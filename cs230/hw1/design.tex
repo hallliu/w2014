@@ -1,0 +1,55 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage[namelimits,sumlimits]{amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage{mathtools}
+\usepackage[cm]{fullpage}
+\newcommand{\tab}{\hspace*{5em}}
+\newcommand{\conj}{\overline}
+\newcommand{\dd}{\partial}
+\newcommand{\ep}{\epsilon}
+\newcommand{\openm}{\begin{pmatrix}}
+\newcommand{\closem}{\end{pmatrix}}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\Null}{null}
+\newcommand{\nc}{\newcommand}
+\newcommand{\rn}{\mathbb{R}}
+\newcommand{\zn}{\mathbb{Z}}
+\nc{\cn}{\mathbb{C}}
+\nc{\ssn}[1]{\subsubsection*{#1}}
+\nc{\inner}[2]{\langle #1,#2\rangle}
+\nc{\h}[1]{\widehat{#1}}
+\nc{\tl}[1]{\widetilde{#1}}
+\nc{\norm}[1]{\left\|{#1}\right\|}
+\DeclarePairedOperator\ceil{\lceil}{\rceil}
+\DeclarePairedOperator\floor{\lfloor}{\rfloor}
+\begin{document}
+
+Name: Hall Liu
+
+Date: \today 
+Notation: Let $[a..b]=\{x\in\zn|a\leq x\leq b\}$ for $a,b\in\zn$, $a\leq b$.
+\section*{Design}
+Throughout, let $N$ denote the number of vertices and $T$ the number of threads.
+\subsection*{Data Structures}
+In both the serial and parallel versions of the algorithms, the matrix of edge lengths shall be stored in a integer array of size $N^2$, where the length of the edge connecting node $i$ to node $j$ is the $i\cdot N+j$th element of the array (with value $1\times10^6$ if such an edge does not exist). The array of minimum path-lengths shall be stored in the same manner. 
+
+\subsection*{Division of labor}
+In the serial case, all computations will be done by the main thread. In the parallel case, for each value of $k$, we will assign values of $i$ from $\ceil{(r-1)\cdot N/T}-1$ through $\floor{r\cdot N/T}-1$ to the $r$th thread (thread numbers indexed from $1$). If $r\cdot N/T$ turns out to be an integer, let $\ceil{r\cdot N/T}=r\cdot N/T + 1$. 
+
+The above division of labor guarantees that each $i$ in $[0..N-1]$ will be assigned to a thread, and no $i$ will be assigned to two threads. To show the first part, note that each $i$ must lie in the interval $[(r-1)\cdot N/T-1, r\cdot N/T-1)$ for some $r\in[1..T]$. If $i\neq (r-1)\cdot N/T$, then $i$ will be assigned to thread $r$, and otherwise it is assigned to thread $r-1$. 
+\subsection*{Invariants}
+
+Let $e_{ij}$ denote the edge length going from node $i$ to node $j$. Let $w_{ij}^{(k)}$ denote the shortest path from $i$ to $j$ going through only nodes $1..(k-1)$. 
+
+First, we are guaranteed that for any $i, j, k$, $w_{ij}^{(k)}$ is nonnegative, since all $e_{ij}$ are nonnegative and all values of $w$ are ultimately derived from sums of the $e_{ij}$.
+
+Next, during the $k$th iteration of the outer loop, we are guaranteed that $w_{ik}^{(k)}=w_{ik}^{(k+1)}$ and $w_{kj}^{(k)}=w_{kj}^{(k+1)}$ for any $i,j$. This is because in the inner loop, $w_{ik}^{(k)}$ is updated only if $w_{ik}^{(k)}\ge w_{ik}^{(k)}+w_{kj}^{(k)}$ for some $j$. However, since $w_{kj}^{(k)}\geq0$, this is impossible.
+
+Finally, in the parallel case, we are guaranteed that no thread will ever write to the same element of $w$ at the same time another thread is accessing it in any way. 
+\end{document}
