@@ -40,16 +40,19 @@ Throughout, let $N$ denote the number of vertices and $T$ the number of threads.
 In both the serial and parallel versions of the algorithms, the matrix of edge lengths shall be stored in a integer array of size $N^2$, where the length of the edge connecting node $i$ to node $j$ is the $i\cdot N+j$th element of the array (with value $1\times10^6$ if such an edge does not exist). The array of minimum path-lengths shall be stored in the same manner. 
 
 \subsection*{Division of labor}
-In the serial case, all computations will be done by the main thread. In the parallel case, for each value of $k$, we will assign values of $i$ from $\ceil{(r-1)\cdot N/T}-1$ through $\floor{r\cdot N/T}-1$ to the $r$th thread (thread numbers indexed from $1$). If $r\cdot N/T$ turns out to be an integer, let $\ceil{r\cdot N/T}=r\cdot N/T + 1$. 
+In the serial case, all computations will be done by the main thread. In the parallel case, order the pairs $(i,j)$ in the same way they are laid out in the array and index them by a variable $l$. For each value of $k$, we will assign values of $l$ from $\ceil{(r-1)\cdot N^2/T}-1$ through $\floor{r\cdot N^2/T}-1$ (inclusive) to the $r$th thread (thread numbers indexed from $1$). If $r\cdot N^2/T$ turns out to be an integer, let $\ceil{r\cdot N^2/T}=r\cdot N^2/T + 1$. Also, if $T>N^2$, then do not spawn the extra threads: force $T=N^2$ and assign one computation to each thread.
 
-The above division of labor guarantees that each $i$ in $[0..N-1]$ will be assigned to a thread, and no $i$ will be assigned to two threads. To show the first part, note that each $i$ must lie in the interval $[(r-1)\cdot N/T-1, r\cdot N/T-1)$ for some $r\in[1..T]$. If $i\neq (r-1)\cdot N/T$, then $i$ will be assigned to thread $r$, and otherwise it is assigned to thread $r-1$. 
+The above division of labor guarantees that each $l$ in $[0..N^2-1]$ will be assigned to a thread, and no $l$ will be assigned to two threads. To show the first part, note that each $l$ must lie in the interval $[(r-1)\cdot N^2/T-1, r\cdot N^2/T-1)$ for some $r\in[1..T]$. If $l\neq (r-1)\cdot N^2/T$, then $l$ will be assigned to thread $r$, and otherwise it is assigned to thread $r-1$. To show the second part, suppose that some $l$ was assigned to two threads, $r$ and $r+1$. Then $l\geq\ceil{r\cdot N^2/T}$ and $l\leq\floor{r\cdot N^2/T}$, which is clearly absurd. 
 \subsection*{Invariants}
-
 Let $e_{ij}$ denote the edge length going from node $i$ to node $j$. Let $w_{ij}^{(k)}$ denote the shortest path from $i$ to $j$ going through only nodes $1..(k-1)$. 
 
 First, we are guaranteed that for any $i, j, k$, $w_{ij}^{(k)}$ is nonnegative, since all $e_{ij}$ are nonnegative and all values of $w$ are ultimately derived from sums of the $e_{ij}$.
 
 Next, during the $k$th iteration of the outer loop, we are guaranteed that $w_{ik}^{(k)}=w_{ik}^{(k+1)}$ and $w_{kj}^{(k)}=w_{kj}^{(k+1)}$ for any $i,j$. This is because in the inner loop, $w_{ik}^{(k)}$ is updated only if $w_{ik}^{(k)}\ge w_{ik}^{(k)}+w_{kj}^{(k)}$ for some $j$. However, since $w_{kj}^{(k)}\geq0$, this is impossible.
 
-Finally, in the parallel case, we are guaranteed that no thread will ever write to the same element of $w$ at the same time another thread is accessing it in any way. 
+Finally, in the parallel case, we are guaranteed that no thread will ever write to the same element of $w$ at the same time another thread is accessing it in any way. First, each thread will only write to element $l$ of the array if $l$ was part of its assigned range, so there is no way that two threads will attempt to write to the same memory location at the same time. 
+Second, during the $k$th iteration of the outer loop, each thread will perform a read-only operation on only elements of the form $w_{ik}^{(k)}$ and $w_{ki}^{(k)}$, and we showed before that these elements will not be written to at all by any thread on the $k$th iteration of the outer loop. Thus, we have no need for synchronization or data-sharing between threads, as we are guaranteed safety by the structure of the algorithm.
+\section*{Testing}
+\subsection*{Correctness}
+For correctness, we want small test cases that can be easily verified by hand. 
 \end{document}
