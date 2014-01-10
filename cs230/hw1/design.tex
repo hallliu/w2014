@@ -26,8 +26,8 @@
 \nc{\h}[1]{\widehat{#1}}
 \nc{\tl}[1]{\widetilde{#1}}
 \nc{\norm}[1]{\left\|{#1}\right\|}
-\DeclarePairedOperator\ceil{\lceil}{\rceil}
-\DeclarePairedOperator\floor{\lfloor}{\rfloor}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
 \begin{document}
 
 Name: Hall Liu
@@ -42,7 +42,7 @@ In both the serial and parallel versions of the algorithms, the matrix of edge l
 \subsection*{Division of labor}
 In the serial case, all computations will be done by the main thread. In the parallel case, order the pairs $(i,j)$ in the same way they are laid out in the array and index them by a variable $l$. For each value of $k$, we will assign values of $l$ from $\ceil{(r-1)\cdot N^2/T}-1$ through $\floor{r\cdot N^2/T}-1$ (inclusive) to the $r$th thread (thread numbers indexed from $1$). If $r\cdot N^2/T$ turns out to be an integer, let $\ceil{r\cdot N^2/T}=r\cdot N^2/T + 1$. Also, if $T>N^2$, then do not spawn the extra threads: force $T=N^2$ and assign one computation to each thread.
 
-The above division of labor guarantees that each $l$ in $[0..N^2-1]$ will be assigned to a thread, and no $l$ will be assigned to two threads. To show the first part, note that each $l$ must lie in the interval $[(r-1)\cdot N^2/T-1, r\cdot N^2/T-1)$ for some $r\in[1..T]$. If $l\neq (r-1)\cdot N^2/T$, then $l$ will be assigned to thread $r$, and otherwise it is assigned to thread $r-1$. To show the second part, suppose that some $l$ was assigned to two threads, $r$ and $r+1$. Then $l\geq\ceil{r\cdot N^2/T}$ and $l\leq\floor{r\cdot N^2/T}$, which is clearly absurd. 
+The above division of labor guarantees that each $l$ in $[0..N^2-1]$ will be assigned to a thread, and no $l$ will be assigned to two threads. To show the first part, note that each $l$ must lie in the interval $((r-1)\cdot N^2/T-1, r\cdot N^2/T-1)$ for some $r\in[1..T]$. If $l\neq (r-1)\cdot N^2/T$, then $l$ will be assigned to thread $r$, and otherwise it is assigned to thread $r-1$. To show the second part, suppose that some $l$ was assigned to two threads, $r$ and $r+1$. Then $l\geq\ceil{r\cdot N^2/T}$ and $l\leq\floor{r\cdot N^2/T}$, which is clearly absurd. 
 \subsection*{Invariants}
 Let $e_{ij}$ denote the edge length going from node $i$ to node $j$. Let $w_{ij}^{(k)}$ denote the shortest path from $i$ to $j$ going through only nodes $1..(k-1)$. 
 
