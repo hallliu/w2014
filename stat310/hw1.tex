@@ -1,0 +1,60 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage[namelimits,sumlimits]{amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage[cm]{fullpage}
+\newcommand{\tab}{\hspace*{5em}}
+\newcommand{\conj}{\overline}
+\newcommand{\dd}{\partial}
+\newcommand{\ep}{\epsilon}
+\newcommand{\openm}{\begin{pmatrix}}
+\newcommand{\closem}{\end{pmatrix}}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\Null}{null}
+\newcommand{\nc}{\newcommand}
+\newcommand{\rn}{\mathbb{R}}
+\nc{\cn}{\mathbb{C}}
+\nc{\ssn}[1]{\subsubsection*{#1}}
+\nc{\inner}[2]{\langle #1,#2\rangle}
+\nc{\h}[1]{\widehat{#1}}
+\nc{\tl}[1]{\widetilde{#1}}
+\nc{\norm}[1]{\left\|{#1}\right\|}
+\begin{document}
+
+Name: Hall Liu
+
+Date: \today 
+\vspace{1.5cm}
+
+\subsection*{2.6}
+Let $x$ be an isolated local minimizer with $x\in U$ such that $x$ is the only local minimizer in $U$. Further, let $V$ be a neighborhood such that for all $y\in V$, $f(x)\leq f(y)$. Consider the neighborhood $U\cap V$, and suppose for the sake of contradiction that there exists some $y\in U\cap V$ such that $f(y)=f(x)$. Then, $y$ is also a local minimizer since $y\in V$, which contradicts the isolateness of $x$. Thus, all points $y\in U\cap V$ must satisfy $f(y)>f(x)$, which means that $x$ is a strict local minimizer.
+\subsection*{2.7}
+%Examine $f(y+\alpha(x-y))-\alpha f(x)-(1-\alpha)f(y)$ for $f(x)=x^TQx$. This expands into 
+%\begin{align*}
+%    (y+\alpha(x-y))^TQ(y+\alpha(x-y))-\alpha x^TQx-(1-\alpha)y^TQy&=y^TQy-\alpha^2\left(x^TQx-2x^TQy+y^TQy\right)-\alpha x^TQx-y^TQy+\alpha y^TQy\\
+%                                                                 &=-\alpha(x^TQx-y^TQy+\alpha x^TQx-2\alpha x^TQy+\alpha y^TQy)\\
+%\end{align*}
+%Let $v_i$ be an orthonormal eigenbasis of $Q$, where all eigenvalues $\gamma_i$ are nonnegative due to positive semidefiniteness. Let $x=\sum a_iv_i$ and $y=\sum b_iv_i$. Then $x^TQx=\sum a_i^2\gamma_i$, $y^TQx=\sum b_i^2\gamma_i$, and $x^TQy=\sum a_ib_i\gamma_i$.
+%
+%We want to show that the term in the parens above is nonnegative in order to show convexity. Plugging in, we have
+%\begin{align*}
+%    \sum_{i=1}^n\gamma_i\left((1+\alpha)a_i^2+(\alpha-1)b_i^2-2\alpha a_ib_i\right)
+%\end{align*}
+We have $f(\alpha x+(1-\alpha)y)=f(y+\alpha(x-y))=(y+\alpha(x-y))^TQ(y+\alpha(x-y))=y^TQy+2\alpha y^TQ(x-y)+\alpha^2(x-y)^TQ(x-y)$. Since $\alpha\in[0,1]$, this is bounded above by $y^TQy+2\alpha y^TQ(x-y)+\alpha(x-y)^TQ(x-y)$. Expanding, we have
+\[y^TQy+2\alpha y^TQx-2\alpha y^TQy+\alpha x^TQx-2\alpha x^TQy+\alpha y^TQy=(1-\alpha)y^TQy+\alpha x^TQx=(1-\alpha)f(y)+\alpha f(x)\]
+so we have convexity.
+ 
+\subsection*{2.8}
+Suppose not. Let $a,b$ be two global minimizers of $f$, and suppose there exists some $\lambda\in[0,1]$ such that $(1-\lambda)a+\lambda b$ is not a global minimizer of $f$. Then, $f((1-\lambda)a+\lambda b)$ is strictly greater than both $f(a)=f(b)=(1-\lambda)f(a)+\lambda f(b)$. However, this contradicts the convexity of $f$, so the set is convex.
+\subsection*{2.14}
+Forming the quotient $\frac{|x_{k+1}-x^*|}{|x_k-x^*|^2}$ for this sequence, we have $\frac{(0.5)^{2^{k+1}}}{(0.5)^{2^{k}\cdot 2}}=1$, which is obviously bounded above.
+\subsection*{2.15}
+This sequence converges to $0$. Forming the fraction $\frac{x_{k+1}}{x_k}$, we have $\frac{1/(k+1)!}{1/k!}=\frac{1}{k+1}$, which approaches $0$ as $k\to\infty$, so it does converge superlinearly. If we instead form the fraction $\frac{x_{k+1}}{x_k^2}$, we get $\frac{1/(k+1)^2}{1/(k!)^2}=\frac{k!}{k+1}$, which approaches infinity since the factorial grows faster than any polynomial. Thus it does not converge quadratically.
+\subsection*{2.16}
+This sequence converges $Q$-superlinearly to $0$. For $k$ even, the relevant fraction is $\frac{(0.25)^{2^k}/k}{(0.25)^{2^k}}=\frac{1}{k}$ which goes to $0$, and for $k$ odd the fraction is $\frac{(0.25)^{2^{k+2}}}{(0.25)^{2^k}/k}\geq\frac{k}{4^{2^k}}$ which also goes to $0$. However, it does not converge $Q$-quadratically, as for $k$ even, the fraction is $\frac{(0.25)^{2^k}/k}{(0.25)^{2^{k+2}}}\geq\frac{4^{2^k}}{k}$, which grows to infinity as $k\to\infty$. The sequence is $R$-quadratically convergent. Let $v_k=\frac{1}{k}(0.25)^{2^{k-1}}$. Then, for $k$ odd, $v_k=x_k$, and for $k$ even, $\frac{v_k}{x_k}=\frac{4^{2^k}}{k}$, which is greater than $1$ in the tail of the sequence. We have $v_k$ is $Q$-quadratically convergent, as $\frac{v_{k+1}}{v_k^2}=1$.
+\end{document}
