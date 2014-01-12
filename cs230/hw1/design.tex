@@ -33,16 +33,23 @@
 Name: Hall Liu
 
 Date: \today 
-Notation: Let $[a..b]=\{x\in\zn|a\leq x\leq b\}$ for $a,b\in\zn$, $a\leq b$.
+\vspace{20pt}
+
+\noindent Notation: Let $[a..b]=\{x\in\zn|a\leq x\leq b\}$ for $a,b\in\zn$, $a\leq b$.
 \section*{Design}
 Throughout, let $N$ denote the number of vertices and $T$ the number of threads.
 \subsection*{Data Structures}
-In both the serial and parallel versions of the algorithms, the matrix of edge lengths shall be stored in a integer array of size $N^2$, where the length of the edge connecting node $i$ to node $j$ is the $i\cdot N+j$th element of the array (with value $1\times10^6$ if such an edge does not exist). The array of minimum path-lengths shall be stored in the same manner. 
+In both the serial and parallel versions of the algorithms, the matrix of edge lengths shall be stored in a integer array of size $N^2$, where the length of the edge connecting node $i$ to node $j$ is the $i\cdot N+j$th element of the array (with value $1\times10^6$ if such an edge does not exist). The array of minimum path-lengths shall be stored in the same manner. If the graph is completely empty, the program should return a null pointer upon detecting that $N=0$.
 
+The interface that will be used to pass data to individual threads is a struct containing the adjacency matrix, the value of $k$ (from the outer loop), the dimensions of the adjacency matrix, and the range of values that are assigned to the particular thread.
+\subsection*{Interfaces}
+The program will have three major functions: \verb|main|, \verb|floyd-warshall|, and \verb|thread_worker|. The \verb|main| function will handle loading external text files and taking care of the command-line arguments. The \verb|floyd-warshall| function will have the adjacency matrix (of type \verb|int *|), the number of nodes, and the number of threads as arguments. Finally, the \verb|thread_worker| function will be the function that is run by the individual threads spawned from \verb|floyd-warshall|.
 \subsection*{Division of labor}
 In the serial case, all computations will be done by the main thread. In the parallel case, order the pairs $(i,j)$ in the same way they are laid out in the array and index them by a variable $l$. For each value of $k$, we will assign values of $l$ from $\ceil{(r-1)\cdot N^2/T}-1$ through $\floor{r\cdot N^2/T}-1$ (inclusive) to the $r$th thread (thread numbers indexed from $1$). If $r\cdot N^2/T$ turns out to be an integer, let $\ceil{r\cdot N^2/T}=r\cdot N^2/T + 1$. Also, if $T>N^2$, then do not spawn the extra threads: force $T=N^2$ and assign one computation to each thread.
 
 The above division of labor guarantees that each $l$ in $[0..N^2-1]$ will be assigned to a thread, and no $l$ will be assigned to two threads. To show the first part, note that each $l$ must lie in the interval $((r-1)\cdot N^2/T-1, r\cdot N^2/T-1)$ for some $r\in[1..T]$. If $l\neq (r-1)\cdot N^2/T$, then $l$ will be assigned to thread $r$, and otherwise it is assigned to thread $r-1$. To show the second part, suppose that some $l$ was assigned to two threads, $r$ and $r+1$. Then $l\geq\ceil{r\cdot N^2/T}$ and $l\leq\floor{r\cdot N^2/T}$, which is clearly absurd. 
+
+Note that this scheme evenly distributes work to each thread, as long as we assume that each operation takes about the same amount of time. On each iteration of $k$, each thread performs $N^2/T$ comparisons and the same number of additions. 
 \subsection*{Invariants}
 Let $e_{ij}$ denote the edge length going from node $i$ to node $j$. Let $w_{ij}^{(k)}$ denote the shortest path from $i$ to $j$ going through only nodes $1..(k-1)$. 
 
@@ -54,5 +61,17 @@ Finally, in the parallel case, we are guaranteed that no thread will ever write 
 Second, during the $k$th iteration of the outer loop, each thread will perform a read-only operation on only elements of the form $w_{ik}^{(k)}$ and $w_{ki}^{(k)}$, and we showed before that these elements will not be written to at all by any thread on the $k$th iteration of the outer loop. Thus, we have no need for synchronization or data-sharing between threads, as we are guaranteed safety by the structure of the algorithm.
 \section*{Testing}
 \subsection*{Correctness}
-For correctness, we want small test cases that can be easily verified by hand. 
+For correctness, we want small test cases or cases with special structure that can be easily verified by hand. One test case should be a relatively ``common'' looking graph with 4 or 5 nodes (with path lengths assigned arbitrarily and shortest lengths computed by hand). The edge cases include extremely sparse graphs (especially ones with one or no edges), graphs with one or two nodes, and complete graphs. We can also do straight-line graphs with constant or algebraically determined edge lengths, as well as cycles. Overall, these are the tests that will be run for correctness:
+\begin{enumerate}
+    \item One or two common-looking graphs with relatively few nodes. To be determined later at time of test-writing
+    \item A graph with zero nodes, with the adjacency matrix passed in as a null pointer.
+    \item A graph with a single node
+    \item Four graphs with two nodes, one with no edges, one with two directed edges, and two with one directed edge, but going in opposite directions
+    \item Three graphs with no edges, with $10$, $50$, and $100$ nodes.
+    \item Three graphs with one edge placed randomly with random weight, with the same node number as above.
+    \item Three graphs with one undirected edge, same as above.
+    \item Three complete graphs with edge length $1$, with the same node numbers as above.
+\end{enumerate}
+\subsection*{Performance}
+
 \end{document}
