@@ -43,7 +43,7 @@ In both the serial and parallel versions of the algorithms, the matrix of edge l
 
 The interface that will be used to pass data to individual threads is a struct containing the adjacency matrix, the value of $k$ (from the outer loop), the dimensions of the adjacency matrix, and the range of values that are assigned to the particular thread.
 \subsection*{Interfaces}
-The program will have three major functions: \verb|main|, \verb|floyd-warshall|, and \verb|thread_worker|. The \verb|main| function will handle loading external text files and taking care of the command-line arguments. The \verb|floyd-warshall| function will have the adjacency matrix (of type \verb|int *|), the number of nodes, and the number of threads as arguments. Finally, the \verb|thread_worker| function will be the function that is run by the individual threads spawned from \verb|floyd-warshall|.
+The program will have three major functions: \verb|main|, \verb|floyd-warshall|, and \verb|thread_worker|. The \verb|main| function will handle loading external text files and taking care of the command-line arguments. The \verb|floyd-warshall| function will have the adjacency matrix (of type \verb|int *|), the number of nodes, and the number of threads as arguments. It will return a pointer to the matrix of shortest path lengths. Finally, the \verb|thread_worker| function will be the function that is run by the individual threads spawned from \verb|floyd-warshall|.
 \subsection*{Division of labor}
 In the serial case, all computations will be done by the main thread. In the parallel case, order the pairs $(i,j)$ in the same way they are laid out in the array and index them by a variable $l$. For each value of $k$, we will assign values of $l$ from $\ceil{(r-1)\cdot N^2/T}-1$ through $\floor{r\cdot N^2/T}-1$ (inclusive) to the $r$th thread (thread numbers indexed from $1$). If $r\cdot N^2/T$ turns out to be an integer, let $\ceil{r\cdot N^2/T}=r\cdot N^2/T + 1$. Also, if $T>N^2$, then do not spawn the extra threads: force $T=N^2$ and assign one computation to each thread.
 
@@ -61,7 +61,7 @@ Finally, in the parallel case, we are guaranteed that no thread will ever write 
 Second, during the $k$th iteration of the outer loop, each thread will perform a read-only operation on only elements of the form $w_{ik}^{(k)}$ and $w_{ki}^{(k)}$, and we showed before that these elements will not be written to at all by any thread on the $k$th iteration of the outer loop. Thus, we have no need for synchronization or data-sharing between threads, as we are guaranteed safety by the structure of the algorithm.
 \section*{Testing}
 \subsection*{Correctness}
-For correctness, we want small test cases or cases with special structure that can be easily verified by hand. One test case should be a relatively ``common'' looking graph with 4 or 5 nodes (with path lengths assigned arbitrarily and shortest lengths computed by hand). The edge cases include extremely sparse graphs (especially ones with one or no edges), graphs with one or two nodes, and complete graphs. We can also do straight-line graphs with constant or algebraically determined edge lengths, as well as cycles. Overall, these are the tests that will be run for correctness:
+For correctness, we want small test cases or cases with special structure that can be easily verified by hand. One test case should be a relatively ``common'' looking graph with 4 or 5 nodes (with path lengths assigned arbitrarily and shortest lengths computed by hand). The edge cases include extremely sparse graphs (especially ones with one or no edges), graphs with one or two nodes, and complete graphs. We can also do straight-line graphs with constant or algebraically determined edge lengths. Overall, these are the tests that will be run for correctness:
 \begin{enumerate}
     \item One or two common-looking graphs with relatively few nodes. To be determined later at time of test-writing
     \item A graph with zero nodes, with the adjacency matrix passed in as a null pointer.
@@ -71,7 +71,13 @@ For correctness, we want small test cases or cases with special structure that c
     \item Three graphs with one edge placed randomly with random weight, with the same node number as above.
     \item Three graphs with one undirected edge, same as above.
     \item Three complete graphs with edge length $1$, with the same node numbers as above.
+    \item Ten linear graphs with undirected lengths of edge $1$, with $N$ randomly determined during testing to be somewhere between $2$ and $1024$.
 \end{enumerate}
+We will run these tests with $T$ taking values in $\{1,2,4,8,16\}$. Throughout all of these, we expect that no two threads will ever conflict in the same memory area. To test this, we first verify that all the results are as expected when run with $T=1$, as this tells us that the implementation of the algorithm is not at fault. Next, we run the tests for larger $T$. If these fail, then we know that the invariant has been violated somehow.
 \subsection*{Performance}
+To measure performance, we will randomly generate adjacency matrices of the correct dimension and run them with the appropriate number of threads. We will measure the performance of the serial algorithm with $N\in\{16,32,64,128,256,512,1024\}$, and we will measure the performance of the parallel algorithm for the same $N$ but also for $T\in\{1,2,4,8,16,32,64\}$. We expect that the exact values of the adjacency matrix will not have a large impact on the runtime, but just to be safe, we will run each $(N,T)$ pair three times and use the mean of the times and use the same matrix when comparing the serial and parallel versions.
 
+First, we hypothesize that the parallel overhead (comparing serial to parallel with $T=1$) will be low and linear with respect to $N$. This is because the core of the algorithm is essentially the same, so the only overhead should come from the thread management operations which take place once on every iteration of the outer loop.
+
+Second, we hypothesize that runtime should decrease linearly with $T$ as long as $T$ does not exceed the number of processors on the test machine. This is because each thread runs independently until it finishes without any synchronization or communication.
 \end{document}
