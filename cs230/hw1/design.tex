@@ -49,7 +49,9 @@ In the serial case, all computations will be done by the main thread. In the par
 
 The above division of labor guarantees that each $l$ in $[0..N^2-1]$ will be assigned to a thread, and no $l$ will be assigned to two threads. To show the first part, note that each $l$ must lie in the interval $((r-1)\cdot N^2/T-1, r\cdot N^2/T-1)$ for some $r\in[1..T]$. If $l\neq (r-1)\cdot N^2/T$, then $l$ will be assigned to thread $r$, and otherwise it is assigned to thread $r-1$. To show the second part, suppose that some $l$ was assigned to two threads, $r$ and $r+1$. Then $l\geq\ceil{r\cdot N^2/T}$ and $l\leq\floor{r\cdot N^2/T}$, which is clearly absurd. 
 
-Note that this scheme evenly distributes work to each thread, as long as we assume that each operation takes about the same amount of time. On each iteration of $k$, each thread performs $N^2/T$ comparisons and the same number of additions. 
+Note that this scheme evenly distributes work to each thread, as long as we assume that each operation takes about the same amount of time and the scheduler behaves sensibly. On each iteration of $k$, each thread performs $N^2/T$ comparisons and the same number of additions. 
+
+If this assumption should fail and there are threads idling while other threads are doing work, then we can switch to a thread pool model.
 \subsection*{Invariants}
 Let $e_{ij}$ denote the edge length going from node $i$ to node $j$. Let $w_{ij}^{(k)}$ denote the shortest path from $i$ to $j$ going through only nodes $1..(k-1)$. 
 
@@ -80,4 +82,6 @@ To measure performance, we will randomly generate adjacency matrices of the corr
 First, we hypothesize that the parallel overhead (comparing serial to parallel with $T=1$) will be low and linear with respect to $N$. This is because the core of the algorithm is essentially the same, so the only overhead should come from the thread management operations which take place once on every iteration of the outer loop.
 
 Second, we hypothesize that runtime should decrease linearly with $T$ as long as $T$ does not exceed the number of processors on the test machine. This is because each thread runs independently until it finishes without any synchronization or communication.
+
+Third, we hypothesize that each thread will take the same amount of time to do the work assigned to it. Since there's no such thing as exactness in the real world, we will measure this by recording the difference in times between when the first thread finishes and the last thread finishes for each iteration of the outer loop, averaging these quantities, then calculating the ratio of this with the average amount of time each iteration of the outer loop takes. If this ratio is less than $0.05$, then we will be reasonably satisfied that the hypothesis is true.
 \end{document}
