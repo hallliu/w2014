@@ -4,7 +4,6 @@
 *.png
 *.swp
 *.djvu
-cs233/
 *.acn
 *.acr
 *.alg
@@ -38,3 +37,4 @@ cs233/
 *.xdy
 *.tdo
 __pycache__
+*.pyc
