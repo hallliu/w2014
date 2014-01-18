@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include "fw.h"
 #include "utils.h"
+#include "stopwatch.h"
 
 /* Assumptions on arguments: -n must be present, the number of nodes.
  * -t may or may not be present. If it is, then it's # threads. If not,
@@ -35,14 +36,13 @@ int main(int argc, char *argv[]) {
     }
     /* Initialize adj matrix and fill it in */
     int *adj_matrix = malloc (n_nodes * n_nodes * sizeof(int));
-    int *result;
     from_csv(adj_matrix, filename, n_nodes);
     if (n_threads == 0) {
-        result = fw_serial(adj_matrix, n_nodes);
+        fw_serial(adj_matrix, n_nodes);
     } else {
-        result = fw_parallel(adj_matrix, n_nodes, n_threads);
+        fw_parallel(adj_matrix, n_nodes, n_threads);
     }
-    to_csv(result, outfile, n_nodes);
+    to_csv(adj_matrix, outfile, n_nodes);
     return 0;
 }
 
@@ -56,7 +56,9 @@ struct thread_info {
 };
 
 void *fw_thread_worker(void *);
-int *fw_parallel(int *adj, int n_nodes, int n_threads) {
+double fw_parallel(int *adj, int n_nodes, int n_threads) {
+    StopWatch_t timer;
+    startTimer (&timer);
     // Check if n_threads > n_nodes and restrict accordingly
     int nsq = n_nodes * n_nodes;
     if (n_threads > nsq) {
@@ -87,8 +89,9 @@ int *fw_parallel(int *adj, int n_nodes, int n_threads) {
 
     free (infos);
     free (threads);
+    stopTimer (&timer);
 
-    return adj;
+    return getElapsedTime (&timer);
 }
 
 void *fw_thread_worker(void *_info) {
@@ -121,7 +124,9 @@ void *fw_thread_worker(void *_info) {
 /* Takes a adjacency matrix and modifies it in-place to produce a matrix
  * of shortest paths. Does not execute in parallel.
  */
-int *fw_serial(int *adj, int n_nodes) {
+double fw_serial(int *adj, int n_nodes) {
+    StopWatch_t timer;
+    startTimer (&timer);
     for (int k = 0; k < n_nodes; k++) {
         int k_start = k * n_nodes;
         for (int i = 0; i < n_nodes; i++) {
@@ -133,7 +138,8 @@ int *fw_serial(int *adj, int n_nodes) {
             }
         }
     }
-    return adj;
+    stopTimer (&timer);
+    return getElapsedTime (&timer);
 }
 
 
