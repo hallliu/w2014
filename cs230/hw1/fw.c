@@ -46,10 +46,55 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
+struct thread_info {
+    int begin;
+    int end;
+    int *adj;
+    int n_nodes;
+    pthread_barrier_t *bar;
+};
+
 int *fw_parallel(int *adj, int n_nodes, int n_threads) {
-    printf("stub\n");
-    return NULL;
+    // Check if n_threads > n_nodes and restrict accordingly
+    if (n_threads > n_nodes) {
+        n_threads = n_nodes;
+    }
+    int nsq = n_nodes * n_nodes;
+    // Initialize barrier
+    pthread_barrier_t bar;
+    pthread_barrier_init (&bar, NULL, n_threads);
+    // Allocate block of thread infos and initialize
+    struct thread_info *infos = malloc (n_threads * sizeof(struct thread_info));
+    pthread_t *threads = malloc (n_threads * sizeof(pthread_t));
+    for (int i = 0; i < n_threads; i++) {
+        // See design doc for rationale behind this allocation.
+        infos[i].begin = i * nsq / n_threads;
+        infos[i].end= (i + 1) * nsq / n_threads - 1;
+        infos[i].n_nodes = n_nodes;
+        infos[i].bar = &bar;
+        infos[i].adj = adj;
+    }
+
+    for (int i = 0; i < n_threads; i++) {
+        pthread_create(&threads[i], NULL, fw_thread_worker, (void *) (infos + i));
+    }
+
+    for(int i = 0; i < n_threads, i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    free (infos);
+    free (threads);
+
+    return adj;
 }
+
+void *fw_thread_worker(void *_info) {
+    struct thread_info *info = (struct thread_info *) _info;
+    int begin_row = info->begin / info->n_nodes;
+    int begin_col = info->begin - begin_row * info->n_nodes;
+    for (int k = 0; k < info->n_nodes; k++) {
+
 
 /* Takes a adjacency matrix and modifies it in-place to produce a matrix
  * of shortest paths. Does not execute in parallel.
