@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd /home/hallliu
-git clone git@github.com:hallliu/w2014.git
+git clone https://github.com/hallliu/w2014.git
 cd ./w2014/cs230/hw1/
 
 ./setup.py build_ext -i
