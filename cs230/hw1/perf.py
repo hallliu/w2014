@@ -2,9 +2,11 @@
 import wrapper
 import numpy as np
 import scipy.sparse as sp
+import cPickle
+import os, sys
 
-sizes = [16,32,64,128,256,512,1024]
-threads = [1,2,4,8,16,32,64]
+sizes = [16,32,64]#,128,256,512,1024]
+threads = [1,2,4]#,8,16,32,64]
 
 def gen_random_adj(size):
     '''
@@ -48,7 +50,6 @@ def speedups():
             for (t_ind, t) in enumerate(threads):
                 p_time = wrapper.fw_parallel(adj, n, t)[1]
                 this_n_spds[i, t_ind] = serial_time / p_time
-                print p_time, serial_time
 
         spds[n_ind] = this_n_spds.mean(0)
         spd_stddevs[n_ind] = this_n_spds.std(0)
@@ -67,3 +68,24 @@ def waits():
             waits[n_ind, t_ind] = wrapper.fw_parallel(adj, n, t)[1]
 
     return waits
+
+def main():
+    try:
+        os.mkdir('results')
+    except:
+        pass
+
+    if len(sys.argv) == 1:
+        overheads = parallel_overhead()
+        spds, spd_stddevs = speedups()
+        f = open('results/overheads', 'w')
+        cPickle.dump(overheads, f)
+        np.savetxt('results/spds.csv', spds, delimiter=',')
+        np.savetxt('results/spd_std.csv', spd_stddevs, delimiter=',')
+
+    else:
+        w = waits()
+        np.savetxt('results/waits.csv', w, delimiter=',')
+
+if __name__ == '__main__':
+    main()
