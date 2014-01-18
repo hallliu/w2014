@@ -7,21 +7,36 @@
 static PyObject *_from_csv(PyObject *self, PyObject *args) {
     int n;
     char *filename;
-    PyObject *_matrix;
+    PyObject *matrix_obj, *_matrix;
 
-    PyArg_ParseTuple(args, "i", &n);
-    PyArg_ParseTuple(args, "s", &filename);
-    PyArg_ParseTuple(args, "o", &_matrix);
+    PyArg_ParseTuple(args, "sOi", &filename, &matrix_obj, &n);
 
-    _matrix = PyArray_FROM_OT(_matrix, NPY_DOUBLE);
+    _matrix = PyArray_FROM_OTF(matrix_obj, NPY_INT, NPY_ARRAY_OUT_ARRAY);
     int *matrix = PyArray_DATA ((PyArrayObject *)_matrix);
     from_csv (matrix, filename, n);
+    Py_DECREF(_matrix);
 
-    return Py_BuildValue("s", NULL);
+    Py_RETURN_NONE;
+}
+
+static PyObject *_to_csv(PyObject *self, PyObject *args) {
+    int n;
+    char *filename;
+    PyObject *matrix_obj, *_matrix;
+
+    PyArg_ParseTuple(args, "sOi", &filename, &matrix_obj, &n);
+
+    _matrix = PyArray_FROM_OTF(matrix_obj, NPY_INT, NPY_ARRAY_IN_ARRAY);
+    int *matrix = PyArray_DATA ((PyArrayObject *)_matrix);
+    to_csv (matrix, filename, n);
+    Py_DECREF(_matrix);
+
+    Py_RETURN_NONE;
 }
 
 static PyMethodDef module_methods[] = {
     {"from_csv", _from_csv, METH_VARARGS, "poop"},
+    {"to_csv", _to_csv, METH_VARARGS, "poop"},
     {NULL, NULL, 0, NULL}
 };
 

@@ -50,7 +50,7 @@ void to_csv(int *matrix, char *filename, int n) {
         for (int j = 0; j < n - 1; j++) {
             fprintf(f, "%d,", matrix[i * n + j]);
         }
-        fprintf (f, "%d\n", matrix[(i - 1) * n + 1]);
+        fprintf (f, "%d\n", matrix[(i + 1) * n - 1]);
     }
     if (f != stdout) {
         fclose (f);
