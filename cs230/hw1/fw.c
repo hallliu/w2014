@@ -17,13 +17,14 @@ int main(int argc, char *argv[]) {
     while (opt = getopt(argc, argv, "n:t:o:"), opt != -1) {
         switch (opt) {
             case 'n':
-                n_nodes = (int) strtol(argv[optind]);
+                n_nodes = (int) strtol(argv[optind], NULL, 10);
                 break;
             case 't':
-                n_threads = (int) strtol(argv[optind]);
+                n_threads = (int) strtol(argv[optind], NULL, 10);
                 break;
             case 'o':
-                outfile = strcpy(argv[optind])
+                outfile = argv[optind];
+                break;
         }
     }
     if (optind >= argc) {
