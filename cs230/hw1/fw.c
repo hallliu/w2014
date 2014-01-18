@@ -118,12 +118,17 @@ double fw_parallel(int *adj, int n_nodes, int n_threads) {
         }
         wait_avg += wait_max;
     }
+    for (int j = 0; j < n_threads; j++) {
+        free (infos[j].outerloop_times);
+        free (infos[j].wait_times);
+    }
+    free (infos);
     outerloop_avg /= n_threads * n_nodes;
     wait_avg /= n_nodes;
     return wait_avg / outerloop_avg;
-#endif
-
+#else
     return getElapsedTime (&timer);
+#endif
 }
 
 void *fw_thread_worker(void *_info) {
@@ -196,5 +201,3 @@ double fw_serial(int *adj, int n_nodes) {
     stopTimer (&timer);
     return getElapsedTime (&timer);
 }
-
-

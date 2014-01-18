@@ -25,7 +25,7 @@ class UtilTests(unittest.TestCase):
 
 class CorrectnessTests(unittest.TestCase):
     def setUp(self):
-        self.sizes = [10, 50, 100]
+        self.sizes = [10, 50, 100, 500]
     '''
     Helper function that actually runs the FW algorithm and raises helpful
     exceptions when things go wrong

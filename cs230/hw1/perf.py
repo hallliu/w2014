@@ -55,3 +55,6 @@ def speedups():
         spd_stddevs[n_ind] = this_n_spds.std(0)
 
     return spds, spd_stddevs
+
+def waits():
+    a = gen_random_adj(400)
