@@ -53,6 +53,12 @@ struct thread_info {
     int *adj;
     int n_nodes;
     pthread_barrier_t *bar;
+    
+#ifdef TIME_WAIT
+    // Things used to measure the downtime at the barrier
+    double *wait_times;
+    double *outerloop_times;
+#endif
 };
 
 void *fw_thread_worker(void *);
@@ -77,6 +83,10 @@ double fw_parallel(int *adj, int n_nodes, int n_threads) {
         infos[i].n_nodes = n_nodes;
         infos[i].bar = &bar;
         infos[i].adj = adj;
+#ifdef TIME_WAIT
+        infos[i].wait_times = malloc(n_nodes * sizeof(double));
+        infos[i].outerloop_times = malloc(n_nodes * sizeof(double));
+#endif
     }
 
     for (int i = 0; i < n_threads; i++) {
@@ -87,9 +97,31 @@ double fw_parallel(int *adj, int n_nodes, int n_threads) {
         pthread_join(threads[i], NULL);
     }
 
+#ifndef TIME_WAIT
+    // We need this stuff for later, so we can't free if we're measuring waiting time
     free (infos);
+#endif
+
     free (threads);
     stopTimer (&timer);
+
+#ifdef TIME_WAIT
+    double outerloop_avg = 0;
+    double wait_avg = 0;
+    for (int i = 0; i < n_nodes; i++) {
+        double wait_max = 0;
+        for (int j = 0; j < n_threads; j++) {
+            outerloop_avg += infos[j].outerloop_times[i];
+            if (infos[j].wait_times[i] > wait_max) {
+                wait_max = infos[j].wait_times[i];
+            }
+        }
+        wait_avg += wait_max;
+    }
+    outerloop_avg /= n_threads * n_nodes;
+    wait_avg /= n_nodes;
+    return wait_avg / outerloop_avg;
+#endif
 
     return getElapsedTime (&timer);
 }
@@ -97,8 +129,17 @@ double fw_parallel(int *adj, int n_nodes, int n_threads) {
 void *fw_thread_worker(void *_info) {
     struct thread_info *info = (struct thread_info *) _info;
     int *adj = info->adj;
+#ifdef TIME_WAIT
+    StopWatch_t timer1;
+    StopWatch_t timer2;
+#endif
 
     for (int k = 0; k < info->n_nodes; k++) {
+
+#ifdef TIME_WAIT
+        startTimer(&timer1);
+#endif
+
         int row_offset = info->begin / info->n_nodes * info->n_nodes;
         int col = info->begin - row_offset;
         int k_offset = k * info->n_nodes;
@@ -115,7 +156,21 @@ void *fw_thread_worker(void *_info) {
                 row_offset += info->n_nodes;
             }
         }
+
+#ifdef TIME_WAIT
+        stopTimer(&timer1);
+        info->outerloop_times[k] = getElapsedTime(&timer1);
+        startTimer(&timer2);
+#endif
+
         pthread_barrier_wait(info->bar);
+
+#ifdef TIME_WAIT
+        stopTimer(&timer2);
+        // Store the time spent waiting into the info struct
+        info->wait_times[k] = getElapsedTime(&timer2);
+#endif
+
     }
     return NULL;
 }
