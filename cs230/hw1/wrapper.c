@@ -34,9 +34,25 @@ static PyObject *_to_csv(PyObject *self, PyObject *args) {
     Py_RETURN_NONE;
 }
 
+static PyObject *_fw_serial(PyObject *self, PyObject *args) {
+    int n;
+    PyObject *matrix_obj, *matrix_pyarr;
+
+    PyArg_ParseTuple(args, "Oi", &matrix_obj, &n);
+    matrix_pyarr = PyArray_FROM_OTF(matrix_obj, NPY_INT, NPY_ARRAY_IN_ARRAY | NPY_ARRAY_ENSURECOPY);
+    int *adj = PyArray_DATA((PyArrayObject *) matrix_pyarr);
+
+    fw_serial(adj, n);
+    Py_DECREF(matrix_pyarr);
+
+    PyObject *retval = Py_BuildValue("O", matrix_pyarr);
+    return retval;
+}
+
 static PyMethodDef module_methods[] = {
     {"from_csv", _from_csv, METH_VARARGS, "poop"},
     {"to_csv", _to_csv, METH_VARARGS, "poop"},
+    {"fw_serial", _fw_serial, METH_VARARGS, "poop"},
     {NULL, NULL, 0, NULL}
 };
 
