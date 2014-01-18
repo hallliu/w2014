@@ -40,6 +40,7 @@ class CorrectnessTests(unittest.TestCase):
         for t in thread_cts:
             result = wrapper.fw_parallel(adj, adj.shape[0], t)
             if not np.all(result == expected):
+                print result
                 failures.append(t)
 
         if len(failures) > 0:

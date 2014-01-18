@@ -55,12 +55,13 @@ struct thread_info {
     pthread_barrier_t *bar;
 };
 
+void *fw_thread_worker(void *);
 int *fw_parallel(int *adj, int n_nodes, int n_threads) {
     // Check if n_threads > n_nodes and restrict accordingly
-    if (n_threads > n_nodes) {
-        n_threads = n_nodes;
-    }
     int nsq = n_nodes * n_nodes;
+    if (n_threads > nsq) {
+        n_threads = nsq;
+    }
     // Initialize barrier
     pthread_barrier_t bar;
     pthread_barrier_init (&bar, NULL, n_threads);
@@ -80,7 +81,7 @@ int *fw_parallel(int *adj, int n_nodes, int n_threads) {
         pthread_create(&threads[i], NULL, fw_thread_worker, (void *) (infos + i));
     }
 
-    for(int i = 0; i < n_threads, i++) {
+    for(int i = 0; i < n_threads; i++) {
         pthread_join(threads[i], NULL);
     }
 
@@ -92,22 +93,23 @@ int *fw_parallel(int *adj, int n_nodes, int n_threads) {
 
 void *fw_thread_worker(void *_info) {
     struct thread_info *info = (struct thread_info *) _info;
-    int row = info->begin / info->n_nodes;
-    int col = info->begin - begin_row * info->n_nodes;
     int *adj = info->adj;
 
     for (int k = 0; k < info->n_nodes; k++) {
-        int k_start = k * info->n_nodes;
+        int row_offset = info->begin / info->n_nodes * info->n_nodes;
+        int col = info->begin - row_offset;
+        int k_offset = k * info->n_nodes;
+
         for(int i = info->begin; i <= info->end; i++) {
-            int alt_dist = adj[row + k] + adj[k_start + col];
+            int alt_dist = adj[row_offset + k] + adj[k_offset + col];
             if (adj[i] > alt_dist)
                 adj[i] = alt_dist;
 
             ++col;
             // TODO: This could have performance implications...
-            if (__builtin_expect(!(col - info->n_nodes), 1)) {
+            if (__builtin_expect(!(col - info->n_nodes), 0)) {
                 col = 0;
-                ++row;
+                row_offset += info->n_nodes;
             }
         }
         pthread_barrier_wait(info->bar);
