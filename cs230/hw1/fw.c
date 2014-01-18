@@ -47,6 +47,7 @@ int main(int argc, char *argv[]) {
 }
 
 struct thread_info {
+    // begin and end are inclusive.
     int begin;
     int end;
     int *adj;
@@ -91,9 +92,28 @@ int *fw_parallel(int *adj, int n_nodes, int n_threads) {
 
 void *fw_thread_worker(void *_info) {
     struct thread_info *info = (struct thread_info *) _info;
-    int begin_row = info->begin / info->n_nodes;
-    int begin_col = info->begin - begin_row * info->n_nodes;
+    int row = info->begin / info->n_nodes;
+    int col = info->begin - begin_row * info->n_nodes;
+    int *adj = info->adj;
+
     for (int k = 0; k < info->n_nodes; k++) {
+        int k_start = k * info->n_nodes;
+        for(int i = info->begin; i <= info->end; i++) {
+            int alt_dist = adj[row + k] + adj[k_start + col];
+            if (adj[i] > alt_dist)
+                adj[i] = alt_dist;
+
+            ++col;
+            // TODO: This could have performance implications...
+            if (__builtin_expect(!(col - info->n_nodes), 1)) {
+                col = 0;
+                ++row;
+            }
+        }
+        pthread_barrier_wait(info->bar);
+    }
+    return NULL;
+}
 
 
 /* Takes a adjacency matrix and modifies it in-place to produce a matrix
