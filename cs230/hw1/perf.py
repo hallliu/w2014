@@ -5,8 +5,8 @@ import scipy.sparse as sp
 import cPickle
 import os, sys
 
-sizes = [16,32,64]#,128,256,512,1024]
-threads = [1,2,4]#,8,16,32,64]
+sizes = [16,32,64,128,256,512,1024]
+threads = [1,2,4,8,16,32,64]
 
 def gen_random_adj(size):
     '''
