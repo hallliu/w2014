@@ -50,9 +50,22 @@ int *fw_parallel(int *adj, int n_nodes, int n_threads) {
     return NULL;
 }
 
+/* Takes a adjacency matrix and modifies it in-place to produce a matrix
+ * of shortest paths. Does not execute in parallel.
+ */
 int *fw_serial(int *adj, int n_nodes) {
-    printf("stub\n");
-    return NULL;
+    for (int k = 0; k < n_nodes; k++) {
+        int k_start = k * n_nodes;
+        for (int i = 0; i < n_nodes; i++) {
+            int row_start = i * n_nodes;
+            for(int j = 0; j < n_nodes; j++) {
+                int alt_dist = adj[row_start + k] + adj[k_start + j];
+                if (adj[row_start + j] > alt_dist)
+                    adj[row_start + j] = alt_dist;
+            }
+        }
+    }
+    return adj;
 }
 
 
