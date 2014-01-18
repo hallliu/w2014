@@ -43,10 +43,8 @@ static PyObject *_fw_serial(PyObject *self, PyObject *args) {
     int *adj = PyArray_DATA((PyArrayObject *) matrix_pyarr);
 
     fw_serial(adj, n);
-    Py_DECREF(matrix_pyarr);
 
-    PyObject *retval = Py_BuildValue("O", matrix_pyarr);
-    return retval;
+    return matrix_pyarr;
 }
 
 static PyMethodDef module_methods[] = {

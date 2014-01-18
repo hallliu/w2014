@@ -31,12 +31,12 @@ class CorrectnessTests(unittest.TestCase):
     exceptions when things go wrong
     '''
     def verify_expectations(self, expected, adj, name):
-        thread_cts = [1, 2, 4, 8, 16, 32, 64]
+        thread_cts = [1, 2, 4, 8, 16, 32]
         serial_result = wrapper.fw_serial(adj, adj.shape[0])
         if not np.all(serial_result == expected):
             raise AssertionError('Serial version failed in {0}'.format(name))
 
-'''
+    '''
         failures = []
         for t in thread_cts:
             result = wrapper.fw_parallel(adj, adj.shape[0], t)
@@ -45,13 +45,13 @@ class CorrectnessTests(unittest.TestCase):
 
         if len(failures) > 0:
             raise AssertionError('Parallel version failed on T={0} in {1}'.format(failures, name))
-'''
+    '''
     '''
     Meant to test correct functionality on a hand-verified
     test case (i.e. on a small graph)
     '''
     def test_small_regular_case(self):
-        expected_result = np.array([[0, 2, 10000000, 10000000, 10000000],
+        expected_result = np.array([[0, 2, 10000000, 10000000, 5],
                                     [10000000, 0, 10000000, 10000000, 3],
                                     [100, 3, 0, 1, 1],
                                     [10000000, 10000000, 10000000, 0, 10000000],
@@ -105,7 +105,7 @@ class CorrectnessTests(unittest.TestCase):
 
             random_edge = (0,0)
             while random_edge[0] == random_edge[1]:
-                random_edge = np.randint(i, size=(2,))
+                random_edge = np.random.randint(i, size=(2,))
 
             adjs[i][random_edge[0], random_edge[1]] = 1
             expecteds[i] = adjs[i].copy()
@@ -121,7 +121,7 @@ class CorrectnessTests(unittest.TestCase):
             self.verify_expectations(expecteds[i], adjs[i], 'complete{0}'.format(i))
 
     def test_linear(self):
-        for i in range(10):
+        for i in range(2):
             graph_size = np.random.randint(2, 512)
             seq = np.random.permutation(graph_size)
             adj = np.ones((graph_size, graph_size), dtype='int32') * 10000000
