@@ -58,7 +58,7 @@ flags = [
 # This path will only work on OS X, but extra paths that don't exist are not
 # harmful
 '-isystem',
-'../llvm/include',
+'/usr/lib64/python3.3/site-packages/numpy/core/include/',
 '-isystem',
 '../llvm/tools/clang/include',
 '-I',

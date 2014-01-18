@@ -8,20 +8,20 @@
  * well-formed matrix and has a terminating , or newline.
  */
 void from_csv(int *matrix, char *filename, int n) {
-    FILE f;
+    FILE *f;
     if (filename != NULL) {
         f = fopen(filename, "r");
     } else {
         f = stdin;
     }
 
-    int matr_ctr = 0, int num_ctr = 0;
+    int matr_ctr = 0, num_ctr = 0;
     char *num_buf = malloc (9); // Longest number possible has 8 characters
     while (!feof(f)) {
         num_buf[num_ctr] = fgetc(f);
         if (num_buf[num_ctr] == ',' || num_buf[num_ctr] == '\n') {
             num_buf[num_ctr] = '\0';
-            matrix[matr_ctr] = (int) strtol (num_buf);
+            matrix[matr_ctr] = (int) strtol (num_buf, NULL, 10);
             num_ctr = 0;
             matr_ctr++;
         } else {
@@ -39,7 +39,7 @@ void from_csv(int *matrix, char *filename, int n) {
 /* Takes the int matrix and prints it to a csv file. If filename is null, print to stdout
  */
 void to_csv(int *matrix, char *filename, int n) {
-    FILE f;
+    FILE *f;
     if (filename != NULL) {
         f = fopen(filename, "w");
     } else {
@@ -50,7 +50,7 @@ void to_csv(int *matrix, char *filename, int n) {
         for (int j = 0; j < n - 1; j++) {
             fprintf(f, "%d,", matrix[i * n + j]);
         }
-        fprintf (f, "%d\n", matrix[i * n + j]);
+        fprintf (f, "%d\n", matrix[(i - 1) * n + 1]);
     }
     if (f != stdout) {
         fclose (f);
