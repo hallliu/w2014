@@ -41,7 +41,6 @@ def speedups():
     spd_stddevs = np.zeros((len(sizes), len(threads)), dtype='float64')
 
     for (n_ind, n) in enumerate(sizes):
-        print n
         this_n_spds = np.zeros((3, len(threads)), dtype='float64')
         for i in range(3):
             adj = gen_random_adj(n)
@@ -56,5 +55,15 @@ def speedups():
 
     return spds, spd_stddevs
 
+'''
+Note: this should be run with the version compiled with the -DTIME_WAIT compiler flag
+'''
 def waits():
-    a = gen_random_adj(400)
+    waits = np.zeros((len(sizes), len(threads)), dtype='float64')
+
+    for (n_ind, n) in enumerate(sizes):
+        adj = gen_random_adj(n)
+        for t_ind, t in enumerate(threads):
+            waits[n_ind, t_ind] = wrapper.fw_parallel(adj, n, t)[1]
+
+    return waits
