@@ -42,9 +42,9 @@ static PyObject *_fw_serial(PyObject *self, PyObject *args) {
     matrix_pyarr = PyArray_FROM_OTF(matrix_obj, NPY_INT, NPY_ARRAY_IN_ARRAY | NPY_ARRAY_ENSURECOPY);
     int *adj = PyArray_DATA((PyArrayObject *) matrix_pyarr);
 
-    fw_serial(adj, n);
+    double time = fw_serial(adj, n);
 
-    return matrix_pyarr;
+    return Py_BuildValue("Nd", matrix_pyarr, time);
 }
 
 static PyObject *_fw_parallel(PyObject *self, PyObject *args) {
@@ -55,9 +55,9 @@ static PyObject *_fw_parallel(PyObject *self, PyObject *args) {
     matrix_pyarr = PyArray_FROM_OTF(matrix_obj, NPY_INT, NPY_ARRAY_IN_ARRAY | NPY_ARRAY_ENSURECOPY);
     int *adj = PyArray_DATA((PyArrayObject *) matrix_pyarr);
 
-    fw_parallel(adj, n, t);
+    double time = fw_parallel(adj, n, t);
 
-    return matrix_pyarr;
+    return Py_BuildValue("Nd", matrix_pyarr, time);
 }
 
 static PyMethodDef module_methods[] = {
