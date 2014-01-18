@@ -38,6 +38,19 @@ static PyObject *_fw_serial(PyObject *self, PyObject *args) {
     int n;
     PyObject *matrix_obj, *matrix_pyarr;
 
+    PyArg_ParseTuple(args, "Oii", &matrix_obj, &n, &t);
+    matrix_pyarr = PyArray_FROM_OTF(matrix_obj, NPY_INT, NPY_ARRAY_IN_ARRAY | NPY_ARRAY_ENSURECOPY);
+    int *adj = PyArray_DATA((PyArrayObject *) matrix_pyarr);
+
+    fw_parallel(adj, n, t);
+
+    return matrix_pyarr;
+}
+
+static PyObject *_fw_parallel(PyObject *self, PyObject *args) {
+    int n, t;
+    PyObject *matrix_obj, *matrix_pyarr;
+
     PyArg_ParseTuple(args, "Oi", &matrix_obj, &n);
     matrix_pyarr = PyArray_FROM_OTF(matrix_obj, NPY_INT, NPY_ARRAY_IN_ARRAY | NPY_ARRAY_ENSURECOPY);
     int *adj = PyArray_DATA((PyArrayObject *) matrix_pyarr);

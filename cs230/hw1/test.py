@@ -36,7 +36,6 @@ class CorrectnessTests(unittest.TestCase):
         if not np.all(serial_result == expected):
             raise AssertionError('Serial version failed in {0}'.format(name))
 
-    '''
         failures = []
         for t in thread_cts:
             result = wrapper.fw_parallel(adj, adj.shape[0], t)
@@ -45,7 +44,7 @@ class CorrectnessTests(unittest.TestCase):
 
         if len(failures) > 0:
             raise AssertionError('Parallel version failed on T={0} in {1}'.format(failures, name))
-    '''
+
     '''
     Meant to test correct functionality on a hand-verified
     test case (i.e. on a small graph)
