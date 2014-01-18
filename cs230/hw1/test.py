@@ -32,13 +32,13 @@ class CorrectnessTests(unittest.TestCase):
     '''
     def verify_expectations(self, expected, adj, name):
         thread_cts = [1, 2, 4, 8, 16, 32]
-        serial_result = wrapper.fw_serial(adj, adj.shape[0])
+        serial_result, time = wrapper.fw_serial(adj, adj.shape[0])
         if not np.all(serial_result == expected):
             raise AssertionError('Serial version failed in {0}'.format(name))
 
         failures = []
         for t in thread_cts:
-            result = wrapper.fw_parallel(adj, adj.shape[0], t)
+            result, time = wrapper.fw_parallel(adj, adj.shape[0], t)
             if not np.all(result == expected):
                 print result
                 failures.append(t)
