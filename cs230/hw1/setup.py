@@ -2,16 +2,19 @@
 from distutils.core import setup, Extension
 import sys
 import numpy as np
+
+compile_args = ['-Wall', '-Werror', '-O3', '-std=gnu99']
  
 if '--time_wait' in sys.argv:
-    module1 = Extension('wrapper', 
-            extra_compile_args = ['-Wall', '-Werror', '-O3', '-std=gnu99', '-DTIME_WAIT'],
-            sources = ['wrapper.c', 'utils.c', 'fw.c', 'stopwatch.c'])
+    compile_args.append('-DTIME_WAIT')
     sys.argv.remove('--time_wait')
-else:
-    module1 = Extension('wrapper', 
-            extra_compile_args = ['-Wall', '-Werror', '-O3', '-std=gnu99'],
-            sources = ['wrapper.c', 'utils.c', 'fw.c', 'stopwatch.c'])
+
+if np.version.version < '1.7.0':
+    compile_args.append('-DOLD_NUMPY')
+
+module1 = Extension('wrapper', 
+        extra_compile_args = compile_args,
+        sources = ['wrapper.c', 'utils.c', 'fw.c', 'stopwatch.c'])
  
 setup (name = 'wrapper', 
         ext_modules = [module1],

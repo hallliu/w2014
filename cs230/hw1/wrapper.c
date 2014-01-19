@@ -4,6 +4,11 @@
 #include "utils.h"
 #include "fw.h"
 
+#ifdef OLD_NUMPY
+#define NPY_ARRAY_OUT_ARRAY NPY_OUT_ARRAY
+#define NPY_ARRAY_IN_ARRAY NPY_IN_ARRAY
+#endif
+
 static PyObject *_from_csv(PyObject *self, PyObject *args) {
     int n;
     char *filename;
@@ -11,7 +16,7 @@ static PyObject *_from_csv(PyObject *self, PyObject *args) {
 
     PyArg_ParseTuple(args, "sOi", &filename, &matrix_obj, &n);
 
-    _matrix = PyArray_FROM_OTF(matrix_obj, NPY_INT, NPY_OUT_ARRAY);
+    _matrix = PyArray_FROM_OTF(matrix_obj, NPY_INT, NPY_ARRAY_OUT_ARRAY);
     int *matrix = PyArray_DATA ((PyArrayObject *)_matrix);
     from_csv (matrix, filename, n);
     Py_DECREF(_matrix);
@@ -26,7 +31,7 @@ static PyObject *_to_csv(PyObject *self, PyObject *args) {
 
     PyArg_ParseTuple(args, "sOi", &filename, &matrix_obj, &n);
 
-    _matrix = PyArray_FROM_OTF(matrix_obj, NPY_INT, NPY_IN_ARRAY);
+    _matrix = PyArray_FROM_OTF(matrix_obj, NPY_INT, NPY_ARRAY_IN_ARRAY);
     int *matrix = PyArray_DATA ((PyArrayObject *)_matrix);
     to_csv (matrix, filename, n);
     Py_DECREF(_matrix);
@@ -39,7 +44,7 @@ static PyObject *_fw_serial(PyObject *self, PyObject *args) {
     PyObject *matrix_obj, *matrix_pyarr;
 
     PyArg_ParseTuple(args, "Oi", &matrix_obj, &n);
-    matrix_pyarr = PyArray_FROM_OTF(matrix_obj, NPY_INT, NPY_IN_ARRAY | NPY_ENSURECOPY);
+    matrix_pyarr = PyArray_FROM_OTF(matrix_obj, NPY_INT, NPY_ARRAY_IN_ARRAY | NPY_ENSURECOPY);
     int *adj = PyArray_DATA((PyArrayObject *) matrix_pyarr);
 
     double time = fw_serial(adj, n);
@@ -52,12 +57,19 @@ static PyObject *_fw_parallel(PyObject *self, PyObject *args) {
     PyObject *matrix_obj, *matrix_pyarr;
 
     PyArg_ParseTuple(args, "Oii", &matrix_obj, &n, &t);
-    matrix_pyarr = PyArray_FROM_OTF(matrix_obj, NPY_INT, NPY_IN_ARRAY | NPY_ENSURECOPY);
+    matrix_pyarr = PyArray_FROM_OTF(matrix_obj, NPY_INT, NPY_ARRAY_IN_ARRAY | NPY_ENSURECOPY);
     int *adj = PyArray_DATA((PyArrayObject *) matrix_pyarr);
 
+#ifdef TIME_WAIT
+    struct final_wait_data *times = fw_parallel(adj, n, t);
+    double o_std = times->o_std;
+    PyObject *retval = Py_BuildValue("Nddd", matrix_pyarr, times->wo_ratio, times->o_mean, times->o_std);
+    free (times);
+    return retval;
+#else
     double time = fw_parallel(adj, n, t);
-
     return Py_BuildValue("Nd", matrix_pyarr, time);
+#endif
 }
 
 static PyMethodDef module_methods[] = {

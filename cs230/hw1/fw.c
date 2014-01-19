@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <string.h>
@@ -62,7 +63,12 @@ struct thread_info {
 };
 
 void *fw_thread_worker(void *);
+#ifdef TIME_WAIT
+struct final_wait_data *fw_parallel(int *adj, int n_nodes, int n_threads) {
+#else
 double fw_parallel(int *adj, int n_nodes, int n_threads) {
+#endif
+
     StopWatch_t timer;
     startTimer (&timer);
     // Check if n_threads > n_nodes and restrict accordingly
@@ -106,6 +112,7 @@ double fw_parallel(int *adj, int n_nodes, int n_threads) {
     stopTimer (&timer);
 
 #ifdef TIME_WAIT
+    // Compute averages and ratio
     double outerloop_avg = 0;
     double wait_avg = 0;
     for (int i = 0; i < n_nodes; i++) {
@@ -118,14 +125,29 @@ double fw_parallel(int *adj, int n_nodes, int n_threads) {
         }
         wait_avg += wait_max;
     }
+    outerloop_avg /= n_threads * n_nodes;
+    wait_avg /= n_nodes;
+    
+    // Compute standard deviations
+    double sumsq = 0;
+    for (int i = 0; i < n_nodes; i++) {
+        for (int j = 0; j < n_threads; j++) {
+            sumsq += (infos[j].outerloop_times[i] - outerloop_avg) * (infos[j].outerloop_times[i] - outerloop_avg);
+        }
+    }
+
     for (int j = 0; j < n_threads; j++) {
         free (infos[j].outerloop_times);
         free (infos[j].wait_times);
     }
     free (infos);
-    outerloop_avg /= n_threads * n_nodes;
-    wait_avg /= n_nodes;
-    return wait_avg / outerloop_avg;
+    
+    struct final_wait_data *retval = malloc(sizeof(struct final_wait_data));
+    retval->wo_ratio = wait_avg / outerloop_avg;
+    retval->o_mean = outerloop_avg;
+    retval->o_std = sqrt(sumsq / (n_threads * n_nodes));
+
+    return retval;
 #else
     return getElapsedTime (&timer);
 #endif
