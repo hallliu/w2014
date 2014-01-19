@@ -34,7 +34,7 @@ def parallel_overhead():
             serial_times[i] = wrapper.fw_serial(adj, n)[1]
             parallel_times[i] = wrapper.fw_parallel(adj, n, 1)[1]
 
-        overheads[n] = ((parallel_times - serial_times).mean(), (parallel_times - serial_times).std())
+        overheads[n] = ((serial_times/parallel_times).mean(), (serial_times/parallel_times).std())
     
     return overheads
 
@@ -79,11 +79,11 @@ def main():
 
     if len(sys.argv) == 1:
         overheads = parallel_overhead()
-        spds, spd_stddevs = speedups()
+        #spds, spd_stddevs = speedups()
         f = open('results/overheads', 'w')
         cPickle.dump(overheads, f)
-        np.savetxt('results/spds.csv', spds, delimiter=',')
-        np.savetxt('results/spd_std.csv', spd_stddevs, delimiter=',')
+        #np.savetxt('results/spds.csv', spds, delimiter=',')
+        #np.savetxt('results/spd_std.csv', spd_stddevs, delimiter=',')
 
     else:
         r, avg, std = waits()
