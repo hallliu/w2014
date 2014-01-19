@@ -38,7 +38,7 @@ class CorrectnessTests(unittest.TestCase):
 
         failures = []
         for t in thread_cts:
-            result, time = wrapper.fw_parallel(adj, adj.shape[0], t)
+            result = wrapper.fw_parallel(adj, adj.shape[0], t)[0]
             if not np.all(result == expected):
                 print result
                 failures.append(t)
