@@ -60,14 +60,16 @@ def speedups():
 Note: this should be run with the version compiled with the -DTIME_WAIT compiler flag
 '''
 def waits():
-    waits = np.zeros((len(sizes), len(threads)), dtype='float64')
+    ratios = np.zeros((len(sizes), len(threads)), dtype='float64')
+    o_avg = np.zeros((len(sizes), len(threads)), dtype='float64')
+    o_std = np.zeros((len(sizes), len(threads)), dtype='float64')
 
     for (n_ind, n) in enumerate(sizes):
         adj = gen_random_adj(n)
         for t_ind, t in enumerate(threads):
-            waits[n_ind, t_ind] = wrapper.fw_parallel(adj, n, t)[1]
+            ratios[n_ind, t_ind], o_avg[n_ind, t_ind], o_std[n_ind, t_ind] = wrapper.fw_parallel(adj, n, t)[1:]
 
-    return waits
+    return ratios, o_avg, o_std
 
 def main():
     try:
@@ -84,8 +86,10 @@ def main():
         np.savetxt('results/spd_std.csv', spd_stddevs, delimiter=',')
 
     else:
-        w = waits()
-        np.savetxt('results/waits.csv', w, delimiter=',')
+        r, avg, std = waits()
+        np.savetxt('results/wait_ratios.csv', r, delimiter=',')
+        np.savetxt('results/outerloop_avgs.csv', avg, delimiter=',')
+        np.savetxt('results/outerloop_stds.csv', std, delimiter=',')
 
 if __name__ == '__main__':
     main()
