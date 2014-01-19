@@ -32,14 +32,32 @@ def analyze_runtimes():
     spd_stds = np.loadtxt('results/spd_std.csv', delimiter=',')
 
     colors = ['black', 'violet', 'blue', 'green', 'yellow', 'orange', 'red']
-    plt.figure(figsize=(8, 5))
+    color_names = map(lambda x: '{0:d} Vertices'.format(int(x)), np.exp2(np.arange(4,11)))
+    plt.figure(figsize=(12, 8))
+    plots = []
     for i in range(spds.shape[0]):
         print colors[i], max(spds[i])
         #plt.plot(threads, spds[i], color=colors[i], linestyle='-')
-        plt.errorbar(threads, spds[i], yerr=spd_stds[i], marker=None, ecolor=colors[i], color=colors[i])
+        plots.append(plt.errorbar(threads, spds[i], yerr=spd_stds[i], marker=None, ecolor=colors[i], color=colors[i])[0])
 
     plt.xscale('log', basex=2)
+    plt.legend(plots, color_names, loc=1)
     plt.savefig('img/speedups.png', dpi=200, bbox_inches='tight')
 
+def analyze_waittimes():
+    waits = np.loadtxt('results/waits.csv', delimiter=',')
+    threads = np.exp2(np.arange(7))
+    color_names = map(lambda x: '{0:d} Vertices'.format(int(x)), np.exp2(np.arange(4,11)))
+    colors = ['black', 'violet', 'blue', 'green', 'yellow', 'orange', 'red']
+
+    plt.figure(figsize=(12, 8))
+    plots = []
+    for i in range(waits.shape[0]):
+        plots.append(plt.plot(threads, waits[i], color=colors[i], linestyle='-')[0])
+
+    plt.xscale('log', basex=2)
+    plt.yscale('log', basey=2)
+    plt.legend(plots, color_names, loc=4)
+    plt.savefig('img/waits.png', dpi=200, bbox_inches='tight')
 
 
