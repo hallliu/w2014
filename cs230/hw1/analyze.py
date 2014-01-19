@@ -45,7 +45,7 @@ def analyze_runtimes():
     plt.savefig('img/speedups.png', dpi=200, bbox_inches='tight')
 
 def analyze_waittimes():
-    waits = np.loadtxt('results/waits.csv', delimiter=',')
+    waits = np.loadtxt('results/wait_ratios.csv', delimiter=',')
     threads = np.exp2(np.arange(7))
     color_names = map(lambda x: '{0:d} Vertices'.format(int(x)), np.exp2(np.arange(4,11)))
     colors = ['black', 'violet', 'blue', 'green', 'yellow', 'orange', 'red']
@@ -59,5 +59,23 @@ def analyze_waittimes():
     plt.yscale('log', basey=2)
     plt.legend(plots, color_names, loc=4)
     plt.savefig('img/waits.png', dpi=200, bbox_inches='tight')
+
+def analyze_tdiffs():
+    threads = np.exp2(np.arange(7))
+    spds = np.loadtxt('results/outerloop_avgs.csv', delimiter=',')
+    spd_stds = np.loadtxt('results/outerloop_stds.csv', delimiter=',')
+
+    colors = ['black', 'violet', 'blue', 'green', 'yellow', 'orange', 'red']
+    color_names = map(lambda x: '{0:d} Vertices'.format(int(x)), np.exp2(np.arange(4,11)))
+    plt.figure(figsize=(12, 8))
+    plots = []
+    for i in range(spds.shape[0]):
+        print colors[i], max(spds[i])
+        #plt.plot(threads, spds[i], color=colors[i], linestyle='-')
+        plots.append(plt.errorbar(threads, spds[i], yerr=spd_stds[i], marker=None, ecolor=colors[i], color=colors[i])[0])
+
+    plt.xscale('log', basex=2)
+    plt.legend(plots, color_names, loc=1)
+    plt.savefig('img/outerloop_data.png', dpi=200, bbox_inches='tight')
 
 
