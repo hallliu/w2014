@@ -27,9 +27,9 @@ def gen_random_adj(size):
 def parallel_overhead():
     overheads = {}
     for n in sizes:
-        serial_times = np.zeros(3, dtype='float64')
-        parallel_times = np.zeros(3, dtype='float64')
-        for i in range(3):
+        serial_times = np.zeros(9, dtype='float64')
+        parallel_times = np.zeros(9, dtype='float64')
+        for i in range(9):
             adj = gen_random_adj(n)
             serial_times[i] = wrapper.fw_serial(adj, n)[1]
             parallel_times[i] = wrapper.fw_parallel(adj, n, 1)[1]
@@ -43,8 +43,8 @@ def speedups():
     spd_stddevs = np.zeros((len(sizes), len(threads)), dtype='float64')
 
     for (n_ind, n) in enumerate(sizes):
-        this_n_spds = np.zeros((3, len(threads)), dtype='float64')
-        for i in range(3):
+        this_n_spds = np.zeros((9, len(threads)), dtype='float64')
+        for i in range(9):
             adj = gen_random_adj(n)
             serial_time = wrapper.fw_serial(adj, n)[1]
             for (t_ind, t) in enumerate(threads):
