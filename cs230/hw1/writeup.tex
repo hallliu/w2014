@@ -1,0 +1,44 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage[namelimits,sumlimits]{amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage{mathtools}
+\usepackage[cm]{fullpage}
+\newcommand{\tab}{\hspace*{5em}}
+\newcommand{\conj}{\overline}
+\newcommand{\dd}{\partial}
+\newcommand{\ep}{\epsilon}
+\newcommand{\openm}{\begin{pmatrix}}
+\newcommand{\closem}{\end{pmatrix}}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\Null}{null}
+\newcommand{\nc}{\newcommand}
+\newcommand{\rn}{\mathbb{R}}
+\newcommand{\zn}{\mathbb{Z}}
+\nc{\cn}{\mathbb{C}}
+\nc{\ssn}[1]{\subsubsection*{#1}}
+\nc{\inner}[2]{\langle #1,#2\rangle}
+\nc{\h}[1]{\widehat{#1}}
+\nc{\tl}[1]{\widetilde{#1}}
+\nc{\norm}[1]{\left\|{#1}\right\|}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\begin{document}
+
+Name: Hall Liu
+
+Date: \today 
+\vspace{20pt}
+
+\section*{Changes to original design}
+\subsection*{Program structure}
+Due to discussion in class on the use of barriers, the original idea of creating new threads upon each iteration of the outer loop was scrapped. Instead, $T$ threads are created at the start of execution, and they live for the entire duration of the algorithm. Consequently, the structure that is passed to the worker threads now includes a pointer to the barrier object. In addition, the program no longer considers empty graphs/null pointers to be valid input to the \verb|fw_parallel| and \verb|fw_serial| functions.
+
+In addition to the C code that performs the numerical work, several functions located in \verb|wrapper.c| were written to provide an interface to Python for testing purposes. The Python functions were named \verb|fw_parallel| and \verb|fw_serial| in the \verb|wrapper| package, and their arguments include a NumPy integer array (for the adjacency matrix), the number of nodes, and the number of threads in the parallel case. They both return a NumPy integer array filled with shortest-path values. There are also two functions to load and dump csv files for the matrices that take a filename, the matrix, and the number of nodes.
+\subsection*{Test plan}
+Correctness tests were implemented in Python with the \verb|unittest| module mostly according to the original plan. For the tests that specifi $10$, $50$, or $100$ nodes, an additional size of $500$ was added because it ran a lot faster than I expected. The tests that involved one undirected edge were omitted since I felt that they were redundant with the one directed edge tests. 
