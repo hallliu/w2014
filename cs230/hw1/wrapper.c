@@ -63,7 +63,6 @@ static PyObject *_fw_parallel(PyObject *self, PyObject *args) {
 
 #ifdef TIME_WAIT
     struct final_wait_data *times = fw_parallel(adj, n, t);
-    double o_std = times->o_std;
     PyObject *retval = Py_BuildValue("Nddd", matrix_pyarr, times->wo_ratio, times->o_mean, times->o_std);
     free (times);
     return retval;
