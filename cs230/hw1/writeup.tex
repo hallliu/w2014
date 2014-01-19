@@ -43,4 +43,8 @@ In addition to the C code that performs the numerical work, several functions lo
 \subsection*{Test plan}
 Correctness tests were implemented in Python with the \verb|unittest| module mostly according to the original plan. For the tests that specifi $10$, $50$, or $100$ nodes, an additional size of $500$ was added because it ran a lot faster than I expected. The tests that involved one undirected edge were omitted since I felt that they were redundant with the one directed edge tests. The highest thread count for the correctness tests was also bumped up to $32$. 
 
-Performance tests were conducted according to plan. For parallel overhead and speedups, each $(N,T)$ combination was run 3 different times with different matrices so as to reduce the effect of random fluctuations. The mean and standard deviation were reported. 
+Performance tests were conducted according to the original plan for parallel overhead and speedups. For parallel overhead and speedups, each $(N,T)$ combination was run $9$ different times with different matrices so as to reduce the effect of random fluctuations. The mean and standard deviation were reported. 
+
+For time spent waiting, the original plan was to time the difference between when the first thread returned and when the last thread returned. Since this became impossible with the use of the barrier, a new system was put into place. A timer was run for each thread to time each iteration of the outer loop, and a separate timer was used to time the time spent in the call to \verb|pthread_barrier_wait|. The times of these were stored in two arrays in the thread data structure which were then processed by the main thread after all threads have finished. Three values were reported: the ratio of the average wait time to the average outer-loop time, the average outer-loop time, and the standard deviation of the outer-loop times. 
+\section*{Hypotheses}
+
