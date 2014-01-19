@@ -122,7 +122,7 @@ class CorrectnessTests(unittest.TestCase):
 
     def test_linear(self):
         for i in range(2):
-            graph_size = np.random.randint(2, 512)
+            graph_size = np.random.randint(2, 1024)
             seq = np.random.permutation(graph_size)
             adj = np.ones((graph_size, graph_size), dtype='int32') * 10000000
             np.fill_diagonal(adj, 0)
