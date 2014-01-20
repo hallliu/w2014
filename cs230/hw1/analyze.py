@@ -12,18 +12,10 @@ def analyze_overheads():
     for i, x in enumerate(xvals):
         yvals[i] = ovs[x][0]
         yerrs[i] = ovs[x][1]
-
-    reg = st.linregress(np.log2(xvals), np.log2(yvals))
-    xline = np.linspace(3, 10.2, 100)
-    yline = reg[0]*xline + reg[1]
-    print reg[0]
-
     plt.figure()
     plt.errorbar(xvals, yvals, yerr=yerrs, fmt='.')
-    plt.plot(np.exp2(xline), np.exp2(yline), 'k-')
     plt.xlim((10, 1500))
     plt.xscale('log', basex=2)
-    plt.yscale('log', basey=2)
     plt.savefig('img/overheads.png', dpi=130, bbox_inches='tight')
 
 def analyze_runtimes():
