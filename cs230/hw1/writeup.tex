@@ -49,14 +49,29 @@ For time spent waiting, the original plan was to time the difference between whe
 \section*{Hypotheses}
 For the parallel overhead, the original hypothesis was that the difference in runtimes between the parallel and serial versions with $T=1$ would increase linearly. Since this was not the correct definition of parallel overhead, we instead recorded the ratio between the serial runtime and parallel runtime. Translated to this parameter, the original hypothesis becomes that the ratio will approach $1$ as $N$ increases. The results of that are presented below in a graph. The error bars denote the standard deviation of the $9$ measurements taken for each $N$. The $x$-axis has the number of nodes, and the $y$-axis has the ratios.
 
-\includegraphics[width=0.6\pagewidth]{img/overhead.png}
+\includegraphics[width=0.5\textwidth]{img/overheads.png}
 
 The trend does indeed seem to be trending upwards, though there is a leveling-off effect towards the tail. The point at $128$ nodes is a bit of a departure from the trend, but its high standard deviation suggests that there could be a low outlier pulling at the point. Beyond that, I am unsure of what could be causing that dip. In addition, the trend seems to be asymptotically approching $0.7$ rather than $1$, which suggests that there is some sort of $O(n^3)$ slowdown in the parallel version. This could be because of the different way memory is accessed in the parallel version -- there is a good deal of index computation going on in the inner loop.
 
 As for the speedups with multiple threads, the information is in the following graph. The $x$-axis contains the number of threads, while the $y$-axis has the speedup.
 
-\includegraphics[width=0.6\pagewidth]{img/speedups.png}
+\includegraphics[width=0.6\textwidth]{img/speedups.png}
 
 As expected, the speedups generally increase with increasing number of nodes, but the trend is decidedly nonlinear in the number of threads. The machine we're running this on has $16$ cores, and this can be seen in the big peak for $N=1024$ at $16$ threads. However, for smaller $N$, the peak comes for smaller values of $T$. This is probably due to the increased overhead experienced by the parallel algorithm for larger values of $T$ (as seen below). 
 
+However, the speedup nowhere near the number of processors even for $T\leq16$, so the original hypothesis there was way off. This is probably due to the time spent waiting at the barrier at the end of each iteration of the outer loop.
 
+Finally, the last original hypothesis was that each thread will take the same amount of time to execute the outer loop, and consequently, the ratio of time spent waiting between iterations to the time spend performing calculations will be low. This was measured here by taking the average (over iterations of the outer loop) maximum (over threads) time spent inside the \verb|pthread_barrier_wait| function and dividing it by the average time for one iteration of the outer loop. 
+Admittedly, this is a rather problematic way of measuring things. The barrier function has unknown overhead which may depend on $T$ somehow, and the timers introduce a fair bit of overhead themselves. Nevertheless, some sensible data came out of it, which is summarized in the graph below.
+
+\includegraphics[width=0.6\textwidth]{img/waits.png}
+
+The $x$-axis is the number of threads, and the $y$-axis is the aforementioned ratio. As would be expected, this ratio is very low when $T=1$, as the barrier function should just return immediately every time. Also, the ratio is lower for larger $N$, which makes sense since the inner loop takes much longer. We also see that the ratio increases for increasing $T$: this is probably due to a combination of two factors. First, for a given $N$, increasing $T$ reduces the amount of work that the inner loop has to do, which will boost up the ratio. Second, increasing $T$ will probably also increase the amount of work that the barrier has to do, so that will contribute to increasing the ratio as well.
+The ratio is also atrociously large for small values of $N$ and large values of $T$. In fact, for $T=1$ and $N=16$, the value is about $1/2$, which suggests that the barrier is responsible for a good amount of the parallel overhead.
+
+To see how much the execution time of the inner loop varies, we can look at the standard deviations of the inner loop execution times. This is presented in the graph below:
+
+\includegraphics[width=0.6\textwidth]{img/outerloop_data.png}
+
+The $x$-axis is number of threads, the $y$-axis is time in milliseconds, and the error bars represent the standard deviation of the inner loop execution times. At least for the $N=512$ and $N=1024$ cases, the standard deviations seem to be decently large compared to the actual value, which suggests that the threads aren't all finishing at the same time. This indicates that we might want to consider some sort of adaptive work-assignment scheme, though that would involve a critical section in the code and more overheads that we will need to seek to minimize by tweaking the size of the chunks that get handed out.
+\end{document}
