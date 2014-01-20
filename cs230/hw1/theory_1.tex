@@ -15,6 +15,8 @@
 \DeclareMathOperator{\cov}{cov}
 \DeclareMathOperator{\rank}{rank}
 \DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\lock}{lock}
+\DeclareMathOperator{\unlock}{unlock}
 \DeclareMathOperator{\Span}{span}
 \DeclareMathOperator{\Null}{null}
 \newcommand{\nc}{\newcommand}
@@ -76,4 +78,63 @@ Pick a counter as before. When the counter enters the room, he will change the s
 We want to show that whenever the counter gets incremented, it becomes equal to the number of prisoners who are now resting forever. Since the counter is always toggling the light on and off, the light won't get stuck in a steady state, and every prisoner will eventually get to see the light in both states and therefore get the chance to rest forever. Thus, if this holds, the counter will eventually get incremented to $P-1$. 
 
 Let $C$ denote the newly incremented value of the counter and $R$ denote the number of prisoners resting forever at that point. Proceed by induction. Suppose that on the last visit of the counter, the light was left on. Then, no intervening prisoners will have touched the light, and the counter will flip the light off on this visit and not increment. Thus, the previous visit by the counter must have left the light in an off state. Now, if an intervening prisoner had turned the light on, he is the first and only prisoner in this par of the sequence to turn the light on and move into a resting-forever state, so the counter is rightly incremented by one.
+\subsection*{5}
+The prisoner in the back of the line should say ``red'' if the number of prisoners he can see with red hats is odd, and ``blue'' otherwise. Then, the next prisoner, knowing the parity of the number of red hats and the colors of everyone except himself, can deduce his own color. Similarly, each successive prisoner will know the colors of the people behind him (assume that they answered correctly by induction) and the colors of the people ahead of him, so everyone will be able to deduce their own color.
+\subsection*{7}
+We have $S_2=\frac{1}{1-p+p/2}$, or $p=2+\frac{2}{S_2}$. Plugging this into $S_n$ gives $\frac{1}{1-(2+2/S_2)+\frac{2+2/S_2}{n}}=\frac{S_2}{2\frac{S_2+1}{n}-(S_2+2)}$
+\subsection*{8}
+The speed of the 10-core processor compared to that of one of its cores will be $\frac{1}{1-p+\frac{p}{10}}$. Since the uniprocessor is $5$ times faster than a single core, the 10-core machine will be preferable iff $\frac{1}{1-p+\frac{p}{10}}>5$, or when $p>\frac{8}{9}$.
+\subsection*{11}
+This satistfies mutual exclusion. First, we show that we cannot transition from a state where no threads are in a critical section to one where more than one thread is. To show this, suppose that thread $n$ is the first to call \verb|lock|, then thread $m$ is the next to call \verb|lock| at some point after thread $n$ does. We have that 
+\begin{verbatim}
+write(n, turn=n) -> read(n, busy == false) -> write(n, busy=true) -> read(n, turn == n) -> CS(n)
+write(m, turn=m) -> read(m, busy == false) -> write(m, busy=true) -> read(m, turn == m) -> CS(m)
+\end{verbatim}
+We must also have 
+\begin{verbatim}
+read(m, busy == false) -> write(n, busy=true)| and \verb|read(n, busy == false) -> write(m, busy=true)
+\end{verbatim}
+since nothing can flip \verb|busy| back to false (as nothing was in the critical section beforehand, so \verb|unlock| won't be called). Thus, transitivity gives
+\begin{verbatim}
+write(n, turn=n) -> ... -> read(m, turn == m)
+write(m, turn=m) -> ... -> read(n, turn == n)
+\end{verbatim}
+which is impossible without intervening writes to \verb|turn| by either thread $n$ or $m$.
+
+This does not satisfy deadlock-freedom. To see this, suppose thread $A$ is executing the inner do-loop and thread $B$ has just exited the inner do-loop. Thread $B$ sets \verb|busy| to true, then thread $A$ sets \verb|turn| to its own id. Then, thread $B$ will go back into the inner do-loop and never exit, and the same with thread $A$, because \verb|busy| will then be stuck in the on state. 
+\subsection*{14}
+Remove the last $l$ levels from the filter hierarchy and place the critical section directly underneath the $(n-l)$th level. Then, lemma 2.4.1 guarantees $l$-mutual-exclusion, and the proof of 2.4.2 will still work with the $(n-l)$th level as the base case.
+\subsection*{15}
+This fails to provide mutual exclusion. Suppose we have the following sequence of events:
+\begin{verbatim}
+write(1, x=1) -> write(2, x=2) -> read(1, y == -1) -> 
+read(2, y == -1) -> write(1, y == 1) -> write(2, y == 2)
+\end{verbatim}
+At this point, thread 2 will return from the fast lock function because it reads that $x$ is 2, and thread $1$ will go ahead and call the slow lock function (which will return because it is uncontested), so both threads will enter the critical section.
+\subsection*{16}
+In order to get \verb|STOP|, a thread $k$ must follow this sequence:
+\begin{verbatim}
+write(k, last=k) -> read(k, goRight == false) -> write(k, goRight == true) -> read(k, last == k)
+\end{verbatim}
+Note that nothing will set \verb|goRight| to false after it has been set to true, so if some other thread $j$ is to follow this sequence, it must have \verb|read(j, goRight == false) -> write(k, goRight == true) -> read(k, last == k)|, and by transitivity, \verb|write(j, last=j) -> ... -> read(k, last == k)|, which is impossible. Thus only one thread will get \verb|STOP|.
+
+For \verb|RIGHT|, since \verb|goRight| is initialized as false, the first thread to reach line 11 will read \verb|goRight == false|, which means that it cannot execute the statement inside the if, which happens to be the only place where a \verb|RIGHT| can be returned. Thus no more than $n-1$ threads can get \verb|RIGHT|.
+
+For \verb|DOWN|, consider what happens to the thread that does not get \verb|RIGHT|. For notation's sake, label it thread 1. The sequence that it must follow to get \verb|DOWN| is 
+\begin{verbatim}
+write(1, last == 1) -> read(1, goRight == false) -> write(1, goRight=true) -> read(1, last != 1) -> DOWN
+\end{verbatim}
+This means that some other thread (call it 2) must have written to \verb|last| after thread $1$ did, or 
+\begin{verbatim}
+write(1, last=1) -> write(2, last=2) -> read(1, last != 1)
+\end{verbatim}
+If thread 2 also gets \verb|DOWN|, then there must be some thread 3 such that 
+\begin{verbatim}
+write(2, last=2) -> write(3, last=3) -> read(2, last != 2)
+\end{verbatim}
+Continuing in this manner for all $n$ threads to get \verb|DOWN|, we must then have 
+\begin{verbatim}
+write(1, last=1) -> ... -> write(n-1, last=n-1) -> write(n, last=n)
+\end{verbatim}
+However, for thread $n$ to get \verb|DOWN|, it must read \verb|last| to be something other than $n$, which is impossible because all write operations by the other threads to \verb|last| have already been completed. Thus not all threads can get \verb|DOWN|.
 \end{document}
