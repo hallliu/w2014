@@ -1,0 +1,79 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage[namelimits,sumlimits]{amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage{mathtools}
+\usepackage[cm]{fullpage}
+\newcommand{\tab}{\hspace*{5em}}
+\newcommand{\conj}{\overline}
+\newcommand{\dd}{\partial}
+\newcommand{\ep}{\epsilon}
+\newcommand{\openm}{\begin{pmatrix}}
+\newcommand{\closem}{\end{pmatrix}}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\Null}{null}
+\newcommand{\nc}{\newcommand}
+\newcommand{\rn}{\mathbb{R}}
+\newcommand{\zn}{\mathbb{Z}}
+\nc{\cn}{\mathbb{C}}
+\nc{\ssn}[1]{\subsubsection*{#1}}
+\nc{\inner}[2]{\langle #1,#2\rangle}
+\nc{\h}[1]{\widehat{#1}}
+\nc{\tl}[1]{\widetilde{#1}}
+\nc{\norm}[1]{\left\|{#1}\right\|}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\begin{document}
+Name: Hall Liu
+
+Date: \today 
+\vspace{1.5cm}
+
+\subsection*{2}
+\begin{enumerate}
+    \item Liveness. The ordering ensures that no customer will be left hanging in the queue.
+    \item Safety. Ensures that nothing goes into orbit accidentally.
+    \item Liveness. Some thread will get to execute its critical section.
+    \item Liveness. Messages will be printed promptly.
+    \item Safety. Messages will not be lost.
+    \item Safety. Cost of living will be monotonically increasing.
+    \item Safety. There will never not be death or taxes.
+    \item Safety. Harvard men will never be confused for something else?
+\end{enumerate}
+\subsection*{3}
+Bob has a string tied to a can on Alice's side and vice versa. Start with an empty yard and Bob's side's can down. When Bob wants to put food out, he does the following:
+\begin{enumerate}
+    \item Wait until his can gets knocked down.
+    \item Put food out.
+    \item Go home and puts his can back up.
+    \item Knock down Alice's can.
+\end{enumerate}
+When Alice wants to go get food, she does the following:
+\begin{enumerate}
+    \item Wait until her can gets knocked down.
+    \item Go get food.
+    \item Go home and put her can back up.
+    \item Knock down Bob's can.
+\end{enumerate}
+Suppose that Bob's can is down. Then, the most recent action that can have happened to Alice's can is that it was put back up, since Bob is the only one who can knock down Alice's can and he will always reset his can before he knocks hers down. Similarly, if Alice's can is down, then Bob's must be up. Thus, both cans cannot be down simultaneously. Now, since both of them will only go outside when their can is down, they cannot be outside simultaneously. This satisifies mutual exclusion.
+
+Suppose that Bob is always willing to provide food and that Alice is always trying to get food. If there is starvation, then either Bob or Alice must be waiting for their can to go down indefinitely. However, if only one of them is waiting, then the other one will complete their task and knock the first person's can down, so for starvation to occur, both cans must be up simultaneously and both parties must be waiting for them to fall. However, this state cannot be reached from the initial state. Since every time either party puts their can up they also knock down the other party's can, the total number of cans up must remain at $1$.
+
+Finally, we have that Alice will never enter the yard unless there is food. This is because she will only enter the yard when her can is down, and her can can only be down when Bob has placed food in the yard and knocked it down after the last time she had retrieved food and reset her can. This is therefore a solution to the producers-consumers problem.
+\subsection*{4}
+\ssn{a}
+Find some prisoner and assign him as the counter. Each time he goes into the room and sees the light on, he turns it off and adds 1 to his internal counter which he starts at 0. For every other prisoner, they will turn the light on the first time they see the light off, then always do nothing afterwards. When the counter reaches $P-1$, he will declare that all prisoners have visited. To show that this is a winning strategy, we need to show that the declaration is always correct and that the strategy will terminate. 
+
+If the counter is at $P-1$, that means that the light has been turned on $P-1$ times in the past, since the light gets turned off every time the counter is incremented. Since each prisoner will only turn on the light once, this means that $P-1$ prisoners have visited, and the counter is guaranteed to have visited because he's been there at least $P-1$ times. To show that it will terminate, suppose that the counter $C$ is bounded above by some $Y<P-1$ for all time. Then, at some point, we will have $C=Y$ and the light off, and the counter in the room. At this point, only $Y$ prisoners have seen the light off when they came in, since otherwise the counter would be higher. Thus, since every prisoner will visit again after this point, at some point a prisoner will flip the light on, after which point the counter will come in again at some point and increment, contradicting the bound.
+\ssn{b}
+Pick a counter as before. When the counter enters the room, he will change the state of the light, and if the light is different from when he last left it, he will increment his counter. When any other prisoner enters, they will leave the light alone unless it is off and they have seen it in both positions, in which case they will flip the light on then rest forever. The counter declares the game over when the counter reaches $P-1$.
+
+We want to show that whenever the counter gets incremented, it becomes equal to the number of prisoners who are now resting forever. Since the counter is always toggling the light on and off, the light won't get stuck in a steady state, and every prisoner will eventually get to see the light in both states and therefore get the chance to rest forever. Thus, if this holds, the counter will eventually get incremented to $P-1$. 
+
+Let $C$ denote the newly incremented value of the counter and $R$ denote the number of prisoners resting forever at that point. Proceed by induction. Suppose that on the last visit of the counter, the light was left on. Then, no intervening prisoners will have touched the light, and the counter will flip the light off on this visit and not increment. Thus, the previous visit by the counter must have left the light in an off state. Now, if an intervening prisoner had turned the light on, he is the first and only prisoner in this par of the sequence to turn the light on and move into a resting-forever state, so the counter is rightly incremented by one.
+\end{document}
