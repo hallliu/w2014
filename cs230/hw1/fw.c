@@ -167,6 +167,9 @@ void *fw_thread_worker(void *_info) {
         startTimer(&timer1);
 #endif
 
+        // These are precomputed to save time in the inner loop.
+        // row_offset is the index of the beginning of the current row,
+        // and k_offset is the index of the beginning of the kth row.
         int row_offset = info->begin / info->n_nodes * info->n_nodes;
         int col = info->begin - row_offset;
         int k_offset = k * info->n_nodes;
@@ -177,7 +180,6 @@ void *fw_thread_worker(void *_info) {
                 adj[i] = alt_dist;
 
             ++col;
-            // TODO: This could have performance implications...
             if (__builtin_expect(!(col - info->n_nodes), 0)) {
                 col = 0;
                 row_offset += info->n_nodes;
