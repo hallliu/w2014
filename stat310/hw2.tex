@@ -1,0 +1,57 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage[namelimits,sumlimits]{amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage[cm]{fullpage}
+\newcommand{\tab}{\hspace*{5em}}
+\newcommand{\conj}{\overline}
+\newcommand{\dd}{\partial}
+\newcommand{\ep}{\epsilon}
+\newcommand{\openm}{\begin{pmatrix}}
+\newcommand{\closem}{\end{pmatrix}}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\Null}{null}
+\newcommand{\nc}{\newcommand}
+\newcommand{\rn}{\mathbb{R}}
+\nc{\cn}{\mathbb{C}}
+\nc{\ssn}[1]{\subsubsection*{#1}}
+\nc{\inner}[2]{\langle #1,#2\rangle}
+\nc{\h}[1]{\widehat{#1}}
+\nc{\tl}[1]{\widetilde{#1}}
+\nc{\norm}[1]{\left\|{#1}\right\|}
+\begin{document}
+
+Name: Hall Liu
+
+Date: \today 
+
+\subsection*{1}
+The gradient of this function is $\openm 8+2x_1&12-4x_2\closem$, which is zero only at $(-4,3)$. The Hessian matrix is $\openm 2&0\\0&-4\closem$, which has both positive and negative eigenvalues, indicating that it's neither positive nor negative definite.
+\vspace{6cm}
+\subsection*{2}
+We have $a^Tx=\sum a_ix_i$, so its gradient is just the constant function $a$, and its Hessian is the zero matrix. For the next one, 
+\[x^TAx=\openm\sum a_{1i}x_i&\sum a_{2i}x_i&\hdots&\sum a_{ni}x_i\closem^Tx=\sum_{i=1}^n\sum_{j=1}^na_{ij}x_ix_j\]
+The gradient, in terms of the individual partials, is 
+\[\frac{\dd f}{\dd x_i}=\sum_{k\neq i}a_{ik}x_k+\sum_{k\neq i}a_{ki}x_k+2a_{ii}x_i\]
+Taking the $j$th partial of the above gives the $ij$th entry of the Hessian. This comes out to be $a_{ij}+a_{ji}$, so the Hessian is just $A+A^T$.
+\subsection*{3}
+later
+\subsection*{4}
+Let $C\ep^2$ be an upper bound on the size of the error of the $O(\ep^2)$ term in the expression given for the central difference. Then, following the derivation of (8.5), we get an error bounded by $(C\ep^2+uL_f/\ep)$, since the bound for $|\text{comp}(f(x-\ep e_i))-f(x-\ep e_i)|$ is still $uL_f$. Differentiating wrt $\ep$ and setting to $0$ gives $2C\ep-uL_f/\ep^2=0$, or $\ep=\left(\frac{uL_f}{2C}\right)^{1/3}$. If $L_f\approx 2C$, then we have $\ep=u^{1/3}$. Plugging this into the original error bound gives $(C+L_f)u^{2/3}$.
+%TODO: Matlab stuff
+\subsection*{5}
+Evaluating $\nabla f(x-\ep p)$, we get $\nabla f(x)-\ep\nabla^2 f(x)p+O(\ep^2)$. Subtracting this from (8.19), we get $\nabla f(x+\ep p)-\nabla f(x-\ep p)=2\ep\nabla^2 f(x)p+O(\ep^2)$. Dividing out by $2\ep$ gives $\nabla^2 f(x)p=\frac{\nabla f(x+\ep p)-\nabla f(x-\ep p)}{2\ep}+O(\ep)$.
+\subsection*{6}
+To evaluate $f$, $x^Tx$ takes $2n$ operations, as does $a^Tx$. There's a squaring, and addition, then a division, making for $4n+3$ operations.
+
+The gradient of $x^Tx$ is $2x$ and that of $(a^Tx)^2=x^T(aa^T)x$ is $2(a^Tx)a$ (from simplifying the formula for gradient of $x^TAx$). Thus the gradient is just $x+(a^Tx)a$. The first term is free, and the second term takes $n$ operations (assuming that $a^Tx$ has been precomputed). Adding them takes an additional $n$, for a total of $2n$.
+
+The Hessian of $x^Tx$ is $2I_n$, and the Hessian of $x^T(aa^T)x$ is $2aa^T$ (both from the formula for Hessian of $x^TAx$), so the overall Hessian is $I_n+aa^T$. The second term needs $n^2$ operations, and adding the first term takes $n$ operations for a total of $n^2+n$.
+
+Multiplying the Hessian by $p$ gives $p+(a^Tp)a$. Computing $a^Tp$ takes $n$ operations, multiplying it to $a$ takes $n$, and adding $p$ on takes another $n$ for a total of $3n$ operations.
+\end{document}
