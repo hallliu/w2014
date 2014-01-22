@@ -40,18 +40,43 @@ The gradient, in terms of the individual partials, is
 \[\frac{\dd f}{\dd x_i}=\sum_{k\neq i}a_{ik}x_k+\sum_{k\neq i}a_{ki}x_k+2a_{ii}x_i\]
 Taking the $j$th partial of the above gives the $ij$th entry of the Hessian. This comes out to be $a_{ij}+a_{ji}$, so the Hessian is just $A+A^T$.
 \subsection*{3}
-later
+First, obtain upper and lower bounds on $\norm{\nabla f(x_k)}$. Since $f$ is convex in some neighborhood around $x^*$, we have $f(x_k)+\nabla f(x_k)^T(x^*-x_k)\leq f(x^*)$, or $\nabla f(x_k)^T(x_k-x^*)\geq f(x_k)-f(x^*)$. Take norms on both sides and apply Cauchy-Schwarz to obtain $\norm{\nabla f(x_k)}\geq \frac{f(x_k)-f(x^*)}{\|x_k-x^*\|}$. To obtain an upper bound, note that the Hessian $H_f$ is continuous in some ball around $x^*$ containing $x_k$, so the 2-norm of $H_f$ is bounded above by some $D$ in this ball. Then, by Taylor's theorem, 
+\begin{align*}
+    &\nabla f(x^*+(x_k-x^*))=\nabla f(x^*)+\int_0^1 H_f(x^*+t(x_k-x^*))(x_k-x^*)dt\\
+    &\implies \norm{\nabla f(x_k)}\leq\int_0^1\norm{H_f(x^*+t(x_k-x^*))}\norm{(x_k-x^*)}dt\leq D\norm{x_k-x^*}
+\end{align*}
+which gives us a lower bound.
+
+Now, let $A=H_f(x_k)+\norm{\nabla f(x_k)}^{1/p}I_n$. Then, rearranging the iteration equation, we have $\nabla f(x_k)+A(x_{k+1}-x_k)=0$. From the proof of Newton's method from class, we have $\nabla f(x_k)+H_f(x_k)(x^*-x_k)+\varphi=0$, where $\norm{\varphi}\leq C\norm{x^*-x_k}^2$. Subtracting the two gives $H_f(x_k)(x_{k+1}-x^*)+\norm{\nabla f(x_k)}^{1/p}(x_{k+1}-x_k)-\varphi=0$, and rearranging and taking norms gives 
+\[\norm{H_f(x_k)(x_{k+1}-x^*)}=\norm{\varphi-\norm{\nabla f(x_k)}^{1/p}(x_{k+1}-x_k)}\]
+If we let $\lambda_n$ be the smallest eigenvalue of $H_f$ within the neighborhood about $x^*$, we then have
+\[\lambda_n\norm{x_{k+1}-x^*}\leq\|\varphi\|+\norm{\nabla f(x_k)}^{1/p}\|x_{k+1}-x_k\|\leq C\norm{x_k-x^*}^2+D\norm{x_k-x^*}^{1/p}\norm{x_{k+1}-x_k}\]
+Dividing out by $\norm{x_k-x^*}$, the RHS becomes $C\norm{x_k-x^*}+D\norm{x_k-x^*}^{1/p-1}\norm{x_{k+1}-x_k}$. Taking $k\to\infty$, this goes to $0$, which means that we have superlinear convergence. 
+
+On the other hand, if we let $\lambda_1$ be the largest eigenvalue of $H_f$ instead, then we have the inequality
+\[\lambda_n\norm{x_{k+1}-x^*}\geq\|\varphi\|-\norm{\nabla f(x_k)}^{1/p}\|x_{k+1}-x_k\|\]
 \subsection*{4}
 Let $C\ep^2$ be an upper bound on the size of the error of the $O(\ep^2)$ term in the expression given for the central difference. Then, following the derivation of (8.5), we get an error bounded by $(C\ep^2+uL_f/\ep)$, since the bound for $|\text{comp}(f(x-\ep e_i))-f(x-\ep e_i)|$ is still $uL_f$. Differentiating wrt $\ep$ and setting to $0$ gives $2C\ep-uL_f/\ep^2=0$, or $\ep=\left(\frac{uL_f}{2C}\right)^{1/3}$. If $L_f\approx 2C$, then we have $\ep=u^{1/3}$. Plugging this into the original error bound gives $(C+L_f)u^{2/3}$.
-%TODO: Matlab stuff
+
+If we run this in Matlab and plot the value of $\log_{10}(\ep)$ versus the log of the error, we obtain the following:
+
+\includegraphics[width=0.5\textwidth]{hw2_files/4.png}
+
+The minimum error comes at around $\ep=10^{-6}$, which matches with the predicted optimal $\ep$ of $10^{-16/3}$. Additionally, the value of the minimum error is about $10^{-10}$, which is again close to the predicted minimum error of $10^{-32/3}$.
 \subsection*{5}
 Evaluating $\nabla f(x-\ep p)$, we get $\nabla f(x)-\ep\nabla^2 f(x)p+O(\ep^2)$. Subtracting this from (8.19), we get $\nabla f(x+\ep p)-\nabla f(x-\ep p)=2\ep\nabla^2 f(x)p+O(\ep^2)$. Dividing out by $2\ep$ gives $\nabla^2 f(x)p=\frac{\nabla f(x+\ep p)-\nabla f(x-\ep p)}{2\ep}+O(\ep)$.
 \subsection*{6}
-To evaluate $f$, $x^Tx$ takes $2n$ operations, as does $a^Tx$. There's a squaring, and addition, then a division, making for $4n+3$ operations.
+To evaluate $f$, $x^Tx$ takes $2n$ operations, as does $a^Tx$. There's a squaring, an addition, then a division, making for $4n+3$ operations.
 
-The gradient of $x^Tx$ is $2x$ and that of $(a^Tx)^2=x^T(aa^T)x$ is $2(a^Tx)a$ (from simplifying the formula for gradient of $x^TAx$). Thus the gradient is just $x+(a^Tx)a$. The first term is free, and the second term takes $n$ operations (assuming that $a^Tx$ has been precomputed). Adding them takes an additional $n$, for a total of $2n$.
+%The gradient of $x^Tx$ is $2x$ and that of $(a^Tx)^2=x^T(aa^T)x$ is $2(a^Tx)a$ (from simplifying the formula for gradient of $x^TAx$). Thus the gradient is just $x+(a^Tx)a$. The first term is free, and the second term takes $n$ operations (assuming that $a^Tx$ has been precomputed). Adding them takes an additional $n$, for a total of $2n$.
+%
+%The Hessian of $x^Tx$ is $2I_n$, and the Hessian of $x^T(aa^T)x$ is $2aa^T$ (both from the formula for Hessian of $x^TAx$), so the overall Hessian is $I_n+aa^T$. The second term needs $n^2$ operations, and adding the first term takes $n$ operations for a total of $n^2+n$.
+%
+%Multiplying the Hessian by $p$ gives $p+(a^Tp)a$. Computing $a^Tp$ takes $n$ operations, multiplying it to $a$ takes $n$, and adding $p$ on takes another $n$ for a total of $3n$ operations.
 
-The Hessian of $x^Tx$ is $2I_n$, and the Hessian of $x^T(aa^T)x$ is $2aa^T$ (both from the formula for Hessian of $x^TAx$), so the overall Hessian is $I_n+aa^T$. The second term needs $n^2$ operations, and adding the first term takes $n$ operations for a total of $n^2+n$.
+If we try and evaluate these things without simplifying first, the gradient would be calculated by evaluating the function $n$ times, subtracting the original value $n$ times, and dividing by $\ep$ $n$ times, which makes for $n(4n+3)+2n=4n^2+5n$ operations. 
 
-Multiplying the Hessian by $p$ gives $p+(a^Tp)a$. Computing $a^Tp$ takes $n$ operations, multiplying it to $a$ takes $n$, and adding $p$ on takes another $n$ for a total of $3n$ operations.
+Approximating the Hessian with (8.21) requires $n$ precomputed values of $f(x+\ep e_i)$ (each requiring $n+4n+3$ operations), one value of $\ep^2$, and $n(n+1)/2$ function values of the form $f(x+\ep x_i+\ep x_j)$ (each requiring $2n+4n+3$ operations). This sums up to $5n^2+3n+1+n(n+1)(6n+3)/2=(6n^3+19n^2+9n+2)/2$ operations. Then, for each matrix element, we need to perform $3$ additions and $1$ division, for an additional $4n^2$ operations.
+
+Taking the Hessian-vector product can use (8.20), which calls for evaluating $(x+\ep p)$ ($2n$ operations), the gradient twice ($8n^2+10n$ operations), subtracting the gradients ($n$ operations), and finally dividing by $\ep$ ($n$ operations) for a total of $8n^2+14n$ operations.
 \end{document}
