@@ -34,5 +34,12 @@ Name: Hall Liu
 Date: \today 
 \vspace{1.5cm}
 
-1. blah blah blah
+\section*{Structure}
+In addition to the provided modules which handle the packet generation/checksum calculation for us, we will define the \verb|queue| object, which will implement the lock-free queue described in class. The module will have 4 functions, \verb|create|, \verb|destroy|, \verb|enq|, and \verb|deq|. \verb|create| will initialize the associated memory/data structures and \verb|destroy| will free them. The other two do the sensible thing and add/remove objects from the queue. These will be located in \verb|queue.c| and \verb|queue.h|. Owing to the lack of generics in C, this queue will contain objects of the type \verb|void *|, which must then be cast to the appropriate type. 
+
+The parallel version of the firewall will consist of two distinct parts -- the dispatcher and the workers. The dispatcher will be called as a function from \verb|main| with the necessary parameters (number of workers, number of packets, size of queue, packet distribution, and mean work).  The dispatcher function will then initialize required structures, spawn the $n-1$ worker threads, then loop and insert packets into the queue. Once the workers are finished, the dispatcher is responsible for deallocating the queues.
+
+The worker threads will receive a pointer pointing to its queue object, and will loop repeatedly to pull packets from this queue and compute their fingerprint. The worker is responsible for deallocating the memory in the packets. 
+\section*{Correctness}
+
 \end{document}
