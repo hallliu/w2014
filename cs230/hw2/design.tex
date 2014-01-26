@@ -40,6 +40,16 @@ In addition to the provided modules which handle the packet generation/checksum 
 The parallel version of the firewall will consist of two distinct parts -- the dispatcher and the workers. The dispatcher will be called as a function from \verb|main| with the necessary parameters (number of workers, number of packets, size of queue, packet distribution, and mean work).  The dispatcher function will then initialize required structures, spawn the $n-1$ worker threads, then loop and insert packets into the queue. Once the workers are finished, the dispatcher is responsible for deallocating the queues.
 
 The worker threads will receive a pointer pointing to its queue object, and will loop repeatedly to pull packets from this queue and compute their fingerprint. The worker is responsible for deallocating the memory in the packets. 
-\section*{Correctness}
+\section*{Correctness testing}
+\subsection*{Queue}
+First, we need to verify the correctness of the queue object under one- and two-thread conditions. To test correctness under serial conditions, we should test what happens when we try to dequeue from an empty queue and enqueue to a full queue (the edge cases), as well as testing its order-preserving conditions. In other words, if we have one thread performing the enqueueing and the dequeueing, we want to satisify the invariant that if $a$ is enqueued before $b$, then if $a$ and $b$ are both dequeued at some point, then $a$ will be dequeued before $b$.
 
+To test this invariant, we will generate random strings of enqueue/dequeue events with random integers in Python, then feed them into both the builtin Python implementation of a queue and the implementation to be tested. The integers will be cast to void pointers directly to store them into the queue (bad C, I know, but it can't hurt for these purposes). The outputs will be compared and verified for correctness.
+
+In the parallel version, the invariants that we wish to verify are the following:
+\begin{enumerate}
+    \item If the enqueuing thread enqueues $n$ objects during some interval of time and the dequeuing thread is constantly trying to dequeue objects during said interval, then the dequeuing thread will succeed exactly $n$ times, and the successes will be returned in the same order as the enqueueing thread inserted them.
+    \item If the enqueuing thread is constantly trying to enqueue objects in order from some infinite ordered set of objects and the dequeuing thread dequeues successfully $n$ times, then the $n$ objects returned are the first $n$ objects from the aforementioned infinite set.
+\end{enumerate}
+Unfortunately, we cannot implement this testing in Python due to the lack of proper multiprocessor support caused by the GIL. Thus, we will create two C functions that perform the requisite testing. The infinite ordered set of objects will naturally be the natural numbers, again encoded into void pointers. 
 \end{document}
