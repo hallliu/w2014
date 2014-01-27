@@ -1,0 +1,61 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage[namelimits,sumlimits]{amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage[cm]{fullpage}
+\newcommand{\tab}{\hspace*{5em}}
+\newcommand{\conj}{\overline}
+\newcommand{\dd}{\partial}
+\newcommand{\ep}{\epsilon}
+\newcommand{\openm}{\begin{pmatrix}}
+\newcommand{\closem}{\end{pmatrix}}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\Null}{null}
+\newcommand{\nc}{\newcommand}
+\newcommand{\rn}{\mathbb{R}}
+\nc{\cn}{\mathbb{C}}
+\nc{\ssn}[1]{\subsubsection*{#1}}
+\nc{\inner}[2]{\langle #1,#2\rangle}
+\nc{\h}[1]{\widehat{#1}}
+\nc{\tl}[1]{\widetilde{#1}}
+\nc{\norm}[1]{\left\|{#1}\right\|}
+\begin{document}
+
+Name: Hall Liu
+
+Date: \today 
+
+\subsection*{1}
+\ssn{a}
+Times were measured in milliseconds. In the dense case , we get $C=1.09\times10^{-6}$ and $\alpha=2.399$, whereas in the sparse case, we have $C=0.0016$ and $\alpha=0.713$. $C$ is fairly meaningless -- it depends on the units we use for time. If we had measured time by the amount of time it takes to execute one floating point operation, $C$ would probably tell us something, but without knowing the details of what overhead Matlab adds, it's still pretty useless. The $\alpha$ tells us that the sparse case is way faster then the dense case. The theoretical values for $\alpha$ would be around $1$ and $3$ for the sparse and dense cases, respectively. The lower values here probably indicate some sort of constant overhead that starts to dominate for lower values of $n$.
+\ssn{b}
+Plots for the dense case on the left, sparse case on the right, with size on the $x$-axis and the ratio on the $y$-axis:
+
+\includegraphics[width=0.5\textwidth]{hw3_files/1_dense_ratios.png}
+\includegraphics[width=0.5\textwidth]{hw3_files/1_sparse_ratios.png}
+
+Standard deviation is there because computations can get preempted by the operating system, leading to delays. This would be expected to show up more for lower $n$, as preemption will add 1ms of wall time at the minimum (my system runs on $1000$Hz timer ticks). The graph for the sparse case shows this off pretty well, but the graph for the dense case has a weird spike at the second-largest value of $n$. I don't know why this is the case, and I suspect it's something to do with how Matlab implements Cholesky factorization for larger/smaller values of $n$.
+\subsection*{2}
+\subsection*{3}
+\ssn{b}
+Let $A=XBX^{T}$ and $B=YCY^{T}$. Then $B=X^{T}AX$, so $B$ is congruent to $A$, and similarly $C$ is congruent to $B$. Substituting, we have $A=X(YCY^{T})X^{T}=(XY)C(XY)^{T}$, so $A$ is congruent to $C$.
+\ssn{c}
+Let $A$ be symmetric, and decompose $A$ as $Q\Lambda Q^{T}$, where $\Lambda$ is a diagonal matrix. Then, if we let $H$ be a diagonal matrix with $h_{ii}=1/\sqrt{|\lambda_{ii}|}$ (unless $\lambda_{ii}=0$, in which case we let $h_{ii}=0$), we have that $H\Lambda H^T$ has only $1$, $-1$, and $0$s on its diagonal. Thus $A$ is congruent to a inertia matrix by $QH$.
+\ssn{d}
+I'm assuming that inertia matrices must be diagonal, because otherwise the matrix filled with $1$s is a counterexample to this problem. Then, if $A$ and $B$ are inertia matrices, they have the same number of zeros iff their kernels have the same dimension. Suppose that $A=SBS^T$. Since $S$ is invertible, the image of $S^T$ is $\rn^n$, so the image of $BS^T$ is the image of $B$, and thus $SBS^T$ has rank equal to that of $B$. Thus, the rank of $A$ is the same as the rank of $B$, which means that their kernels have the same dimension too.
+\ssn{e}
+Following the hint, let $N$ and $M$ be such that $N=S^TMS$, with the positive, negative, and zero elements arranged contiguously and in that order. Suppose that $N$ has $t$ nonzero entries and $M$ has $s$ nonzero entries. Suppose for the sake of contradiction that $s<t$. We want to find some nonzero $x$ such that only its first $t$ entries are nonzero. Further, we want the first $s$ entries of $Sx$ to be zero. To this purpose, let the first $t$ entries of $x$ be $x_1,\ldots,x_t$. Then, the $i$th entry of $Sx$ is $\sum_{j=1}^t S_{ij}x_j$. We want this to be zero for $i\in[1..s]$. This is equivalent to finding an element in the kernel of a $s\times t$ matrix formed from the first $s$ rows and first $t$ columns of $S$. Since $s<t$, the kernel must be nontrivial, and we are done.
+
+Label the diagonal entries of $N$ as $n_1,\ldots,n_n$, and same for $M$. Then, $xNx=\sum_{i=0}^t n_ix_i^2$. Since the first $t$ of the $n_i$ are strictly positive, this sum is also strictly positive because $x$ is nonzero. Now examine the product $(Sx)^TM(Sx)=x^TS^TMSx=xNx$. Since the the $m_i$ for $i>s$ are all nonpositive, the sum $\sum_{i=s+1}^nm_i(Sx)_i^2$ must be nonpositive, since the first $s$ entries of $Sx$ are zero. This presents a contradiction, so we must have $s\geq t$.
+
+If we now reverse the roles of $N$ and $M$ with $S^{-1}$ in place of $S$, we obtain that $t\geq s$, so we have that $s=t$. Since we showed above that the number of zero entries are the same, we must now have that all three multiplicities are the same between $N$ and $M$.
+\ssn{f}
+Note that from (c), we have that $A$ is congruent to an inertia matrix with the number of $1$s corresponding to the number of positive eigenvalues, the number of $-1$s corresponding to the number of negative eigenvalues, and the number of zeros corresponding to the number of zero eigenvalues. Thus, if we can find any other inertia matrix that $A$ is congruent to (perhaps easier to compute than the spectral decomposition), we will get the info on the eigenvalues.
+
+To compute this, we can decompose $A$ via the $LDL^T$ decomposition (up to a permutation), and count the positive, negative, and zero entries in $D$. If we do the same thing to $D$ as we did to $\Lambda$ in (c), we get an inertia matrix that $A$ is congruent to, so since the signs are preserved, we don't actually need to perform the calculations on $D$.
+\end{document}
