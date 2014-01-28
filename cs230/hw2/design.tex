@@ -35,11 +35,21 @@ Date: \today
 \vspace{1.5cm}
 
 \section*{Structure}
+\subsection*{Queue}
 In addition to the provided modules which handle the packet generation/checksum calculation for us, we will define the \verb|queue| object, which will implement the lock-free queue described in class. The module will have 4 functions, \verb|create|, \verb|destroy|, \verb|enq|, and \verb|deq|. \verb|create| will initialize the associated memory/data structures and \verb|destroy| will free them. The other two do the sensible thing and add/remove objects from the queue. These will be located in \verb|queue.c| and \verb|queue.h|. Owing to the lack of generics in C, this queue will contain objects of the type \verb|void *|, which must then be cast to the appropriate type. 
 
-The parallel version of the firewall will consist of two distinct parts -- the dispatcher and the workers. The dispatcher will be called as a function from \verb|main| with the necessary parameters (number of workers, number of packets, size of queue, packet distribution, and mean work).  The dispatcher function will then initialize required structures, spawn the $n-1$ worker threads, then loop and insert packets into the queue. Once the workers are finished, the dispatcher is responsible for deallocating the queues.
+Additionally, we will have a function \verb|check_full| that examines the queue to see whether it is full, but will not insert or remove anything from the queue. This is to help the dispatcher decide whether to fetch another packet for a worker.
+\subsection*{Parallel version}
+\subsubsection*{Dispatcher}
+The parallel version of the firewall will consist of two distinct parts -- the dispatcher and the workers. The dispatcher will be called as a function from \verb|main| with the necessary parameters (number of workers, number of packets, size of queue, packet distribution, and mean work).  The dispatcher function will then initialize required structures, spawn the $n-1$ worker threads, then loop and insert packets into the queue. Once it inserts all the packets from a particular source, it should enqueue a null pointer to let the worker know that it is done. Once the workers are finished, the dispatcher is responsible for deallocating the queues.
 
-The worker threads will receive a pointer pointing to its queue object, and will loop repeatedly to pull packets from this queue and compute their fingerprint. The worker is responsible for deallocating the memory in the packets. 
+%If the dispatcher attempts to enqueue a packet to a particular queue and finds that the queue is full, it will pop the packet onto a tail queue of the kind found in \verb|queue.h| (copied over from \verb|/usr/include/sys/queue.h| on my system). This requires modification of the packet struct: a macro \verb|_TAILQ_ENTRY(Packet_t,)| will need to be added to the end of the struct, but the advantage of this approach is that we only need to perform a constant memory allocation in the beginning of the dispatcher loop to initialize the queue container rather than allocating a space for each packet in some other overflow queue.
+
+We also want the dispatcher to keep working if one of the workers gets stalled somehow. Thus, on each iteration, the dispatcher will check the worker queue to see if it's full, and only call the getPacket function and enqueue if the queue is not full. Note that the queue cannot change from not-full to full in the interval between calling \verb|check_full| and \verb|enq| -- the dispatcher is the only thread writing to the queue.
+\subsubsection*{Worker}
+The worker threads will receive a pointer pointing to its queue object, and will loop repeatedly to pull packets from this queue and compute their fingerprint. If the worker should pull a null pointer out of the queue, this is to be taken as a cue that the dispatcher has finished sending packets and that the worker should exit. The worker is responsible for deallocating the memory in the packets. 
+\subsection*{Serial-Queue version}
+The serial-queue version will be very similar to the basic serial firewall, except we will initialize an array of $n$ queues, then when we draw from the $i$th source, we will call \verb|enq| on the $i$th queue, immediately call \verb|deq|, then process the packet. 
 \section*{Correctness testing}
 \subsection*{Queue}
 First, we need to verify the correctness of the queue object under one- and two-thread conditions. To test correctness under serial conditions, we should test what happens when we try to dequeue from an empty queue and enqueue to a full queue (the edge cases), as well as testing its order-preserving conditions. In other words, if we have one thread performing the enqueueing and the dequeueing, we want to satisify the invariant that if $a$ is enqueued before $b$, then if $a$ and $b$ are both dequeued at some point, then $a$ will be dequeued before $b$.
@@ -52,4 +62,36 @@ In the parallel version, the invariants that we wish to verify are the following
     \item If the enqueuing thread is constantly trying to enqueue objects in order from some infinite ordered set of objects and the dequeuing thread dequeues successfully $n$ times, then the $n$ objects returned are the first $n$ objects from the aforementioned infinite set.
 \end{enumerate}
 Unfortunately, we cannot implement this testing in Python due to the lack of proper multiprocessor support caused by the GIL. Thus, we will create two C functions that perform the requisite testing. The infinite ordered set of objects will naturally be the natural numbers, again encoded into void pointers. 
+
+We will test these across queue depth in the set $\{1,2,4,8,16,32,8196\}$. 
+\subsection*{Dispatcher}
+For the dispatcher in the parallel case, we want to guarantee two things. First, before the dispatcher exits, it must have enqueued $T$ packets into each queue along with the final void pointer. Second, if any number of worker threads become stalled for some reason, we would like the dispatcher to continue providing work to the other threads. 
+
+To test the first condition, we can implement a total enqueue count within the queue object to count the number of enqueues, then report this number upon the destruction of the queue. To test the second condition, we can add a field to the data structure passed to the thread that indicates whether the thread should do any work at all. We can then test the condition by setting this to false for $k$ threads and verifying that $n-k$ queues produce the expected enqueue count upon destruction.
+
+Finally, we want to test the robustness of the dispatcher under edge conditions. This means providing low values of $n$, $T$, and $D$ (low meaning $1$ or $2$, zero doesn't make sense for these). Under any of these combinations, we will expect the enqueue count to be the correct value. 
+
+\subsection*{Worker}
+The worker's task is simple: constantly try to pull from its queue, calculating a fingerprint when succeeding, and exiting when it pulls a void pointer. We can test this by setting up a trivial dispatcher that spawns a single worker thread, enqueuing a known number of packets from some source, and comparing the resulting fingerprint-sum to that obtained from the serial version. 
+
+\subsection*{Serial-Queue}
+Due to the similarity of this with the plain serial version, we expect the resulting fingerprint-sum to be the same as that of the plain serial version when called with the same parameters. Thus, we can just compare the outputs from the two versions on the edge cases (low $n$, low $T$, and low $D$, in some combination) and one or two common cases.
+
+\section*{Performance}
+\subsection*{Parallel overhead}
+We expect the speedup to increase, though not appreciably with increasing $n$ and fixed $W$. This is because the only additional overhead from more sources is the memory allocation -- we're going to be calling \verb|enq| and \verb|deq| exactly once for each packet regardless of how many sources we have, and $T$ is selected to keep the total number of packets fixed as $n$ varies. By the same logic, we expect the speedup to decrease as $W$ increases, since there are less packets to do bookkeeping on and more work is done for each packet.
+
+For any particular $W$, we can derive worker rate by taking the $n=1$ case and dividing $T$ by runtime. Assuming that the packet rate of a worker is inversely proportional to $W$, we can derive a function for the worker's packet rate by performing a linear fit of the inverse of packet rate to $W$. If this linearity assumption does not hold, then we can play around with different fit functions until we find one that works well.
+\subsection*{Dispatcher rate}
+Here, since the workload is so small, we'd expect that the queue will never fill up to any appreciable extent, and the bottleneck is on how fast the dispatcher can loop through and enqueue the packets. For the same reason as above, we expect the actual dispatch operations to take the same amount of time for all $n$, but the actual runtime will increase due to the amount of overhead involved in setting up the queues and the threads.
+\subsection*{Uniform load speedup}
+Here, we'd expect that especially for higher $W$, the worker parallelism will dominate the overhead, and the speedup will peak out at the number of physical cores on the machine, whereas for lower $W$, the overhead to parallelism tradeoff may favor lower values of $n$. However, not having the information from the previous experiments, we can't form a concrete hypothesis. If we let the previously calculated worker rate be $r_W(W)$ (as a function of $W$) and dispatcher rate be $r_D(n)$ (as a function of $n$), then the expected runtime of the serial version is $T/\min(r_W(W), r_D(1))$, and the expected runtime of parallel with $n$ threads is $T/\min(n\cdot r_W(W), r_D(n))$. 
+\subsection*{Exponential load speedup}
+Since the exponential distribution has a pretty fat tail compared to the uniform or even normal distributions, the work is going to be distributed more unevenly here (though maybe we could've used a Cauchy distribution\ldots). Thus, we expect the speedup to be lower across the board because there may be more workers sitting idle at the end of the computation. The effect will be more pronounced for larger $n$ and larger $W$. 
+\subsection*{Queue depth}
+We want to measure performance with parameter across the Cartesian product of the sets $W=\{1,500,8000\}$, $n=\{1,2,4,8,16,32,64\}$, and $D=\{1,2,4,8,16,32,256,1024\}$. Packets used will be uniform.
+
+For $W=1$, workers will finish the tasks up really quickly, ensuring that the queue is nearly empty at all times and making queue depth mostly irrelevant. We may start to see an effect with $D=1$ (due to hiccups in processing) or with larger $n$ (due to some threads being preempted for a long period of time). 
+
+For $W=500$ and $W=8000$, we expect to see increasing performance with increasing $D$. However, the increase probably won't be much, especially in the $W=8000$ case, since there, the worker threads are going to be spending the vast majority of their time working on the packet rather than waiting for the dispatcher. However, for larger values of $n$, we do expect to see a more significant increase as $D$ increases through the low single-digits: it'll take longer for the dispatcher to get around to any particular thread if they're waiting on an empty queue, and an empty queue is more likely if the queue is short.
 \end{document}
