@@ -1,23 +1,19 @@
+%poop
 function x = p2(A, b)
     x = ldlsolve(A, b);
 end
 
 function x = ldlsolve(A, b)
     [L,D,p] = ldl(A, 'vector');
-    b_permut = b(p);
-    opts.LT = true;
+    b = b(p);
     
-    dltx = linsolve(L, b_permut, l_opts);
-    ltx = blk2_slv(D, dltx);
-    opts.TRANSA = true;
-    x = linsolve(L, ltx, opts);
+    dltx = L\b;
+    ltx = D\dltx;
+    x = L.'\ltx;
     
     x(p) = x;
 end
 
-%{
-Solves a 2x2 block diagonal system
-%}
 function x = blk2_slv(D, b)
     [n, ~] = size(D);
     x = 1:n;
@@ -38,7 +34,3 @@ function x = blk2_slv(D, b)
         end
     end
 end
-            
-            
-            
-            
