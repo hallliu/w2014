@@ -41,6 +41,20 @@ Plots for the dense case on the left, sparse case on the right, with size on the
 
 Standard deviation is there because computations can get preempted by the operating system, leading to delays. This would be expected to show up more for lower $n$, as preemption will add 1ms of wall time at the minimum (my system runs on $1000$Hz timer ticks). The graph for the sparse case shows this off pretty well, but the graph for the dense case has a weird spike at the second-largest value of $n$. I don't know why this is the case, and I suspect it's something to do with how Matlab implements Cholesky factorization for larger/smaller values of $n$.
 \subsection*{2}
+Here are index plots of $x$ for all values of $n$. The value of $n$ increases as you go down, then left to right.
+
+\includegraphics[width=0.5\textwidth]{hw3_files/2_x1_plot.png}
+\includegraphics[width=0.5\textwidth]{hw3_files/2_x2_plot.png}
+
+\includegraphics[width=0.5\textwidth]{hw3_files/2_x3_plot.png}
+\includegraphics[width=0.5\textwidth]{hw3_files/2_x4_plot.png}
+
+\includegraphics[width=0.5\textwidth]{hw3_files/2_x5_plot.png}
+\includegraphics[width=0.5\textwidth]{hw3_files/2_x6_plot.png}
+
+\includegraphics[width=0.5\textwidth]{hw3_files/2_x7_plot.png}
+
+If we fit $Cn^\alpha$ to the wall clock times, we get meaningless values of $C$ (as discussed above), $\alpha=2.115$ for the dense case
 \subsection*{3}
 \ssn{b}
 Let $A=XBX^{T}$ and $B=YCY^{T}$. Then $B=X^{T}AX$, so $B$ is congruent to $A$, and similarly $C$ is congruent to $B$. Substituting, we have $A=X(YCY^{T})X^{T}=(XY)C(XY)^{T}$, so $A$ is congruent to $C$.

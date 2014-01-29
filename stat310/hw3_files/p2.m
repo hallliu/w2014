@@ -17,6 +17,8 @@ function x = p2(upto)
         tic;
         x = ldlsolve(W_sp, e);
         sp_times(i) = toc;
+        figure;
+        plot(x);
     end
     
     d_coefs = polyfit(log(sizes), log(d_times), 1);
