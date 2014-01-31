@@ -122,3 +122,21 @@ static void eqr1(struct l_queue *q, int n) {
     while (enq (q, NULL)) {}; 
     return;
 }
+
+static void eqr2(struct l_queue *q, int n) {
+    usleep(500000);
+    eqr0(q, n);
+}
+
+static void eqr3(struct l_queue *q, int n) {
+    usleep(500000);
+    eqr1(q, n);
+}
+
+/*
+ * Sleeps for n microseconds.
+ */
+static void usleep(n) {
+    struct timespec sleep_time = {.tv_sec = n / 1000000, .tv_nsec = (n % 1000000) * 1000};
+    nanosleep(&sleep_time, NULL);
+}
