@@ -7,12 +7,21 @@
 #include "../queue.h"
 
 #define TIMELIMIT 2
-static void usleep(int us);
+static void eternal_dqr(void *_q);
+static void eternal_eqr(void *_q);
+
 static void eqr0(struct l_queue *, int n);
 static void eqr1(struct l_queue *, int n);
 static void eqr2(struct l_queue *, int n);
 static void eqr3(struct l_queue *, int n);
 
+static void dqr0(struct l_queue *, int n);
+static void dqr1(struct l_queue *, int n);
+static void dqr2(struct l_queue *, int n);
+static void dqr3(struct l_queue *, int n);
+
+static long timediff(struct timespec *start, struct timespec *end);
+static void usleep(int us);
 /*
  * Tests serial correctness of the queue. Takes the queue capacity as a parameter
  * 
@@ -64,7 +73,7 @@ void test_queue_parallel_1 (int q_size, int n_to_enqueue, int delay_mode) {
     struct l_queue *q = create_queue(q_size);
 
     pthread_t dqr;
-    pthread_create(&dqr, NULL, fast_dqr, (void *) q);
+    pthread_create(&dqr, NULL, eternal_dqr, (void *) q);
 
     switch(delay_mode) {
         case 0:
@@ -82,6 +91,100 @@ void test_queue_parallel_1 (int q_size, int n_to_enqueue, int delay_mode) {
     }
 
     pthread_join(&dqr, NULL);
+    destroy_queue(q);
+    return;
+}
+
+/*
+ * Spawns a enqueuer thread that constantly tries to enqueue,
+ * and the main thread dequeues n_to_enqueue times (successfully, hopefully)
+ * Enqueuer thread will exit after two seconds.
+ *
+ * delay_mode controls the interval between successive dequeues.
+ * 0 means dequeue as fast as possible
+ * 1 means random small delays
+ * 2 means large delay (0.5s) in the beginning, then fast dequeue
+ * 3 means large delay, then random small delays.
+ */
+void test_queue_parallel_2 (int q_size, int n_to_dequeue, int delay_mode) {
+    struct l_queue *q = create_queue(q_size);
+
+    pthread_t dqr;
+    pthread_create(&dqr, NULL, eternal_eqr, (void *) q);
+
+    switch(delay_mode) {
+        case 0:
+            dqr0(q, n_to_enqueue);
+            break;
+        case 1:
+            dqr1(q, n_to_enqueue);
+            break;
+        case 2:
+            dqr2(q, n_to_enqueue);
+            break;
+        case 3:
+            dqr3(q, n_to_enqueue);
+            break;
+    }
+
+    pthread_join(&dqr, NULL);
+    destroy_queue(q);
+    return;
+}
+
+/* 
+ * Function tries to dequeue from the queue in an endless loop, 
+ * stopping after two seconds (checking once every hundred iterations)
+ * Prints "FAIL" and exits if it receives a non-sequential value
+ */
+static void eternal_dqr(void *_q) {
+    struct l_queue *q = (struct l_queue *) _q;
+    struct timespec start, end;
+    
+    clock_gettime (CLOCK_MONOTONIC, &start);
+    clock_gettime (CLOCK_MONOTONIC, &end);
+    long val = 1;
+    long old_val = 0;
+    for (int i = 0;; i++) {
+        if (!deq (q, (void **) &val)) {
+            if (val == 0)
+                break;
+            if (old_val + 1 != val) {
+                printf("FAIL: expected %ld, got %ld\n", old_val + 1, val);
+                break;
+            }
+            old_val = val;
+        }
+        if (i % 100 == 0) {
+            clock_gettime (CLOCK_MONOTONIC, &end);
+            if (timediff (&start, &end) > 2000000) 
+                break;
+        }
+    }
+    return;
+}
+
+/* 
+ * Function tries to enqueue from the queue in an endless loop, 
+ * stopping after two seconds (checking once every hundred iterations)
+ */
+static void eternal_eqr(void *_q) {
+    struct l_queue *q = (struct l_queue *) _q;
+    struct timespec start, end;
+    clock_gettime (CLOCK_MONOTONIC, &start);
+    clock_gettime (CLOCK_MONOTONIC, &end);
+    
+    long val = 1;
+    for (int i = 0;; i++) {
+        if (!enq (q, (void *) val))
+            val += 1;
+
+        if (i % 100 == 0) {
+            clock_gettime (CLOCK_MONOTONIC, &end);
+            if (timediff (&start, &end) > 2000000) 
+                break;
+        }
+    }
     return;
 }
 
@@ -90,6 +193,7 @@ void test_queue_parallel_1 (int q_size, int n_to_enqueue, int delay_mode) {
  * in a manner perscribed by delay_mode (see above)
  */
 static void eqr0(struct l_queue *q, int n) {
+
     for (long i = 1; i <= n; i++) {
         if (enq (q, (void *) i)) {
             // If enq hits a full queue for some reason...
@@ -134,9 +238,79 @@ static void eqr3(struct l_queue *q, int n) {
 }
 
 /*
+ * Following four functions perform the dequeuing of integers 1..n
+ * in a manner perscribed by delay_mode (see above)
+ */
+static void dqr0(struct l_queue *q, int n) {
+    long val = 1, old_val = 0;
+    int success_ctr = 0;
+    while (success_ctr < n) {
+        if (!deq (q, (void **) &val)) {
+            success_ctr++;
+            if (old_val + 1 != val) {
+                printf("FAIL: expected %ld, got %ld\n", old_val + 1, val);
+                break;
+            }
+            old_val = val;
+        }
+    }
+    return;
+}
+
+static void dqr1(struct l_queue *q, int n) {
+    int total_sleep_us = 0;
+    int sleep_limit = TIMELIMIT * 1000000 / 2;
+    int max_per_sleep = sleep_limit / n;
+    int success_ctr = 0;
+    long val = 1, old_val = 0;
+    
+    while (success_ctr < n && total_sleep_us <= sleep_limit) {
+        usleep(rand() % max_per_sleep + 1);
+        if (!deq (q, (void **) val)) {
+            success_ctr += 1;
+            if (old_val + 1 != val) {
+                printf("FAIL: expected %ld, got %ld\n", old_val + 1, val);
+                break;
+            }
+            old_val = val;
+        }
+    }
+
+    if (success_ctr != n) {
+        while (success_ctr < n) {
+            if (!deq (q, (void **) val)) {
+                success_ctr += 1;
+                if (old_val + 1 != val) {
+                    printf("FAIL: expected %ld, got %ld\n", old_val + 1, val);
+                    break;
+                }
+                old_val = val;
+            }
+        }
+    }
+    return;
+}
+
+static void dqr2(struct l_queue *q, int n) {
+    usleep(500000);
+    dqr0(q, n);
+}
+
+static void dqr3(struct l_queue *q, int n) {
+    usleep(500000);
+    dqr1(q, n);
+}
+
+
+/*
  * Sleeps for n microseconds.
  */
 static void usleep(n) {
     struct timespec sleep_time = {.tv_sec = n / 1000000, .tv_nsec = (n % 1000000) * 1000};
     nanosleep(&sleep_time, NULL);
+}
+
+/* Returns time difference in microseconds */
+static double timediff(struct timespec *start, struct timespec *end) {
+    return ((end->tv_sec - start->tv_sec) * 1000000L + end->tv_usec - start->tv_usec) / 1000.0f;
 }
