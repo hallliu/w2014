@@ -37,7 +37,7 @@ void test_queue_serial(int q_size) {
     char *line_in = calloc(500, sizeof(char));
 
     long i = 0;
-    while (fgets(&line_in, 500, stdin), strcmp(line_in, "x")) {
+    while (gets(line_in), strcmp(line_in, "x")) {
         if (line_in[0] == 'e') {
             i = strtol (line_in + 2, NULL, 10);
             if (enq (q, (void *) i)) {
