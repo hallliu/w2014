@@ -54,6 +54,7 @@ void test_queue_serial(int q_size) {
         }
     }
     free (line_in);
+    destroy_queue(q);
     return;
 }
 
