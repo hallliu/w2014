@@ -49,8 +49,9 @@ class QueueTests(unittest.TestCase):
                 self.stdin.write('e {0}\n'.format(i))
                 self.stdin.write('d\n')
                 self.stdin.flush()
-                assert self.stdout.readline().strip() == str(i)
             self.stdin.write('x\n')
+            for i in range(size):
+                assert self.stdout.readline().strip() == str(i)
 
     '''
     Generates a random sequence of enqueues and dequeues, plugs them into
@@ -61,6 +62,7 @@ class QueueTests(unittest.TestCase):
         for size in [1, 2, 4, 8, 32, 128]:
             pyQ = Queue.Queue(maxsize=size)
             serial_queue_helper(size)
+            expected = []
     
             for i in range(100): # perform 100 actions
                 action = random.randint(0, 1)
@@ -70,17 +72,20 @@ class QueueTests(unittest.TestCase):
                         self.stdin.write('e {0}\n'.format(to_enq))
                         pyQ.put(to_enq, block=False)
                     except Queue.Full:
-                        assert self.stdout.readline().strip() == 'F'
+                        expected.append('F')
     
                 else:
                     try:
                         self.stdin.write('d\n')
                         dqd = pyQ.get(block=False)
-                        assert dqd == int(self.stdout.readline().strip())
+                        expected.append(str(dqd))
                     except Queue.Empty:
-                        assert self.stdout.readline().strip() == 'E'
-
+                        expected.append('E')
             self.stdin.write('x\n')
+
+            for i in expected:
+                assert self.stdout.readline().strip() == i
+
 
     '''
     Parallel queue tests. Python does very little of the heavy lifting
