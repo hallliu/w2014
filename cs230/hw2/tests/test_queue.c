@@ -3,7 +3,6 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <time.h>
-#include "testutils.h"
 #include "../queue.h"
 
 #define TIMELIMIT 2
