@@ -30,4 +30,4 @@ tests: $(TEST_OBJS)
 	$(CC) $(LDFLAGS) $(LDLIBS) $(CFLAGS) $(TEST_OBJS) queue.o -o tests/test_main
 
 clean:
-	rm *.o Utils/*.o
+	rm *.o Utils/*.o tests/*.o
