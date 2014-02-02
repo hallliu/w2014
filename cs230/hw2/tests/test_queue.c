@@ -33,7 +33,7 @@ static void usleep(int us);
  * will output a line containing "E".
  */
 void test_queue_serial(int q_size) {
-    struct l_queue *q = create_queue(q_size);
+    struct l_queue *q = create_queues(1, q_size);
     char *line_in = calloc(500, sizeof(char));
 
     long i = 0;
@@ -66,7 +66,7 @@ void test_queue_serial(int q_size) {
         fflush(stdout);
     }
     free (line_in);
-    destroy_queue(q);
+    destroy_queue(1, q);
     return;
 }
 
@@ -83,7 +83,7 @@ void test_queue_serial(int q_size) {
  * 3 means large delay, then random small delays.
  */
 void test_queue_parallel_1 (int q_size, int n_to_enqueue, int delay_mode) {
-    struct l_queue *q = create_queue(q_size);
+    struct l_queue *q = create_queue(1, q_size);
 
     pthread_t dqr;
     pthread_create(&dqr, NULL, eternal_dqr, (void *) q);
@@ -104,7 +104,7 @@ void test_queue_parallel_1 (int q_size, int n_to_enqueue, int delay_mode) {
     }
 
     pthread_join(dqr, NULL);
-    destroy_queue(q);
+    destroy_queue(1, q);
     return;
 }
 
@@ -120,7 +120,7 @@ void test_queue_parallel_1 (int q_size, int n_to_enqueue, int delay_mode) {
  * 3 means large delay, then random small delays.
  */
 void test_queue_parallel_2 (int q_size, int n_to_dequeue, int delay_mode) {
-    struct l_queue *q = create_queue(q_size);
+    struct l_queue *q = create_queue(1, q_size);
 
     pthread_t eqr;
     pthread_create(&eqr, NULL, eternal_eqr, (void *) q);
@@ -141,7 +141,7 @@ void test_queue_parallel_2 (int q_size, int n_to_dequeue, int delay_mode) {
     }
 
     pthread_join(eqr, NULL);
-    destroy_queue(q);
+    destroy_queue(1, q);
     return;
 }
 

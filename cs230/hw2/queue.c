@@ -5,19 +5,21 @@ struct l_queue {
     volatile int head, tail;
     int length;
     void **items;
+    int n_enqueues;
 };
 
-struct l_queue *create_queue(int size) {
-    struct l_queue *q = malloc (sizeof(struct l_queue));
-    q->items = calloc (size, sizeof(void *));
-    q->length = size;
-    q->head = 0;
-    q->tail = 0;
+struct l_queue *create_queues(int n_queues, int size) {
+    struct l_queue *q = calloc (n_queues, sizeof(struct l_queue));
+    for (int i = 0; i < n_queues; i++) {
+        q[i].items = calloc (size, sizeof(void *));
+        q[i].length = size;
+    }
     return q;
 }
 
-void destroy_queue(struct l_queue *q) {
-    free (q->items);
+void destroy_queue(int n_queues, struct l_queue *q) {
+    for (int i = 0; i < n_queues; i++)
+        free (q[i].items);
     free (q);
 }
 
@@ -31,7 +33,7 @@ int enq(struct l_queue *q, void *obj) {
     }
 
     q->items[tail % len] = obj;
-
+    q->n_enqueues += 1;
     q->tail = tail + 1;
     return 0;
 }
@@ -61,4 +63,8 @@ int check_free (struct l_queue *q) {
     else {
         return 1;
     }
+}
+
+int get_n_enqueues (struct l_queue *q) {
+    return (q->n_enqueues);
 }

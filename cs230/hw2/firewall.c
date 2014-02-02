@@ -30,7 +30,6 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-
 void serialFirewall (int numPackets,
 					 int numSources,
 					 long mean,
@@ -64,3 +63,5 @@ void serialFirewall (int numPackets,
     }
     printf("%f\n",getElapsedTime(&watch));
 }
+
+
