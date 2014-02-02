@@ -3,14 +3,14 @@
 
 struct l_queue {
     volatile int head, tail;
-    int queue_size;
+    int length;
     void **items;
 };
 
 struct l_queue *create_queue(int size) {
     struct l_queue *q = malloc (sizeof(struct l_queue));
     q->items = calloc (size, sizeof(void *));
-    q->queue_size = size;
+    q->length = size;
     q->head = 0;
     q->tail = 0;
     return q;
@@ -45,7 +45,7 @@ int deq(struct l_queue *q, void **obj_ptr) {
         return 1;
     }
 
-    *obj_ptr = items[head % len];
+    *obj_ptr = q->items[head % len];
     q->head = head + 1;
     return 0;
 }
