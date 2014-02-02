@@ -61,7 +61,7 @@ class QueueTests(unittest.TestCase):
     def test_random_fill(self):
         for size in [1, 2, 4, 8, 32, 128]:
             pyQ = Queue.Queue(maxsize=size)
-            serial_queue_helper(size)
+            self.serial_queue_helper(size)
             expected = []
     
             for i in range(100): # perform 100 actions
@@ -90,12 +90,11 @@ class QueueTests(unittest.TestCase):
     '''
     Parallel queue tests. Python does very little of the heavy lifting
     here because it involves threading.
-    '''
     def test_fast_dqr(self):
         for size in [1, 2, 4, 8, 16, 32]:
             for enq_count in [1, 10, 100, 1000]:
                 for delay_mode in [0, 1, 2, 3]:
-                    out = sp.check_output(['test_main', 'queue_parallel_1', str(size), str(enq_count), str(delay_mode)])
+                    out = sp.check_output(['./test_main', 'queue_parallel_1', str(size), str(enq_count), str(delay_mode)])
                     if len(out) > 0:
                         raise AssertionError('{0}\nFailed with size={1}, enq_count={2}, delay={3}'.format(
                             out, size, enq_count, delay_mode))
@@ -105,8 +104,9 @@ class QueueTests(unittest.TestCase):
         for size in [1, 2, 4, 8, 16, 32]:
             for enq_count in [1, 10, 100, 1000]:
                 for delay_mode in [0, 1, 2, 3]:
-                    out = sp.check_output(['test_main', 'queue_parallel_2', str(size), str(enq_count), str(delay_mode)])
+                    out = sp.check_output(['./test_main', 'queue_parallel_2', str(size), str(enq_count), str(delay_mode)])
                     if len(out) > 0:
                         raise AssertionError('{0}\nFailed with size={1}, enq_count={2}, delay={3}'.format(
                             out, size, enq_count, delay_mode))
 
+    '''
