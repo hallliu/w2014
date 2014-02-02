@@ -1,5 +1,5 @@
 #!/usr/bin/python2
-import os
+import sys
 import subprocess as sp
 import unittest
 import Queue
@@ -8,9 +8,9 @@ import random
 
 class QueueTests(unittest.TestCase):
     def serial_queue_helper(self, q_size):
-        proc = sp.Popen(["test_main", "queue_serial", str(q_size)], stdin=sp.PIPE, stdout=sp.PIPE)
-        self.stdin = stdin
-        self.stdout = stdout
+        proc = sp.Popen(["./test_main", "queue_serial", str(q_size)], stdin=sp.PIPE, stdout=sp.PIPE)
+        self.stdin = proc.stdin
+        self.stdout = proc.stdout
 
     '''
     Serial queue tests. Includes some standard cases and some edge cases,
@@ -20,16 +20,16 @@ class QueueTests(unittest.TestCase):
         for size in [1,2,4]:
             self.serial_queue_helper(size)
             self.stdin.write('d\n')
-            assert (self.stdout.readline().strip() == 'E')
             self.stdin.write('x\n')
+            assert (self.stdout.readline().strip() == 'E')
 
     def test_full_enq(self):
         for size in [1, 2, 4, 8]:
             self.serial_queue_helper(size)
             for i in range(size + 1):
                 self.stdin.write('e {0}\n'.format(i))
-            assert (self.stdout.readline().strip() == 'F')
             self.stdin.write('x\n')
+            assert (self.stdout.readline().strip() == 'F')
 
     def test_fill_and_empty(self):
         for size in [1, 2, 16, 32]:
@@ -38,8 +38,9 @@ class QueueTests(unittest.TestCase):
                 self.stdin.write('e {0}\n'.format(i))
             for i in range(size):
                 self.stdin.write('d\n')
-                assert self.stdout.readline().strip() == str(i)
             self.stdin.write('x\n')
+            for i in range(size):
+                assert self.stdout.readline().strip() == str(i)
 
     def test_alternate_fill(self):
         for size in [1, 2, 16, 32]:
@@ -47,6 +48,7 @@ class QueueTests(unittest.TestCase):
             for i in range(size):
                 self.stdin.write('e {0}\n'.format(i))
                 self.stdin.write('d\n')
+                self.stdin.flush()
                 assert self.stdout.readline().strip() == str(i)
             self.stdin.write('x\n')
 

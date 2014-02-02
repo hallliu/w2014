@@ -63,6 +63,7 @@ void test_queue_serial(int q_size) {
                 printf("%ld\n", i);
             }
         }
+        fflush(stdout);
     }
     free (line_in);
     destroy_queue(q);
