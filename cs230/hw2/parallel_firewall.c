@@ -34,12 +34,12 @@ long parallel_dispatcher
     // also we're putting packet memory management outside the timing for all three.
 
     Packet_t **rcvd_packets = malloc (n_packets * n_src * sizeof(Packet_t *));
+    PacketSource_t *source = createPacketSource (mean, n_src, seed);
 
     StopWatch_t watch;
     startTimer(&watch);
 
     struct l_queue *queues = create_queues (n_src, q_depth);
-    PacketSource_t *source = createPacketSource (mean, n_src, seed);
 
     int n_workers_done = 0;
     int packet_ctr = 0;
@@ -94,15 +94,20 @@ long parallel_dispatcher
 
     free (worker_data);
     destroy_queues (n_src, queues);
-    deletePacketSource (source);
-
     stopTimer(&watch);
 
+
+    deletePacketSource (source);
     // Free all the packets...
     for (int i = 0; i < packet_ctr * n_src; i++)
         free (rcvd_packets[i]);
+    free (rcvd_packets);
 
+#ifdef PERF
     return getElapsedTime(&watch);
+#else
+    return total_fp_sum;
+#endif
 }
 
 void *worker_fn(void *_data) {

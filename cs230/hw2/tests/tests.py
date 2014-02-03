@@ -116,7 +116,7 @@ class ParallelTests(unittest.TestCase):
     def test_full_enq(self):
         for n, T, D, distr in itertools.product([1,2,4,8,16], [100, 200], [1,2,4,100], [0,1]):
             out = sp.check_output(['./test_main', 'dispatcher_1', str(T), str(n), str(D), 50, 0, str(distr)])
-            nq_cts = out.split()
+            nq_cts = out.split()[:-1]
             if len(nq_cts) != n:
                 raise AssertionError('Incorrect return count on n={0}, T={1}, D={2}, distr={3}'.format(n, T, D, distr))
             for t1 in nq_cts:
@@ -127,9 +127,21 @@ class ParallelTests(unittest.TestCase):
         for n, T, D, distr in itertools.product([2,4,8,16], [100, 200], [1,2,4,100], [0,1]):
             for lazy_cnt in range(1, n, 2):
                 out = sp.check_output(['./test_main', 'dispatcher_1', str(T), str(n), str(D), 50, str(lazy_cnt), str(distr)])
-                nq_cts = out.split()
+                nq_cts = out.split()[:-1]
                 if len(nq_cts) != n:
                     raise AssertionError('Incorrect return count on n={0}, T={1}, D={2}, distr={3}'.format(n, T, D, distr))
                 if nq_cts.count(str(T)) != n - lazy_cnt:
                     raise AssertionError('Incorrect busy count on n={0}, T={1}, D={2}, lazy={3}, distr={4}: got {5}'.format(
                         n, T, D, n- lazy_cnt, distr, nq_cts.count(str(T))))
+
+    def test_fingerprint_p(self):
+        for n, T, D, distr, seed in itertools.product([1,2,4,8,16], [100, 200], [1,2,4,100], [0,1], [0,1,2]):
+            parallel_output = sp.check_output('../firewall', '2', str(T), str(n), 50, str(distr), str(seed), str(D)).split()
+            serial_output = sp.check_output('../firewall', '0', str(T), str(n), 50, str(distr), str(seed), str(D)).strip()
+            assert parallel_output[-1] == serial_output
+
+    def test_fingerprint_sq(self):
+        for n, T, D, distr, seed in itertools.product([1,2,4,8,16], [100, 200], [1,2,4,100], [0,1], [0,1,2]):
+            parallel_output = sp.check_output('../firewall', '1', str(T), str(n), 50, str(distr), str(seed), str(D)).split()
+            serial_output = sp.check_output('../firewall', '0', str(T), str(n), 50, str(distr), str(seed), str(D)).strip()
+            assert parallel_output[-1] == serial_output
