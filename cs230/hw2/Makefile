@@ -8,10 +8,11 @@ TEST_OBJS=$(TEST_FILES:%.c=tests/%.o)
 .PHONY: tests
 
 CC=gcc
-override CFLAGS += -O3 -Wall -Werror -std=gnu99
+override CFLAGS += -O0 -Wall -Werror -std=gnu99 -g
+
 LDLIBS=-pthread -lm
 
-firewall: $(OBJS) $(UTIL_OBJS)
+firewall: $(OBJS) $(UTIL_OBJS) firewall.c
 	$(CC) $(LDFLAGS) $(LDLIBS) $(CFLAGS) $(OBJS) $(UTIL_OBJS) firewall.c -o firewall
 
 queue.o: queue.c queue.h

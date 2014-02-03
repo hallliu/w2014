@@ -67,18 +67,24 @@ long parallel_dispatcher
 
     while (n_workers_done < n_src) {
         for (int i = 0; i < n_src; i++) {
-            if (get_n_enqueues(queues + i) == n_packets)
+            int n_enqs = get_n_enqueues(queues + i);
+            if (n_enqs == n_packets + 1)
                 continue;
             if (!check_free(queues + i))
                 continue;
             
-            Packet_t *pkt = pkt_fn (source, i);
-            enq (queues + i, (void *) pkt);
+            if (n_enqs == n_packets) {
+                enq(queues + i, NULL);
+            }
+            else {
+                Packet_t *pkt = pkt_fn (source, i);
+                enq (queues + i, (void *) pkt);
 
-            rcvd_packets[packet_ctr] = pkt;
-            packet_ctr += 1;
+                rcvd_packets[packet_ctr] = pkt;
+                packet_ctr += 1;
+            }
 
-            if (get_n_enqueues(queues + i) == n_packets)
+            if (get_n_enqueues(queues + i) == n_packets + 1)
                 n_workers_done += 1;
         }
 #ifdef TESTING
@@ -92,7 +98,7 @@ long parallel_dispatcher
         pthread_join (workers[i], (void **) &this_fp);
         total_fp_sum += this_fp;
 #ifdef TESTING
-        printf("%d\n", get_n_enqueues(queues + i));
+        printf("%d\n", get_n_enqueues(queues + i) - 1);
 #endif
     }
 
