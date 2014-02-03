@@ -137,7 +137,7 @@ void serial_queue(int n_packets, int n_src, int q_depth, long mean, int seed, in
 
     deletePacketSource (source);
     // Free all the packets...
-    for (int i = 0; i < packet_ctr * n_src; i++)
+    for (int i = 0; i < packet_ctr; i++)
         free (rcvd_packets[i]);
     free (rcvd_packets);
 
