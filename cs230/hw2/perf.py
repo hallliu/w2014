@@ -5,6 +5,7 @@ from subprocess import Popen, PIPE
 from itertools import product
 import os
 import threading
+import datetime
 
 logfile = None
 '''
@@ -41,6 +42,9 @@ def timeout_output(cmd, timeout):
     else:
         return out
 
+def _log(msg):
+    logfile.write('{0}      {1}'.format(datetime.datetime.utcnow(), msg))
+
 def parallel_overhead(exponent):
     n_iters = 5
     serial_times = np.zeros((3, 6), dtype='float64')
@@ -50,7 +54,7 @@ def parallel_overhead(exponent):
 
     for n_ind, m_ind in product(range(3), range(6)):
         n_pkts = 2**exponent / (means[m_ind] * srcs[n_ind])
-        logfile.write('parallel overhead: n={0}, mean={1}\n'.format(srcs[n_ind], means[m_ind]))
+        _log('parallel overhead: n={0}, mean={1}\n'.format(srcs[n_ind], means[m_ind]))
         for i in range(n_iters):
             serial_times[n_ind, m_ind] += float(timeout_output(['./firewall', '0', str(n_pkts), str(srcs[n_ind]), str(means[m_ind]), '1', str(i), '32'], 2))
             serial_queue_times[n_ind, m_ind] += float(timeout_output(['./firewall', '1', str(n_pkts), str(srcs[n_ind]), str(means[m_ind]), '1', str(i), '32'], 2))
@@ -69,7 +73,7 @@ def dispatcher_rate(exponent):
 
     for ind, n in enumerate(srcs):
         n_pkts = 2 ** exponent / n
-        logfile.write('dispatcher rate: n={0}\n'.format(srcs[n_ind]))
+        _log('dispatcher rate: n={0}\n'.format(srcs[ind]))
         for i in range(n_iters):
             runtimes[ind] += float(timeout_output(['./firewall', '2', str(n_pkts), str(n), '1', '1', str(i), '32'], 2))
 
@@ -86,7 +90,7 @@ def unif_speedup(exponent):
 
     for w_ind, n_ind in product(range(len(workloads)), range(len(srcs))):
         n_pkts = 2 ** exponent
-        logfile.write('uniform speedup: n={0}, mean={1}\n'.format(srcs[n_ind], workloads[w_ind]))
+        _log('uniform speedup: n={0}, mean={1}\n'.format(srcs[n_ind], workloads[w_ind]))
         for i in range(n_iters):
             serial_times[w_ind, n_ind] += float(timeout_output(['./firewall', '0', str(n_pkts), str(srcs[n_ind]), str(workloads[w_ind]), '1', str(i), '32'], 2))
             parallel_times[w_ind, n_ind] += float(timeout_output(['./firewall', '2', str(n_pkts), str(srcs[n_ind]), str(workloads[w_ind]), '1', str(i), '32'], 2))
@@ -108,7 +112,7 @@ def exp_speedup(exponent):
 
     for w_ind, n_ind in product(range(len(workloads)), range(len(srcs))):
         n_pkts = 2 ** exponent
-        logfile.write('exp speedup: n={0}, mean={1}\n'.format(srcs[n_ind], workloads[w_ind]))
+        _log('exp speedup: n={0}, mean={1}\n'.format(srcs[n_ind], workloads[w_ind]))
         for i in range(n_iters):
             serial_times[w_ind, n_ind] += float(timeout_output(['./firewall', '0', str(n_pkts), str(srcs[n_ind]), str(workloads[w_ind]), '0', str(i), '32'], 2))
             parallel_times[w_ind, n_ind] += float(timeout_output(['./firewall', '2', str(n_pkts), str(srcs[n_ind]), str(workloads[w_ind]), '0', str(i), '32'], 2))
@@ -128,13 +132,14 @@ def q_depth(exponent):
 
     runtimes = np.zeros((len(workloads), len(srcs), len(depths)), dtype='float64')
     for w_ind, n_ind, D_ind in product(range(len(workloads)), range(len(srcs)), range(len(depths))):
-        logfile.write('q depth: n={0}, mean={1}, depth={2}\n'.format(srcs[n_ind], workloads[w_ind], depths[D_ind]))
+        n_pkts = 2 ** exponent
+        _log('q depth: n={0}, mean={1}, depth={2}\n'.format(srcs[n_ind], workloads[w_ind], depths[D_ind]))
         for i in range(n_iters):
             runtimes[w_ind, n_ind, D_ind] += float(timeout_output(['./firewall', '2', str(n_pkts), str(srcs[n_ind]), str(workloads[w_ind]), '0', str(i), str(depths[D_ind])], 2))
 
     runtimes /= n_iters
 
-    f = open('results/q_depth.npy')
+    f = open('results/q_depth.npy', 'w')
     np.save(f, runtimes)
     f.close()
 
