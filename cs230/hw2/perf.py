@@ -62,7 +62,6 @@ def parallel_overhead(exponent):
     serial_times /= n_iters
     serial_queue_times /= n_iters 
 
-    os.mkdir('results/parallel_overhead')
     np.savetxt('results/parallel_overhead/serial_times.csv', serial_times, delimiter=',')
     np.savetxt('results/parallel_overhead/serial_queue_times.csv', serial_queue_times, delimiter=',')
 
@@ -80,9 +79,9 @@ def dispatcher_rate(exponent):
     runtimes /= n_iters
     np.savetxt('results/dispatcher_rate.csv', runtimes, delimiter=',')
 
-def unif_speedup(exponent):
+def unif_speedup(exponent, upto):
     workloads = [1000, 2000, 4000, 8000]
-    srcs = [1, 2, 4, 8, 16, 32, 64][:5]
+    srcs = [1, 2, 4, 8, 16, 32, 64][:upto]
     n_iters = 5
 
     serial_times = np.zeros((len(workloads), len(srcs)), dtype='float64')
@@ -98,13 +97,12 @@ def unif_speedup(exponent):
     serial_times /= n_iters
     parallel_times /= n_iters
 
-    os.mkdir('results/unif_speedup')
-    np.savetxt('results/unif_speedup/serial_times.csv', serial_times, delimiter=',')
-    np.savetxt('results/unif_speedup/parallel_times.csv', parallel_times, delimiter=',')
+    np.savetxt('results/unif_speedup/serial_times_{0}.csv'.format(exponent), serial_times, delimiter=',')
+    np.savetxt('results/unif_speedup/parallel_times_{0}.csv'.format(exponent), parallel_times, delimiter=',')
 
-def exp_speedup(exponent):
+def exp_speedup(exponent, upto):
     workloads = [1000, 2000, 4000, 8000]
-    srcs = [1, 2, 4, 8, 16, 32, 64][:5]
+    srcs = [1, 2, 4, 8, 16, 32, 64][:upto]
     n_iters = 5
 
     serial_times = np.zeros((len(workloads), len(srcs)), dtype='float64')
@@ -120,9 +118,8 @@ def exp_speedup(exponent):
     serial_times /= n_iters
     parallel_times /= n_iters
 
-    os.mkdir('results/exp_speedup')
-    np.savetxt('results/exp_speedup/serial_times.csv', serial_times, delimiter=',')
-    np.savetxt('results/exp_speedup/parallel_times.csv', parallel_times, delimiter=',')
+    np.savetxt('results/exp_speedup/serial_times_{0}.csv'.format(exponent), serial_times, delimiter=',')
+    np.savetxt('results/exp_speedup/parallel_times_{0}.csv'.format(exponent), parallel_times, delimiter=',')
 
 def q_depth(exponent):
     n_iters = 3
@@ -145,11 +142,16 @@ def q_depth(exponent):
 
 if __name__ == '__main__':
     os.mkdir('results')
+    os.mkdir('results/exp_speedup')
+    os.mkdir('results/unif_speedup')
+    os.mkdir('results/parallel_overhead')
     global logfile
     logfile = open('/tmp/hallliu_log', 'w', 0)
     #parallel_overhead(24)
     #dispatcher_rate(20)
-    unif_speedup(16)
-    exp_speedup(16)
+    unif_speedup(15, 5)
+    exp_speedup(15, 5)
+    unif_speedup(11, 7)
+    exp_speedup(11, 7)
     #q_depth(14)
     logfile.close()
