@@ -60,7 +60,7 @@ long parallel_dispatcher
             worker_data[i].do_work = true;
 #endif
 
-        pthread_create (workers + i, NULL, worker_fn, (void *) worker_data + i);
+        pthread_create (workers + i, NULL, worker_fn, (void *) (worker_data + i));
     }
     
     Packet_t *(*pkt_fn)(PacketSource_t *, int) = distr ? &getUniformPacket : &getExponentialPacket;
@@ -110,7 +110,7 @@ long parallel_dispatcher
 
     deletePacketSource (source);
     // Free all the packets...
-    for (int i = 0; i < packet_ctr * n_src; i++)
+    for (int i = 0; i < packet_ctr; i++)
         free (rcvd_packets[i]);
     free (rcvd_packets);
 
@@ -125,10 +125,10 @@ void *worker_fn(void *_data) {
     struct thread_data *data = (struct thread_data *) _data;
 
 #ifdef TESTING
-    if (!data->do_work)
+    if (!data->do_work) {
         return NULL;
+    }
 #endif
-
     struct l_queue *q = data->q;
     Packet_t *pkt = NULL;
     long fp_sum = 0;
