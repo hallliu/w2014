@@ -37,6 +37,9 @@ void serialFirewall (int numPackets,
 					 short experimentNumber) {
 
     PacketSource_t *packetSource = createPacketSource(mean, numSources, experimentNumber);
+    Packet_t **rcvd_pkts = malloc (numSources * numPackets * sizeof(Packet_t *));
+    int packet_ctr = 0;
+
     StopWatch_t watch;
     long fingerprint = 0;
 
@@ -46,6 +49,8 @@ void serialFirewall (int numPackets,
             for(int j = 0; j < numPackets; j++) {
                 volatile Packet_t *tmp = getUniformPacket(packetSource,i);
                 fingerprint += getFingerprint(tmp->iterations, tmp->seed);
+                rcvd_pkts[packet_ctr] = tmp;
+                packet_ctr += 1;
             }
         }
         stopTimer(&watch);
@@ -57,10 +62,16 @@ void serialFirewall (int numPackets,
             for(int j = 0; j < numPackets; j++) {
                 volatile Packet_t *tmp = getExponentialPacket(packetSource,i);
                 fingerprint += getFingerprint(tmp->iterations, tmp->seed);
+                rcvd_pkts[packet_ctr] = tmp;
+                packet_ctr += 1;
             }
         }
         stopTimer(&watch);
     }
+    for (int i = 0; i < packet_ctr; i++) {
+        free(rcvd_pkts[i]);
+    }
+
     printf("%f\n",getElapsedTime(&watch));
 }
 

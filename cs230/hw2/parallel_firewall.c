@@ -15,7 +15,7 @@ struct thread_data {
 /*
  * distr=1 corresponds to uniform, 0 corresponds to exponential.
  */
-void parallel_dispatcher(int n_packets, 
+double parallel_dispatcher(int n_packets, 
         int n_src, 
         int q_depth, 
         long mean, 
@@ -25,9 +25,15 @@ void parallel_dispatcher(int n_packets,
 #endif
         int distr) {
 
-    struct l_queue *queues = create_queues (n_src, q_depth);
     // This array holds packets so we can free them in the end. Shouldn't be too big...
+    // also we're putting packet memory management outside the timing for all three.
+
     Packet_t **rcvd_packets = malloc (n_packets * n_src * sizeof(Packet_t *));
+
+    StopWatch_t watch;
+    startTimer(&watch);
+
+    struct l_queue *queues = create_queues (n_src, q_depth);
     PacketSource_t *source = createPacketSource (mean, n_src, seed);
 
     int n_workers_done = 0;
@@ -80,13 +86,18 @@ void parallel_dispatcher(int n_packets,
 #endif
     }
 
-    // Free all the packets...
-    for (int i = 0; i < packet_ctr * n_src; i++)
-        free (rcvd_packets[i]);
 
     free (worker_data);
     destroy_queues (n_src, queues);
     deletePacketSource (source);
+
+    stopTimer(&watch);
+
+    // Free all the packets...
+    for (int i = 0; i < packet_ctr * n_src; i++)
+        free (rcvd_packets[i]);
+
+    return getElapsedTime(&watch);
 }
 
 void *worker_fn(void *_data) {
