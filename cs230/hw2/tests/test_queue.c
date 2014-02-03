@@ -83,7 +83,7 @@ void test_queue_serial(int q_size) {
  * 3 means large delay, then random small delays.
  */
 void test_queue_parallel_1 (int q_size, int n_to_enqueue, int delay_mode) {
-    struct l_queue *q = create_queue(1, q_size);
+    struct l_queue *q = create_queues(1, q_size);
 
     pthread_t dqr;
     pthread_create(&dqr, NULL, eternal_dqr, (void *) q);
@@ -120,7 +120,7 @@ void test_queue_parallel_1 (int q_size, int n_to_enqueue, int delay_mode) {
  * 3 means large delay, then random small delays.
  */
 void test_queue_parallel_2 (int q_size, int n_to_dequeue, int delay_mode) {
-    struct l_queue *q = create_queue(1, q_size);
+    struct l_queue *q = create_queues(1, q_size);
 
     pthread_t eqr;
     pthread_create(&eqr, NULL, eternal_eqr, (void *) q);
@@ -141,7 +141,7 @@ void test_queue_parallel_2 (int q_size, int n_to_dequeue, int delay_mode) {
     }
 
     pthread_join(eqr, NULL);
-    destroy_queue(1, q);
+    destroy_queues(1, q);
     return;
 }
 
