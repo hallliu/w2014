@@ -1,4 +1,4 @@
-OBJS=firewall.o queue.o parallel_firewall.o
+OBJS=queue.o parallel_firewall.o
 UTIL_FILES=generators.c crc32.c stopwatch.c fingerprint.c packetsource.c
 UTIL_OBJS=$(UTIL_FILES:%.c=Utils/%.o)
 
@@ -12,9 +12,8 @@ override CFLAGS += -O3 -Wall -Werror -std=gnu99
 LDLIBS=-pthread -lm
 
 firewall: $(OBJS) $(UTIL_OBJS)
-	$(CC) $(LDFLAGS) $(LDLIBS) $(CFLAGS) $(OBJS) $(UTIL_OBJS) -o firewall
+	$(CC) $(LDFLAGS) $(LDLIBS) $(CFLAGS) $(OBJS) $(UTIL_OBJS) firewall.c -o firewall
 
-firewall.o: firewall.c queue.o parallel_firewall.o
 queue.o: queue.c queue.h
 parallel_firewall.o: parallel_firewall.c parallel_firewall.h	
 
@@ -27,8 +26,8 @@ tests/test_queue.o: tests/test_queue.c queue.o
 tests/test_main.o: tests/test_main.c
 	$(CC) -c $(CFLAGS) $(LDFLAGS) $(LDLIBS) $< -o $@
 
-tests: $(TEST_OBJS)
-	$(CC) $(LDFLAGS) $(LDLIBS) $(CFLAGS) $(TEST_OBJS) queue.o -o tests/test_main
+tests: $(TEST_OBJS) $(OBJS)
+	$(CC) $(LDFLAGS) $(LDLIBS) $(CFLAGS) $(TEST_OBJS) $(UTIL_OBJS) $(OBJS) -o tests/test_main
 
 clean:
 	rm *.o Utils/*.o

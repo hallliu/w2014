@@ -66,7 +66,7 @@ void test_queue_serial(int q_size) {
         fflush(stdout);
     }
     free (line_in);
-    destroy_queue(1, q);
+    destroy_queues(1, q);
     return;
 }
 
@@ -104,7 +104,7 @@ void test_queue_parallel_1 (int q_size, int n_to_enqueue, int delay_mode) {
     }
 
     pthread_join(dqr, NULL);
-    destroy_queue(1, q);
+    destroy_queues(1, q);
     return;
 }
 
