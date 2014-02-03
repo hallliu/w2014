@@ -40,11 +40,51 @@ def dispatcher_rate(exponent):
 
 def unif_speedup(exponent):
     workloads = [1000, 2000, 4000, 8000]
-    srcs = [1, 2, 4, 8, 16, 32, 64]
+    srcs = [1, 2, 4, 8, 16, 32, 64][:5]
     n_iters = 5
+
+    serial_times = np.zeros((len(workloads), len(srcs)), dtype='float64')
+    parallel_times = np.zeros((len(workloads), len(srcs)), dtype='float64')
+
+    for w_ind, n_ind in product(range(len(workloads)), range(len(srcs))):
+        n_pkts = 2 ** exponent
+        for i in range(n_iters):
+            serial_times[w_ind, n_ind] += float(check_output(['./firewall', '0', str(n_pkts), str(srcs[n_ind]), str(workloads[w_ind]), '1', str(i), '32']))
+            parallel_times[w_ind, n_ind] += float(check_output(['./firewall', '2', str(n_pkts), str(srcs[n_ind]), str(workloads[w_ind]), '1', str(i), '32']))
+
+    serial_times /= n_iters
+    parallel_times /= n_iters
+
+    os.mkdir('results/unif_speedup')
+    np.savetxt('results/unif_speedup/serial_times.csv', serial_times, delimiter=',')
+    np.savetxt('results/unif_speedup/parallel_times.csv', parallel_times, delimiter=',')
+
+def exp_speedup(exponent):
+    workloads = [1000, 2000, 4000, 8000]
+    srcs = [1, 2, 4, 8, 16, 32, 64][:5]
+    n_iters = 5
+
+    serial_times = np.zeros((len(workloads), len(srcs)), dtype='float64')
+    parallel_times = np.zeros((len(workloads), len(srcs)), dtype='float64')
+
+    for w_ind, n_ind in product(range(len(workloads)), range(len(srcs))):
+        n_pkts = 2 ** exponent
+        print w_ind, n_ind
+        for i in range(n_iters):
+            serial_times[w_ind, n_ind] += float(check_output(['./firewall', '0', str(n_pkts), str(srcs[n_ind]), str(workloads[w_ind]), '0', str(i), '32']))
+            parallel_times[w_ind, n_ind] += float(check_output(['./firewall', '2', str(n_pkts), str(srcs[n_ind]), str(workloads[w_ind]), '0', str(i), '32']))
+
+    serial_times /= n_iters
+    parallel_times /= n_iters
+
+    os.mkdir('results/exp_speedup')
+    np.savetxt('results/exp_speedup/serial_times.csv', serial_times, delimiter=',')
+    np.savetxt('results/exp_speedup/parallel_times.csv', parallel_times, delimiter=',')
 
 
 if __name__ == '__main__':
     os.mkdir('results')
     parallel_overhead(24)
     dispatcher_rate(20)
+    unif_speedup(17)
+    exp_speedup(17)
