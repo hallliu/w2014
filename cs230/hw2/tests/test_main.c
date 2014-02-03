@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "test_queue.h"
+#include "../parallel_firewall.h"
 
 /*
  * Invoke with the test name as the first arg (excluding test_)
@@ -27,6 +28,11 @@ int main(int argc, char *argv[]) {
 
     if (!strcmp(argv[1], "queue_parallel_2")) {
         test_queue_parallel_2(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]));
+        return 0;
+    }
+
+    if (!strcmp(argv[1], "dispatcher_1")) {
+        parallel_dispatcher(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atol(argv[5]), 0, atoi(argv[6]), atoi(argv[7]));
         return 0;
     }
 

@@ -1,7 +1,7 @@
 #!/usr/bin/python2
-import sys
 import subprocess as sp
 import unittest
+import itertools
 import Queue
 import random
 
@@ -112,3 +112,24 @@ class QueueTests(unittest.TestCase):
                         raise AssertionError('{0}\nFailed with size={1}, enq_count={2}, delay={3}'.format(
                             out, size, enq_count, delay_mode))
 
+class ParallelTests(unittest.TestCase):
+    def test_full_enq(self):
+        for n, T, D, distr in itertools.product([1,2,4,8,16], [100, 200], [1,2,4,100], [0,1]):
+            out = sp.check_output(['./test_main', 'dispatcher_1', str(T), str(n), str(D), 50, 0, str(distr)])
+            nq_cts = out.split()
+            if len(nq_cts) != n:
+                raise AssertionError('Incorrect return count on n={0}, T={1}, D={2}, distr={3}'.format(n, T, D, distr))
+            for t1 in nq_cts:
+                if int(t1) != T:
+                    raise AssertionError('Incorrect enq count on n={0}, T={1}, D={2}, distr={3}: got {4}'.format(n, T, D, distr, t1))
+
+    def test_lazy_enq(self):
+        for n, T, D, distr in itertools.product([2,4,8,16], [100, 200], [1,2,4,100], [0,1]):
+            for lazy_cnt in range(1, n, 2):
+                out = sp.check_output(['./test_main', 'dispatcher_1', str(T), str(n), str(D), 50, str(lazy_cnt), str(distr)])
+                nq_cts = out.split()
+                if len(nq_cts) != n:
+                    raise AssertionError('Incorrect return count on n={0}, T={1}, D={2}, distr={3}'.format(n, T, D, distr))
+                if nq_cts.count(str(T)) != n - lazy_cnt:
+                    raise AssertionError('Incorrect busy count on n={0}, T={1}, D={2}, lazy={3}, distr={4}: got {5}'.format(
+                        n, T, D, n- lazy_cnt, distr, nq_cts.count(str(T))))

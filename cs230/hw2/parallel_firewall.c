@@ -15,7 +15,12 @@ struct thread_data {
 /*
  * distr=1 corresponds to uniform, 0 corresponds to exponential.
  */
-double parallel_dispatcher(int n_packets, 
+#ifdef PERF
+double parallel_dispatcher
+#else
+long parallel_dispatcher
+#endif
+        (int n_packets, 
         int n_src, 
         int q_depth, 
         long mean, 
@@ -46,7 +51,7 @@ double parallel_dispatcher(int n_packets,
         worker_data[i].q = queues + i;
 
 #ifdef TESTING
-        if (i < n_lazy)
+        if (i >= n_lazy)
             worker_data[i].do_work = true;
 #endif
 
