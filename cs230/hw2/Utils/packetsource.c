@@ -68,16 +68,16 @@ void deletePacketSource(PacketSource_t * packetSource)
 
     free(packetSource);
 }
-volatile Packet_t * getUniformPacket(PacketSource_t * packetSource, int sourceNum){
-	volatile Packet_t * tmp = (volatile Packet_t *)malloc(sizeof(volatile Packet_t));
+Packet_t * getUniformPacket(PacketSource_t * packetSource, int sourceNum){
+	Packet_t * tmp = (Packet_t *)malloc(sizeof(Packet_t));
 	tmp->iterations =  getUniformRand(&(packetSource->uniformGen[sourceNum]));
 	tmp->seed =  getUniformRand(&(packetSource->uniformSeed[sourceNum]));
 	packetSource->uniformCounts[sourceNum] += tmp->iterations;
 	return tmp;
 }
-volatile Packet_t * getExponentialPacket(PacketSource_t * packetSource, int sourceNum)
+Packet_t * getExponentialPacket(PacketSource_t * packetSource, int sourceNum)
 {
-	volatile Packet_t * tmp = (volatile Packet_t *)malloc(sizeof(volatile Packet_t));
+	Packet_t * tmp = (Packet_t *)malloc(sizeof(Packet_t));
 	tmp->iterations = genExponentialRand(&(packetSource->exponentialGen[sourceNum]));
 	tmp->seed = getUniformRand(&(packetSource->exponentialSeed[sourceNum]));
 	packetSource->exponentialCounts[sourceNum] += tmp->iterations;

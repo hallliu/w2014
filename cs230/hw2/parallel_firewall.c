@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
+#include <stdbool.h>
+#include "queue.h"
 #include "Utils/generators.h"
 #include "Utils/stopwatch.h"
 #include "Utils/fingerprint.h"
@@ -10,7 +13,9 @@ struct thread_data {
 #ifdef TESTING
     bool do_work;
 #endif
-}
+};
+
+void *worker_fn(void *);
 
 /*
  * distr=1 corresponds to uniform, 0 corresponds to exponential.
@@ -58,7 +63,7 @@ long parallel_dispatcher
         pthread_create (workers + i, NULL, worker_fn, (void *) worker_data + i);
     }
     
-    Packet_t *(*pkt_fn)(PacketSource_t *, int) = distr ? getUniformPacket : getExponentialPacket;
+    Packet_t *(*pkt_fn)(PacketSource_t *, int) = distr ? &getUniformPacket : &getExponentialPacket;
 
     while (n_workers_done < n_src) {
         for (int i = 0; i < n_src; i++) {
@@ -127,7 +132,7 @@ void *worker_fn(void *_data) {
             continue;
         if (pkt == NULL)
             break;
-        fp_sum += getFingerPrint(pkt->iterations, pkt->seed);
+        fp_sum += getFingerprint(pkt->iterations, pkt->seed);
     }
     
     return ((void *) fp_sum);

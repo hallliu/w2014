@@ -1,12 +1,13 @@
 #ifndef P_FIREWALL_H
 #define P_FIREWALL_H
+#include <stdbool.h>
 
 struct thread_data {
     struct l_queue *q;
 #ifdef TESTING
     bool do_work;
 #endif
-}
+};
 
 #ifdef PERF
 double parallel_dispatcher

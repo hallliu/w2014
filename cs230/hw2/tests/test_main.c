@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (!strcmp(argv[1], "dispatcher_1")) {
-        parallel_dispatcher(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atol(argv[5]), 0, atoi(argv[6]), atoi(argv[7]));
+        (void) parallel_dispatcher(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atol(argv[5]), 0, atoi(argv[6]), atoi(argv[7]));
         return 0;
     }
 

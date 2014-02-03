@@ -8,6 +8,7 @@
 #include "Utils/fingerprint.h"
 #include "Utils/packetsource.h"
 #include "queue.h"
+#include "parallel_firewall.h"
 
 #define DEFAULT_NUMBER_OF_ARGS 7
 
@@ -31,6 +32,11 @@ int main(int argc, char *argv[]) {
         if (argc > 7)
             q_depth = atoi(argv[7]);
 
+#ifdef PERF
+        double p_time;
+#else
+        long fp;
+#endif
         switch(atoi(argv[1])) {
             case 0:
                 serialFirewall(numPackets, numSources, mean, uniformFlag, experimentNumber);
@@ -40,10 +46,10 @@ int main(int argc, char *argv[]) {
                 break;
             case 2:
 #ifdef PERF
-                double p_time = parallel_dispatcher(numPackets, numSources, q_depth, mean, experimentNumber, uniformFlag);
+                p_time = parallel_dispatcher(numPackets, numSources, q_depth, mean, experimentNumber, uniformFlag);
                 printf("%f\n", p_time);
 #else
-                long fp = parallel_dispatcher(numPackets, numSources, q_depth, mean, experimentNumber, 0, uniformFlag);
+                fp = parallel_dispatcher(numPackets, numSources, q_depth, mean, experimentNumber, 0, uniformFlag);
                 printf("%ld\n", fp);
 #endif
         }
@@ -70,7 +76,7 @@ void serialFirewall (int numPackets,
         startTimer(&watch);
         for(int i = 0; i < numSources; i++) {
             for(int j = 0; j < numPackets; j++) {
-                volatile Packet_t *tmp = getUniformPacket(packetSource,i);
+                Packet_t *tmp = getUniformPacket(packetSource,i);
                 fingerprint += getFingerprint(tmp->iterations, tmp->seed);
                 rcvd_pkts[packet_ctr] = tmp;
                 packet_ctr += 1;
@@ -83,7 +89,7 @@ void serialFirewall (int numPackets,
         startTimer(&watch);
         for(int i = 0; i < numSources; i++) {
             for(int j = 0; j < numPackets; j++) {
-                volatile Packet_t *tmp = getExponentialPacket(packetSource,i);
+                Packet_t *tmp = getExponentialPacket(packetSource,i);
                 fingerprint += getFingerprint(tmp->iterations, tmp->seed);
                 rcvd_pkts[packet_ctr] = tmp;
                 packet_ctr += 1;
@@ -108,7 +114,7 @@ void serial_queue(int n_packets, int n_src, int q_depth, long mean, int seed, in
     Packet_t **rcvd_packets = malloc (n_packets * n_src * sizeof(Packet_t *));
     PacketSource_t *source = createPacketSource (mean, n_src, seed);
     int packet_ctr = 0;
-    long total_fp_sum = 0;
+    long fp_sum = 0;
 
     StopWatch_t watch;
     startTimer(&watch);
@@ -119,7 +125,7 @@ void serial_queue(int n_packets, int n_src, int q_depth, long mean, int seed, in
     for (int i = 0; i < n_packets; i++) {
         for (int j = 0; j < n_src; j++) {
             Packet_t *pkt = pkt_fn (source, j);
-            rcvd_pkts[packet_ctr] = pkt;
+            rcvd_packets[packet_ctr] = pkt;
             enq (queues + j, (void *) pkt);
             packet_ctr++;
             deq (queues + j, (void **) &pkt);
@@ -138,7 +144,7 @@ void serial_queue(int n_packets, int n_src, int q_depth, long mean, int seed, in
 #ifdef PERF
     printf("%f\n", getElapsedTime(&watch));
 #else
-    printf("%ld\n", total_fp_sum);
+    printf("%ld\n", fp_sum);
 #endif
     return;
 }

@@ -1,12 +1,6 @@
 #include <stdlib.h>
 #include "queue.h"
 
-struct l_queue {
-    volatile int head, tail;
-    int length;
-    void **items;
-    int n_enqueues;
-};
 
 struct l_queue *create_queues(int n_queues, int size) {
     struct l_queue *q = calloc (n_queues, sizeof(struct l_queue));
@@ -17,7 +11,7 @@ struct l_queue *create_queues(int n_queues, int size) {
     return q;
 }
 
-void destroy_queue(int n_queues, struct l_queue *q) {
+void destroy_queues(int n_queues, struct l_queue *q) {
     for (int i = 0; i < n_queues; i++)
         free (q[i].items);
     free (q);

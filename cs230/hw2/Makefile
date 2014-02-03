@@ -1,4 +1,4 @@
-OBJS=firewall.o queue.o
+OBJS=firewall.o queue.o parallel_firewall.o
 UTIL_FILES=generators.c crc32.c stopwatch.c fingerprint.c packetsource.c
 UTIL_OBJS=$(UTIL_FILES:%.c=Utils/%.o)
 
@@ -8,14 +8,15 @@ TEST_OBJS=$(TEST_FILES:%.c=tests/%.o)
 .PHONY: tests
 
 CC=gcc
-CFLAGS=-O3 -Wall -Werror -std=gnu99
+override CFLAGS += -O3 -Wall -Werror -std=gnu99
 LDLIBS=-pthread -lm
 
 firewall: $(OBJS) $(UTIL_OBJS)
 	$(CC) $(LDFLAGS) $(LDLIBS) $(CFLAGS) $(OBJS) $(UTIL_OBJS) -o firewall
 
-firewall.o: firewall.c queue.o
+firewall.o: firewall.c queue.o parallel_firewall.o
 queue.o: queue.c queue.h
+parallel_firewall.o: parallel_firewall.c parallel_firewall.h	
 
 Utils/%.o: %.c %.h
 	$(CC) -c $(CFLAGS) $(LDFLAGS) $(LDLIBS) $< -o $@

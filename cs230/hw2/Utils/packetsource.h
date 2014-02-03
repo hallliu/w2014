@@ -20,10 +20,10 @@ typedef struct {
 
 PacketSource_t * createPacketSource(long mean, int numSources, short seed);
 
-volatile Packet_t * getUniformPacket(PacketSource_t * packetSource, int soruceNum);
+Packet_t * getUniformPacket(PacketSource_t * packetSource, int soruceNum);
 long getUniformCount(PacketSource_t * packetSource, int soruceNum);
 
-volatile Packet_t * getExponentialPacket(PacketSource_t * packetSource, int sourceNum);
+Packet_t * getExponentialPacket(PacketSource_t * packetSource, int sourceNum);
 long getExponentialCount(PacketSource_t * packetSource, int sourceNum);
 
 void deletePacketSource(PacketSource_t * packetSource);
