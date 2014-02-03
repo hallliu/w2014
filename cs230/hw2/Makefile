@@ -8,7 +8,7 @@ TEST_OBJS=$(TEST_FILES:%.c=tests/%.o)
 .PHONY: tests
 
 CC=gcc
-override CFLAGS += -O0 -Wall -Werror -std=gnu99 -g
+override CFLAGS += -O3 -Wall -Werror -std=gnu99
 
 LDLIBS=-pthread -lm
 
@@ -28,7 +28,7 @@ tests/test_main.o: tests/test_main.c
 	$(CC) -c $(CFLAGS) $(LDFLAGS) $(LDLIBS) $< -o $@
 
 tests: $(TEST_OBJS) $(OBJS)
-	$(CC) $(LDFLAGS) $(LDLIBS) $(CFLAGS) $(TEST_OBJS) $(UTIL_OBJS) $(OBJS) -o tests/test_main
+	$(CC) $(LDFLAGS) $(CFLAGS) $(TEST_OBJS) $(UTIL_OBJS) $(OBJS) -o tests/test_main $(LDLIBS)
 
 clean:
 	rm *.o Utils/*.o
