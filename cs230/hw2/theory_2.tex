@@ -1,0 +1,56 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage[namelimits,sumlimits]{amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage{mathtools}
+\usepackage[cm]{fullpage}
+\newcommand{\tab}{\hspace*{5em}}
+\newcommand{\conj}{\overline}
+\newcommand{\dd}{\partial}
+\newcommand{\ep}{\epsilon}
+\newcommand{\openm}{\begin{pmatrix}}
+\newcommand{\closem}{\end{pmatrix}}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\lock}{lock}
+\DeclareMathOperator{\unlock}{unlock}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\Null}{null}
+\newcommand{\nc}{\newcommand}
+\newcommand{\rn}{\mathbb{R}}
+\newcommand{\zn}{\mathbb{Z}}
+\nc{\cn}{\mathbb{C}}
+\nc{\ssn}[1]{\subsubsection*{#1}}
+\nc{\inner}[2]{\langle #1,#2\rangle}
+\nc{\h}[1]{\widehat{#1}}
+\nc{\tl}[1]{\widetilde{#1}}
+\nc{\norm}[1]{\left\|{#1}\right\|}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\begin{document}
+Name: Hall Liu
+
+Date: \today 
+\vspace{1.5cm}
+\subsection*{25}
+Yes: the requirement that there exist a legal sequential history equivalent to $H'$ implies that in the sequential history $S$, the calls in each thread stay in the same order as in $H$, which fulfills the requirement of sequential consistency. Conversely, if sequential consistency holds, then there is a sequential history (3.3.1) which preserves the program order (3.4.1), which implies that the sequential history is equivalent to $H$.
+\subsection*{29}
+Yes. Wait-free implies this property: if some thread takes an infinite number of steps, the object is wait free, and the thread only completes finitely many ($m$) method calls, then the number of steps per method call is bounded above by some $N$, which means that the thread can have taken no more than $mN$ steps, which is a contradiction.
+
+Conversely, suppose that the object has this property and there is some method call which takes an infinite number of steps. Then, if a thread calls this method, it will take an infinite number of steps while having only completed finitely many method calls.
+\subsection*{30}
+Yes, if we assume that there are a finite number of threads. If in an infinite history, infinitely many method calls are completed, and only finitely many method calls finish in finitely many steps, then after these finitely many calls have been completed, the finitely many threads can only call one method more each, leading to a finite number of completed method calls.
+
+Conversely, if we have that finite method calls occur infinitely often, for any number of steps $n$, there is a finite method call that occurs after step $n$, so we must have that infinitely many method calls are completed.
+\subsection*{31}
+This is wait-free, but not bounded wait-free. It's wait-free because at any method call, a thread has only called it finitely many times before, so $i$ is finite and thus $2^i$ must be as well. However, the number of steps grows in an unbounded fashion as a thread repeatedly calls $m$, since $2^i$ is not bounded above.
+\subsection*{32}
+Let there be two threads, $A$ and $B$. Let \verb|A(15)| denote $A$ calling line 15. Set \verb|tail=0| at the beginning. If the order of execution goes like \verb|A(15)->B(15)->B(16)->...->A(16)|, then $A$ gets $i=0$, $B$ gets $i=1$, then $B$ sets \verb|items[1]| to whatever its $x$ was. Now, if some thread should call \verb|deq| and finish before $A$ calls line 16, then the thread will receive the value that $B$ enqueued, since \verb|items[1]| is still null. 
+
+For line 16, if execution goes like the above, but there is no intervening call to \verb|deq| before \verb|A(16)|, then any subsequent calls to \verb|deq| will return the object that $A$ enqueued, as it would be in \verb|items[0]|. However, $B$ called line 16 before $A$, so line 16 isn't the linearization point either.
+
+This does not necessarily mean that the queue is not linearizable. All it means is that there's no linearization point for \verb|enq| that works for all histories, but it could still have different linearization points depending on the history.
+\end{document}
