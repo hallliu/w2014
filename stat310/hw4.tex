@@ -1,0 +1,48 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage[namelimits,sumlimits]{amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage[cm]{fullpage}
+\newcommand{\tab}{\hspace*{5em}}
+\newcommand{\conj}{\overline}
+\newcommand{\dd}{\partial}
+\newcommand{\ep}{\epsilon}
+\newcommand{\openm}{\begin{pmatrix}}
+\newcommand{\closem}{\end{pmatrix}}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\Null}{null}
+\newcommand{\nc}{\newcommand}
+\newcommand{\rn}{\mathbb{R}}
+\nc{\cn}{\mathbb{C}}
+\nc{\ssn}[1]{\subsubsection*{#1}}
+\nc{\inner}[2]{\langle #1,#2\rangle}
+\nc{\h}[1]{\widehat{#1}}
+\nc{\tl}[1]{\widetilde{#1}}
+\nc{\norm}[1]{\left\|{#1}\right\|}
+\begin{document}
+
+Name: Hall Liu
+
+Date: \today 
+\vspace{1.5cm}
+
+\subsection*{3}
+Let $g(t)=f(x_k+t\alpha_kp_k)$. Then, $g(0)=f(x_k)$ and $g(1)=f(x_{k+1})$, and we have 
+\[g(1)-g(0)=\int_0^1\frac{d}{dt}g(t)dt=\int_0^1\alpha_k\nabla f(x_k+t\alpha_kp_k)^Tp_k\]
+By the mean value theorem, there exists some $t\in[0,1]$ such that the above is equal to $\alpha_k\nabla f(x_k+t\alpha_kp_k)^Tp_k$. Then, by the left side of the Goldstein inequality, we have
+\[\alpha_k\nabla f(x_k+t\alpha_kp_k)^Tp_k\geq(1-c)\alpha_k\nabla f(x_k)^Tp_k\implies c\alpha_k\nabla f(x_k)^Tp_k\geq\alpha_k(\nabla f(x_k)^Tp_k-\nabla f(x_k+t\alpha_kp_k)^Tp_k)\]
+Since $\nabla f(x_k)^Tp_k<0$, we flip the signs around and get by the Lipschitz condition:
+\[-c\alpha_k\nabla f(x_k)^Tp_k\leq Lt\alpha_k^2\|p_k\|^2\implies \alpha_k\geq-\frac{c\nabla f(x_k)^Tp_k}{Lt\|p_k\|^2}\geq-\frac{c\nabla f(x_k)^Tp_k}{L\|p_k\|^2}\]
+the last inequality being because $0<t<1$.
+
+Now, plugging this into $f(x_{k+1})-f(x_k)\leq c\alpha_k\nabla f(x_k)^Tp_k$, we have
+\[f(x_{k})-f(x_{k+1})\geq-c\alpha_k\nabla f(x_k)^Tp_k\geq\frac{(c\nabla f(x_k)^Tp_k)^2}{L\|p_k\|^2}\]
+Using the identity $a^Tb=\|a\|\|b\|\cos(\theta)$, we have that the above is equal to 
+\[\frac{c^2\|\nabla f(x_k)^T\|^2\cos^2(\theta_k)}{L}\]
+Thus, the sum of the above expression over all $k$ is bounded above by the sum of $f(x_k)-f(x_{k+1})$ over all $k$, which is a bounded telescoping sum due to the below-boundedness of $f$. Thus, we have convergence.
+\end{document}
