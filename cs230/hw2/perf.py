@@ -67,7 +67,7 @@ def parallel_overhead(exponent):
 
 def dispatcher_rate(exponent):
     n_iters = 5
-    srcs = [1, 3, 7, 15, 31]
+    srcs = [1, 2, 3, 4, 7, 9, 13, 15, 31]
     runtimes = np.zeros(len(srcs), dtype='float64')
 
     for ind, n in enumerate(srcs):
