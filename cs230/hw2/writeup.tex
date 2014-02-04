@@ -37,21 +37,25 @@ Date: \today
 
 \section*{Changes to original design}
 \subsection*{Program structure}
-Due to discussion in class on the use of barriers, the original idea of creating new threads upon each iteration of the outer loop was scrapped. Instead, $T$ threads are created at the start of execution, and they live for the entire duration of the algorithm. Consequently, the structure that is passed to the worker threads now includes a pointer to the barrier object. In addition, the program no longer considers empty graphs/null pointers to be valid input to the \verb|fw_parallel| and \verb|fw_serial| functions.
+The design document did not fully specify the interface of the queue object, so I will do so here. The provided creation and destrction functions are \verb|create_queues| and \verb|destroy_queues|. The former takes the number of queues to create and the capacity of each queue, and returns a pointer to the beginning of an array of that many queues. The latter takes the number of queues and a pointer to the beginning of said array and cleans up the memory.
 
-In addition to the C code that performs the numerical work, several functions located in \verb|wrapper.c| were written to provide an interface to Python for testing purposes. The Python functions were named \verb|fw_parallel| and \verb|fw_serial| in the \verb|wrapper| package, and their arguments include a NumPy integer array (for the adjacency matrix), the number of nodes, and the number of threads in the parallel case. They both return a NumPy integer array filled with shortest-path values. There are also two functions to load and dump csv files for the matrices that take a filename, the matrix, and the number of nodes.
+\verb|enq| takes a void pointer and sticks it into the queue. It returns $0$ if successful and $1$ if the queue is full. \verb|deq| takes a pointer to a void pointer and places the address of the dequeued object into said void pointer. It returns $0$ if successful and $1$ if the queue is empty. The provided pointer will not be modified if the queue is empty.
+
+\verb|check_full| and \verb|get_n_enqueued| take no arguments except for the queue object. \verb|check_full| returns $1$ if the queue is full and $0$ otherwise, and \verb|get_n_enqueued| returns the number of successful enqueues since the creation of the queue.
+
+In addition, I allocated an array of pointers to \verb|Packet_t| before each run so as to be able to clean up the memory after all packets have been run. 
 \subsection*{Test plan}
-Correctness tests were implemented in Python with the \verb|unittest| module mostly according to the original plan. For the tests that specified $10$, $50$, or $100$ nodes, an additional size of $500$ was added because it ran a lot faster than I expected. The tests that involved one undirected edge were omitted since I felt that they were redundant with the one directed edge tests. The highest thread count for the correctness tests was also bumped up to $32$. 
+The correctness testing for the queue followed the original plan, except some queue sizes were omitted for being redundant. I added in different ways of doing the fixed-count dequeuing and enqueuing (e.g. waiting random periods of time between each one, sleeping for $0.5$s before starting to do anything).
 
-Performance tests were conducted according to the original plan for parallel overhead and speedups. For parallel overhead and speedups, each $(N,T)$ combination was run $9$ different times with different matrices so as to reduce the effect of random fluctuations. The mean and standard deviation were reported. 
+The resilience of the dispatcher to hanging threads was also tested according to plan, and all other correctness results were guaranteed by comparing the resultant fingerprint-sums against the output from the provided serial version.
 
-For time spent waiting, the original plan was to time the difference between when the first thread returned and when the last thread returned. Since this became impossible with the use of the barrier, a new system was put into place. A timer was run for each thread to time each iteration of the outer loop, and a separate timer was used to time the time spent in the call to \verb|pthread_barrier_wait|. The times of these were stored in two arrays in the thread data structure which were then processed by the main thread after all threads have finished. Three values were reported: the ratio of the average wait time to the average outer-loop time, the average outer-loop time, and the standard deviation of the outer-loop times. 
+For the performance tests, the value of $n$ cited is the number of sources, not the number of threads. 
 \section*{Results}
 Unless otherwise specified, all experiments were conducted with 5 iterations at the same parameter averaged together and compiled with the \verb|-DPERF| flag.
 \subsection*{Parallel overhead}
 Here is a plot of speedup (serial-queue time divided by serial time), with speedup on the y-axis and workload on the x-axis:
 
-\includegraphics[width=0.5\textwidth]{img/parallel_overheads.png}
+\includegraphics[width=0.6\textwidth]{img/parallel_overheads.png}
 
 We indeed do see a decreasing trend as the workload increases, and the dependence on the number of sources is very weak as expected. However, I am at somewhat of a loss as to why the speedup can drop below 1 (i.e. the serial queue version is faster than plain serial). Within the parts covered by the timer, the serial queue version does at least as much work as the plain serial version. 
 
@@ -59,11 +63,41 @@ If we calculate worker rate as described in the design document, regressing the 
 \subsection*{Dispatcher rate}
 The plot of packets per second versus number of sources follows, with number of sources on the $x$-axis.
 
-\includegraphics[width=0.5\textwidth]{img/dispatcher_rate.png}
+\includegraphics[width=0.6\textwidth]{img/dispatcher_rate.png}
 
 There is some wild variability here. The general trend is that packet rate starts low, goes up, then comes down again as $n$ increases. The initial increase might be explained by the fact that the worker still takes a non-negligible amount of time to do its thing, even for $W=1$. Then, if the queues somehow start filling up with $n=1$ or $n=2$, we'll see a hit to the dispatch rate. Also, the decrease at $n=31$ can be explained by scheduling -- there are more threads than processors, so some threads aren't going to execute for a while, potentially causing their queue to fill up.
 
 Due to the variability, we cannot derive a single dispatch rate for all values of $n$, so we'll just use the numbers we have here.
 \subsection*{Uniform speedup}
+There was a mistake in the design document of the expected runtimes: the numerator in the runtime in both the serial and the parallel  cases should be $Tn$ instead of just $T$. Using this, deriving expected runtimes (methodology can be found in \verb|analyze.py|), and plotting, we have the following, where number of sources is on the $x$ axis and speedup is on $y$:
 
+\includegraphics[width=0.6\textwidth]{img/exp_parallel_speedup_14.png}
+
+We can see the $W=1000$ and $W=2000$ cases drop off as the dispatcher rate gets hit, while the other two exhibit linear speedup. Comparing this to the actual results, 
+
+\includegraphics[width=0.6\textwidth]{img/parallel_speedup_14.png}
+
+we see that the shapes of the two look more or less the same, with less speedup in the actual case due to threading overhead probably. The $W=4000$ and $W=8000$ cases were cut off for the larger values of $n$ due to a $2$-second runtime limit imposed on each run, but the portions prior to that look pretty solid. In particular, we see the $W=1000$ case run into the dispatcher rate just like in the expected case. 
+
+As for $n=31$ and $n=63$, rumor has it that those incurred massively large runtimes in the parallel case, so I decided not to test them at the same scale. Instead, I set $T=2^{10}$ to test these instead. The resulting plot of speedups is as follows:
+
+\includegraphics[width=0.6\textwidth]{img/parallel_speedup_10.png}
+
+As we can see, there is a big dropoff, but not as much as was rumored/feared. In fact, the speedups of the $W=1000$ and $W=2000$ cases actuall peaked at $n=31$, probably because they ran into the dispatch rate earlier. However, even for the $n=63$ case, speedups remained at respectable levels, above $1$. The difference, again, is probably due to scheduling issues with the threads. If some thread gets blocked for a while, its queue will fill up. In our design of the dispatcher, this just lets the dispatcher skip to the next thread whose queue is open, so it incurs some waiting time, but not a lot. The rumored slowdowns are probably then due to a different dispatcher design, where encountering a full queue is much more expensive than in our case.
+\subsection*{Exponential speedup}
+Assuming linearity of workloads, the expected speedups here are going to be exactly the same as in the uniform case, as the parameter $W$ is an expected value. Thus, we present the actual speedups only:
+
+\includegraphics[width=0.6\textwidth]{img/exp_speedup_10.png}
+
+As expected, the scale of the speedups is a lot lower here, and the dispatch rate isn't being hit as dramatically here due to load imbalance. 
+\subsection*{Queue depth}
+We measured performance across $W=\{1, 500, 5000\}$, $n=\{1, 3, 7, 15\}$, and $D=\{1,2,4,8,32,256\}$. Three plots follow. Top left is $W=1$, top right is $W=500$, and bottom is $W=5000$, each with runtime on the $y$ axis and $D$ on the $x$.
+
+\includegraphics[width=0.5\textwidth]{img/q_depth_1.png}
+\includegraphics[width=0.5\textwidth]{img/q_depth_500.png}
+
+\includegraphics[width=0.5\textwidth]{img/q_depth_5000.png}
+Interestingly, the queue depth seems to stop mattering (proportionally, in terms of runtime) for $W=5000$. This is probably due to the fact that the lag time for the dispatcher to come around to a queue-full worker again is short compared to the amount of time that the worker is spending actually computing things. Also, the times for $W=1$ and $W=500$ are very similar, probably due to the dispatch rate. Here, the queue depth matters, but only for low values -- this is due to the workers being able to chew through the packets about as fast as the dispatcher can provide them, and a deeper queue will give the workers more leeway in case they get hung up on something. 
+
+Our hypothesis that the value of $D$ matters more for large $n$ was supported -- the reasoning is in the design document. 
 \end{document}

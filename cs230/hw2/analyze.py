@@ -2,6 +2,7 @@ import numpy as np
 import scipy.stats as st
 import matplotlib.pyplot as plt
 import pickle
+from itertools import product
 
 colors = ['black', 'violet', 'blue', 'green', 'yellow', 'orange', 'red']
 
@@ -47,40 +48,96 @@ def dispatch_rate():
     plt.plot(srcs, nt_to_runtime)
     plt.savefig('img/dispatcher_rate.png', dpi=150, bbox_inches='tight')
 
-def analyze_runtimes():
-    threads = np.exp2(np.arange(7))
-    spds = np.loadtxt('results/spds.csv', delimiter=',')
-    spd_stds = np.loadtxt('results/spd_std.csv', delimiter=',')
+def uniform_speedup_14():
+    srcs = np.array([1, 3, 7, 15, 31, 63])
+    workloads = np.array([1000, 2000, 4000, 8000])
 
-    colors = ['black', 'violet', 'blue', 'green', 'yellow', 'orange', 'red']
-    color_names = map(lambda x: '{0:d} Vertices'.format(int(x)), np.exp2(np.arange(4,11)))
-    plt.figure(figsize=(12, 8))
+    serial_times_14 = np.loadtxt('results/unif_speedup/serial_times_14.csv', delimiter=',')[:, :4]
+    parallel_times_14 = np.loadtxt('results/unif_speedup/parallel_times_14.csv', delimiter=',')[:, :4]
+
+    d_rates =  (2**20 / np.loadtxt('results/dispatcher_rate.csv', delimiter=','))[np.array([0, 2, 4, 7])]
+    w_rates = 1. / (2.618e-6 * workloads)
+
+    expected_serial_runtimes = np.empty((4, 4), dtype='float64')
+    expected_parallel_runtimes = np.empty((4, 4), dtype='float64')
+    for i, j in product(range(4), range(4)):
+        expected_parallel_runtimes[i, j] = 2 ** 17 * srcs[j]/min(w_rates[i] * srcs[j], d_rates[j])
+        expected_serial_runtimes[i, j] = 2 ** 17 * srcs[j]/min(w_rates[i], d_rates[0])
+
+    p_speedup = serial_times_14 / parallel_times_14
+    expected_p_speedup = expected_serial_runtimes / expected_parallel_runtimes 
+    plt.figure()
     plots = []
-    for i in range(spds.shape[0]):
-        print colors[i], max(spds[i])
-        #plt.plot(threads, spds[i], color=colors[i], linestyle='-')
-        plots.append(plt.errorbar(threads, spds[i], yerr=spd_stds[i], marker=None, ecolor=colors[i], color=colors[i])[0])
+    names = map(lambda x:'{0:d} workload'.format(x), workloads)
+    for ind, w in enumerate(workloads):
+        plots.append(plt.plot(srcs[:4], p_speedup[ind], color=colors[ind], linestyle='-')[0])
 
-    plt.xscale('log', basex=2)
-    plt.legend(plots, color_names, loc=1)
-    plt.savefig('img/speedups.png', dpi=200, bbox_inches='tight')
-
-def analyze_tdiffs():
-    threads = np.exp2(np.arange(7))
-    spds = np.loadtxt('results/outerloop_avgs.csv', delimiter=',')
-    spd_stds = np.loadtxt('results/outerloop_stds.csv', delimiter=',')
-
-    colors = ['black', 'violet', 'blue', 'green', 'yellow', 'orange', 'red']
-    color_names = map(lambda x: '{0:d} Vertices'.format(int(x)), np.exp2(np.arange(4,11)))
-    plt.figure(figsize=(12, 8))
+    plt.legend(plots, names, loc=0)
+    plt.savefig('img/parallel_speedup_14.png', dpi=150, bbox_inches='tight')
+    '''
+    plt.figure()
     plots = []
-    for i in range(spds.shape[0]):
-        print colors[i], max(spds[i])
-        #plt.plot(threads, spds[i], color=colors[i], linestyle='-')
-        plots.append(plt.errorbar(threads, spds[i], yerr=spd_stds[i], marker=None, ecolor=colors[i], color=colors[i])[0])
+    names = map(lambda x:'{0:d} workload'.format(x), workloads)
+    for ind, w in enumerate(workloads):
+        plots.append(plt.plot(srcs[:4], expected_p_speedup[ind], color=colors[ind], linestyle='-')[0])
 
-    plt.xscale('log', basex=2)
-    plt.legend(plots, color_names, loc=1)
-    plt.savefig('img/outerloop_data.png', dpi=200, bbox_inches='tight')
+    plt.legend(plots, names, loc=0)
+    plt.savefig('img/exp_parallel_speedup_14.png', dpi=150, bbox_inches='tight')
+    '''
+
+def uniform_speedup_10():
+    srcs = np.array([1, 3, 7, 15, 31, 63])
+    workloads = np.array([1000, 2000, 4000, 8000])
+
+    serial_times_10 = np.loadtxt('results/unif_speedup/serial_times_10.csv', delimiter=',')
+    parallel_times_10 = np.loadtxt('results/unif_speedup/parallel_times_10.csv', delimiter=',')
+
+
+    p_speedup = serial_times_10 / parallel_times_10
+    plt.figure()
+    plots = []
+    names = map(lambda x:'{0:d} workload'.format(x), workloads)
+    for ind, w in enumerate(workloads):
+        plots.append(plt.plot(srcs, p_speedup[ind], color=colors[ind], linestyle='-')[0])
+
+    plt.legend(plots, names, loc=0)
+    plt.savefig('img/parallel_speedup_10.png', dpi=150, bbox_inches='tight')
+
+def exponential_speedup_14():
+    srcs = np.array([1, 3, 7, 15, 31, 63])
+    workloads = np.array([1000, 2000, 4000, 8000])
+
+    serial_times_14 = np.loadtxt('results/exp_speedup/serial_times_14.csv', delimiter=',')[:, :4]
+    parallel_times_14 = np.loadtxt('results/exp_speedup/parallel_times_14.csv', delimiter=',')[:, :4]
+
+    p_speedup = serial_times_14 / parallel_times_14
+    plt.figure()
+    plots = []
+    names = map(lambda x:'{0:d} workload'.format(x), workloads)
+    for ind, w in enumerate(workloads):
+        plots.append(plt.plot(srcs[:4], p_speedup[ind], color=colors[ind], linestyle='-')[0])
+
+    plt.legend(plots, names, loc=0)
+    plt.savefig('img/exp_speedup_14.png', dpi=150, bbox_inches='tight')
+
+
+def q_depths():
+    loads = np.array([ 1, 500, 5000])
+    srcs = np.array([1, 3, 7, 15])
+    depths = np.array([1, 2, 4, 8, 32, 256])
+
+    data = np.load('results/q_depth.npy')
+    for ind, w in enumerate(loads):
+        dw = data[ind]
+        plt.figure()
+        plots = []
+        names = map(lambda x:'{0:d} sources'.format(x), srcs)
+        for ind1, s in enumerate(srcs):
+            plots.append(plt.plot(depths, dw[ind1], color=colors[ind1], linestyle='-')[0])
+    
+        plt.legend(plots, names, loc=0)
+        plt.xscale('log', basex=2)
+        plt.savefig('img/q_depth_{0}.png'.format(w), dpi=150, bbox_inches='tight')
+
 
 
