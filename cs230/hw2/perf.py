@@ -47,12 +47,12 @@ def _log(msg):
 
 def parallel_overhead(exponent):
     n_iters = 5
-    serial_times = np.zeros((3, 6), dtype='float64')
-    serial_queue_times = np.zeros((3, 6), dtype='float64')
     means = [25, 50, 100, 200, 400, 800]
-    srcs = [1, 8, 16]
+    srcs = [1, 3, 7, 15]
+    serial_times = np.zeros((len(srcs), len(means)), dtype='float64')
+    serial_queue_times = np.zeros((len(srcs), len(means)), dtype='float64')
 
-    for n_ind, m_ind in product(range(3), range(6)):
+    for n_ind, m_ind in product(range(len(srcs)), range(len(means))):
         n_pkts = 2**exponent / (means[m_ind] * srcs[n_ind])
         _log('parallel overhead: n={0}, mean={1}\n'.format(srcs[n_ind], means[m_ind]))
         for i in range(n_iters):
@@ -67,8 +67,8 @@ def parallel_overhead(exponent):
 
 def dispatcher_rate(exponent):
     n_iters = 5
-    srcs = [1, 2, 4, 8, 16, 32]
-    runtimes = np.zeros(6, dtype='float64')
+    srcs = [1, 3, 7, 15, 31]
+    runtimes = np.zeros(len(srcs), dtype='float64')
 
     for ind, n in enumerate(srcs):
         n_pkts = 2 ** exponent / n
@@ -81,7 +81,7 @@ def dispatcher_rate(exponent):
 
 def unif_speedup(exponent, upto):
     workloads = [1000, 2000, 4000, 8000]
-    srcs = [1, 2, 4, 8, 16, 32, 64][:upto]
+    srcs = [1, 3, 7, 15, 31, 63][:upto]
     n_iters = 5
 
     serial_times = np.zeros((len(workloads), len(srcs)), dtype='float64')
@@ -102,7 +102,7 @@ def unif_speedup(exponent, upto):
 
 def exp_speedup(exponent, upto):
     workloads = [1000, 2000, 4000, 8000]
-    srcs = [1, 2, 4, 8, 16, 32, 64][:upto]
+    srcs = [1, 3, 7, 15, 31, 63][:upto]
     n_iters = 5
 
     serial_times = np.zeros((len(workloads), len(srcs)), dtype='float64')
@@ -124,7 +124,7 @@ def exp_speedup(exponent, upto):
 def q_depth(exponent):
     n_iters = 3
     workloads = [1, 500, 5000]
-    srcs = [1, 2, 4, 8, 16]
+    srcs = [1, 3, 7, 15]
     depths = [1, 2, 4, 8, 32, 256]
 
     runtimes = np.zeros((len(workloads), len(srcs), len(depths)), dtype='float64')
@@ -147,11 +147,11 @@ if __name__ == '__main__':
     os.mkdir('results/parallel_overhead')
     global logfile
     logfile = open('/tmp/hallliu_log', 'w', 0)
-    #parallel_overhead(24)
-    #dispatcher_rate(20)
+    parallel_overhead(24)
+    dispatcher_rate(20)
     unif_speedup(14, 5)
     exp_speedup(14, 5)
     unif_speedup(10, 7)
     exp_speedup(10, 7)
-    #q_depth(14)
+    q_depth(14)
     logfile.close()
