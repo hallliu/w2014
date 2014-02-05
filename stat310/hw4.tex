@@ -24,12 +24,73 @@
 \nc{\h}[1]{\widehat{#1}}
 \nc{\tl}[1]{\widetilde{#1}}
 \nc{\norm}[1]{\left\|{#1}\right\|}
+\nc{\grf}[1]{\nabla f_{#1}}
 \begin{document}
 
 Name: Hall Liu
 
 Date: \today 
 \vspace{1.5cm}
+\subsection*{1}
+For modifying the $2\times2$ blocks, the rationale is as follows: if the block is of the form $\openm a&c\\c&b\closem$, then the lowest eigenvalue times 2 is $a+b-\sqrt{(a-b)^2+c^2}$. If this is less than $2\delta$ and if we add a constant to both $a$ and $b$, the term in the sqrt won't change, so we choose this constant $D$ to be $2\delta+\sqrt{(a-b)^2+c^2}-(a+b)$. 
+Pesudocode:
+\begin{verbatim}
+function modified_ldl(A, delta):
+    compute L*D*L.T=P.T*A*P
+    i = 1
+    while i <= D.shape[0]:
+        if i == D.shape[0] or D[i, i+1] == 0:
+            if D[i, i] < delta:
+                D[i, i] = delta
+            i += 1
+
+        else:
+            a = D[i, i], b = D[i+1, i+1], c = D[i, i+1]
+            if a+b-sqrt((a-b)^2+c^2) < 2*delta:
+                k = 2*delta + sqrt((a-b)^2+c^2) - a - b
+                D[i, i] += k
+                D[i+1, i+1] += k
+                i += 2
+    return L, D, P
+end
+
+function optimize(f, start, delta, rho, c, epsilon):
+    x = start
+    fx = undef
+    old_x = undef
+    old_fx = undef
+
+    while(1)
+        compute fx, gx, Hx as the three derivatives of f at x
+        if fx and old_fx both exist and |fx - old_fx| < epsilon:
+            return x
+
+        L, D, P = modified_ldl(H, delta)
+        pk = ldlsolve(L, D, p, -gx) <- this is from the last hw
+        ak = backtrack(f, x, gx, pk, rho, c)
+        old_x = x
+        old_fx = fx
+        x = x + ak*pk
+    end
+end
+\end{verbatim}
+There's not much point to writing pseudocode for backtrack: it's already in the book.
+
+Implementing this and playing around with the parameters to Fenton, it seems that the fastest convergence at a precision of $10^{-5}$ comes at $\delta=0.1$, $\rho=0.2$, and $c=0.1$ when starting from $(3,4)$ (6 linear systems and 11 function evaluations), and the best parameters for $(3,2)$ come at $\delta=0.1$, $\rho=0.5$, and $c=0.1$ (5 iterations and 10 function evaluations).
+\subsection*{2}
+The function was tested on the sizes
+\[\{5,6,7,8,9,10,15,20,25,30,40,50,75,100,150,200,250,300,400,500,750,1000, 1500,2000\}\]
+at $\delta=0.1$, $\rho=0.5$, and $c=0.1$, to a precision of $10^{-8}$.
+
+The number of iterations/linear solves was really boring: the first two sizes took 10 iterations, and all the others took 11. For function evaluations, here's the plot, but it's not very informative.
+
+\includegraphics[width=0.6\textwidth]{hw4_files/2_fevals.png}
+
+It mostly stays constant, with some peaks at larger sizes, but strangely it goes down again at 2000. 
+
+Here's a index plot of the optimum, in case it sheds any light on anything (it doesn't look like anything I've seen...)
+
+\includegraphics[width=0.6\textwidth]{hw4_files/2_xplot.png}
 
 \subsection*{3}
 Let $g(t)=f(x_k+t\alpha_kp_k)$. Then, $g(0)=f(x_k)$ and $g(1)=f(x_{k+1})$, and we have 
@@ -45,4 +106,44 @@ Now, plugging this into $f(x_{k+1})-f(x_k)\leq c\alpha_k\nabla f(x_k)^Tp_k$, we 
 Using the identity $a^Tb=\|a\|\|b\|\cos(\theta)$, we have that the above is equal to 
 \[\frac{c^2\|\nabla f(x_k)^T\|^2\cos^2(\theta_k)}{L}\]
 Thus, the sum of the above expression over all $k$ is bounded above by the sum of $f(x_k)-f(x_{k+1})$ over all $k$, which is a bounded telescoping sum due to the below-boundedness of $f$. Thus, we have convergence.
+\subsection*{4}
+We have $\|x_k-x^*\|_Q^2=x_k^TQx_k-2x_k^TQx^*+x^{*T}Qx^*=x_k^TQx_k-2x_k^Tb+x^{*T}b$, and similarly with $\|x_{k+1}-x^*\|_Q$ except with different indices. Subtracting the two gives $x_{k}^TQx_k-2x_k^Tb-x_{k+1}^TQx_{k+1}+2x_{k+1}^Tb$, and substituting in $x_{k+1}=x_k+\alpha_k\grf{k}$ gives
+\begin{align*}
+    &x_{k}^TQx_k-2x_k^Tb-(x_k+\alpha_k\grf{k})^TQ(x_k+\alpha_k\grf{k})+2(x_k+\alpha_k\grf{k})^Tb\\
+    &=x_{k}^TQx_k-2x_k^Tb-x_{k}^TQx_k-2\alpha_kx_k^TQ\grf{k}-\alpha_k^2\grf{k}^TQ\grf{k}+2x_k^Tb+2\alpha_k\grf{k}^Tb\\
+    &=-2\alpha_kx_k^TQ\grf{k}-\alpha_k^2\grf{k}^TQ\grf{k}+2\alpha_k\grf{k}^TQx^*\\
+    &=2\alpha_k\grf{k}^TQ(x^*-x_k)-\alpha_k^2\grf{k}^TQ\grf{k}\\
+\end{align*}
+
+Now, substitute in $\grf{k}=Q(x_k-x^*)$ and $\alpha_k=\frac{\grf{k}^T\grf{k}}{\grf{k}^TQ\grf{k}}$ to get
+\[2\frac{(\grf{k}^T\grf{k})^2}{\grf{k}^TQ\grf{k}}-\frac{(\grf{k}^T\grf{k})^2}{\grf{k}^TQ\grf{k}}=\frac{(\grf{k}^T\grf{k})^2}{\grf{k}^TQ\grf{k}}\]
+which means that $\|x_{k+1}-x^*\|_Q^2=\frac{(\grf{k}^T\grf{k})^2}{\grf{k}^TQ\grf{k}}+\|x_k-x^*\|_Q^2$
+
+Now, note that $\grf{k}^TQ^{-1}\grf{k}=(x_k-x^*)^TQQ^{-1}Q(x_k-x^*)=\|x_k+x^*\|_Q^2$, so the identity (3.28) follows by multiplying it out.
+\subsection*{5}
+\ssn{a}
+Following the hint, suppose that for all $w_i\in(0,1)$ such that their sum is 1, we have:
+\[\left(\sum w_i\lambda_i\right)\left(\sum\frac{w_i}{\lambda_i}\right)\leq\frac{(\lambda_1+\lambda_n)^2}{4\lambda_1\lambda_n}\ (*)\]
+Since $Q$ is posdef, taking the reciprocal on both sides results in 
+\[\frac{(\lambda_1+\lambda_n)^2}{4\lambda_1\lambda_n}\leq\left(\sum w_i\lambda_i\right)^{-1}\left(\sum\frac{w_i}{\lambda_i}\right)^{-1}\ (**)\]
+
+By the spectral theorem, there exists an orthonormal eigenbasis of $Q$, call them the $z_i$. For any $x$, normalize $x$ such that $\|x\|_2=1$, since the RHS of the inequality we're trying to prove is invariant under scaling of $x$. Then, if we write $x=\sum r_iz_i$, we must have that $\sum r_i^2=1$ since norms are invariant under orthogonal transformations. 
+
+If we now let $w_i=r_i^2$, we have that $x^TQx=\sum w_i\lambda_i$ and $x^TQ^{-1}x=\sum \frac{w_i}{\lambda_i}$, which means that the desired inequality follows from $(**)$.
+
+%We now want to prove the inequality $(*)$. To do this, first note that we can write $\lambda_i=t_i\lambda_1+(1-t_i)\lambda_n$, where $t_i=\frac{\lambda_i-\lambda_n}{\lambda_1-\lambda_n}$, $t_i\in[0,1]$. Then, by the convexity of $1/x$, we have that 
+%\[\sum w_i\frac{1}{t_i\lambda_1+(1-t_i)\lambda_n}\leq\sum w_i\left(\frac{t_i}{\lambda_1}+\frac{1-t_i}{\lambda_n}\right)=\sum w_i\left(\frac{t_i\lambda_n+\lambda_1-t_i\lambda_1}{\lambda_1\lambda_n}\right)\]
+%Plugging in $t_i$ from above into that expressing and simplifying gives 
+%\[\frac{\lambda_n+\lambda_1}{\lambda_n\lambda_1}-\frac{\sum\lambda_iw_i}{\lambda_1\lambda_n}\]
+For the proof of $(*)$, by the AM-GM inequality, we have that 
+\[\left(\sum w_i\lambda_i\right)\left(\sum\frac{w_i}{\lambda_i}\right)\leq\frac{1}{4}\left(\sum w_i\left(\lambda_i+\frac{1}{\lambda_i}\right)\right)^2\ (***)\]
+Further, since the LHS is invariant to scaling of the $\lambda_i$, let the $y_i$ be a scaling of them so that $y_1y_n=1$. Replacing the $\lambda_i$ with the $y_i$ on the LHS of $(*)$ makes no difference, while replacing the $\lambda_i$ with the $y_i$ on the RHS gives $\frac{1}{4}(y_1+y_n)^2$. Thus, now all we have to do is prove the inequality above for this case.
+
+Note that the minimum of the function $x+1/x$ occurs at $x=1$. Since $y_1\leq y_n<1$, we have that for all $i$, $y_i+\frac{1}{y_i}\leq y_1+\frac{1}{y_1}=y_1+y_n$. Then, if we replace $\lambda_i$ with $y_i$ in $(***)$ and apply this inequality, we have
+\[\frac{1}{4}\left(\sum w_i\left(y_i+\frac{1}{y_i}\right)\right)^2\leq\frac{1}{4}\left(\sum w_i(y_1+y_n)\right)^2=\frac{1}{4}(y_1+y_n)^2\]
+as desired.
+\ssn{b}
+Applying the above inequality to (3.28), we have
+\[\|x_{k+1}-x^*\|_Q^2\leq\left(1-\frac{(\lambda_1+\lambda_n)^2}{4\lambda_1\lambda_n}\right)\|x_k-x^*\|_Q^2=\left(\frac{(\lambda_1-\lambda_n)^2}{4\lambda_1\lambda_n}\right)\|x_k-x^*\|_Q^2\]
+Again by AM-GM, we have that $\lambda_1\lambda_n\leq\frac{1}{4}(\lambda_1+\lambda_n)^2$, so applying that to the denominator above gives what we want.
 \end{document}
