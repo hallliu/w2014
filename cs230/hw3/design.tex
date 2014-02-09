@@ -1,0 +1,76 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage[namelimits,sumlimits]{amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage{mathtools}
+\usepackage[cm]{fullpage}
+\newcommand{\tab}{\hspace*{5em}}
+\newcommand{\conj}{\overline}
+\newcommand{\dd}{\partial}
+\newcommand{\ep}{\epsilon}
+\newcommand{\openm}{\begin{pmatrix}}
+\newcommand{\closem}{\end{pmatrix}}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\Null}{null}
+\newcommand{\nc}{\newcommand}
+\newcommand{\rn}{\mathbb{R}}
+\newcommand{\zn}{\mathbb{Z}}
+\nc{\cn}{\mathbb{C}}
+\nc{\ssn}[1]{\subsubsection*{#1}}
+\nc{\inner}[2]{\langle #1,#2\rangle}
+\nc{\h}[1]{\widehat{#1}}
+\nc{\tl}[1]{\widetilde{#1}}
+\nc{\norm}[1]{\left\|{#1}\right\|}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\begin{document}
+Name: Hall Liu
+
+Date: \today 
+\vspace{1.5cm}
+
+\section*{Structure}
+\subsection*{Lock interface}
+Due to the varied number of locks we're using, in order to be able to apply the locks in a consistent manner, all locks will be abstracted with the following struct:
+\begin{verbatim}
+struct lock_t {
+    void (*lock)(lock_t *);
+    void (*unlock)(lock_t *);
+    bool (*try_lock)(lock_t *);
+    void (*destroy)(lock_t *);
+};
+\end{verbatim}
+Each distinct type of lock will have these four function pointers in the beginning of its data in this order, so we will be able to cast freely between \verb|lock_t| and the specific lock types. Each lock will have its own specifically-named creation function, and said creation function will put the appropriate function pointers into those slots. 
+
+The calling functions should not have to manage any thread-local constructs for these locks -- pthreads provides some thread-local mechanisms that can replace the functionality of the \verb|ThreadLocal| class in Java, and all that stuff should just be taken care of by the lock-specific functions. The idea is to make the lock as opaque as possible to the calling function.
+
+We will also have a null lock that implements this interface, but actually does nothing when its \verb|lock| or \verb|unlock| functions are called -- this is to facilitate the implementation of the locked queue.
+\subsection*{Queue}
+The queue object here will behave exactly the same as the one from before, with the exception of a \verb|lock| parameter to the queue creation function. This will be an integer corresponding to the type of lock we want to be associated with the queue, with the option for the null lock to create a lock-free queue. The lock will be called internally from \verb|deq|, so there will be no need to interact with the lock object from any caller of the queue functions. 
+
+\verb|deq| will also give the caller the option to fail upon encountering a locked queue via an additional parameter -- the return code will be $2$ to indicate a lock failure as opposed to $1$, which indicates an empty queue.
+\section*{Correctness tests}
+%TODO
+\section*{Performance hypotheses}
+\subsection*{The three load-balancing strategies}
+The load-balancing approaches given in the assignment document are the non-balanced approach, random queue selection, and the ``last-queue'' strategy. The goal is to design a load-balancing approach that will outperform these approaches under some specified set of conditions. 
+
+In the non-load-balanced approach, we have two problems. If a worker is finishing the packets faster than the dispatcher provides them, it has no choice other than to idle and spin on the empty queue, and if a worker is backlogged on a packet, the queue corresponding to that worker will be full as long as that worker is backlogged. Poor performance on this approach is expected for the exponential case and less so for the uniform case, as the larger spread of workloads from exponential is more likely to cause empty queues or worker backlogs.
+
+The random queue selection approach helps to address the idle worker problem -- unless most of the queues are empty, any individual worker will probably spin less than if it was just watching one empty queue. However, we do get a bit of overhead from the random number generation, and this may result in filled-up queues because the number of worker hits to any one given queue should tend to become normally distributed. Worse performance here with the uniform distribution relative to the non-balanced approach indicates that the full-queue problem is significant, and worse performance here with the exponential distribution indicates that the full-queue problem is actually worse than the idle-worker problem. Note that the problem of lock contention probably isn't significant here -- as long as the workload is big enough, it is very unlikely that a large number of workers will be trying to dequeue from the same queue at the same time.
+
+The ``last-queue'' strategy is fairly similar, with the exception that the worker will not wait for a particular queue to be unlocked, but rather hop around until it finds one. In addition, it will commit to finishing that queue before it hops on to another randomly chosen one. This strategy preserves the no-idling-workers property of the previous rule, and it will also serve to empty out filled queues quicker. However, it seems that this will tend to exacerbate the problem of full queues -- two or more workers could easily home in on the same queue, and this would leave other queues to just accumulate packets because there are the same number of workers and queues.
+
+It seems that the ``last-queue'' strategy will have poorer performance than the random selection strategy. The doubled-up worker issue is my biggest concern here. If this occurs, then the queue will be emptied fairly quickly, but there will be lock contention on that queue, and at least one other queue will go unserved during that time period. However, without actually implementing the program and actually measuring performance, it is hard to tell.
+\subsection*{The ``awesome'' load-balancing strategy}
+In order to design a better approach, we need to identify what is causing poor performance in the existing approaches and aim to rectify that in the new approach. Ideally, to achieve maximum throughput, we want each worker to be spending as much time in the \verb|getFingerprint| function as possible and as little time spinning on a queue as possible. In addition, we want the dispatcher to be skipping over full queues as little as possible and actually enqueueing as much as possible. However, it seems that the former will pose a much larger problem for speed. In the last assignment, we rarely saw the speedup flatline due to hitting up against the dispatcher rate, and the dispatcher skipping over a queue and going on is considerable less expensive than having a worker spin until the dispatcher gets around to them again (1 dispatcher iteration versus $n$ dispatcher iterations).
+
+It is evident that there is a tradeoff between the two things we want. On one hand, if a queue is constantly being watched by one or more workers, then it is less likely to fill up but more likely that the workers will sit and spin. On the other hand, if the workers greedily go after work in whatever queue, this increases the risk that some queue will be overlooked and therefore get filled up. Then, on this spectrum, we can rank the existing strategies as follows. The non-balancing approach sits to the extreme of making sure that the queues are being watched. The last-queue strategy is at the extreme of having the workers actively go where the work is (stay at a queue because it's known to have work, leave only when it's empty). The random selection approach is a compromise between these two.
+
+Thus, depending how the approaches actually perform, we can try and locate a good place for the new strategy in this spectrum. There are a sufficient number of possibilities that it would be pointless to come up with designs for each case, so I'll defer that to the writeup so that I only have to come up with one alternative design.
+\end{document}
