@@ -1,0 +1,48 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage[namelimits,sumlimits]{amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage[cm]{fullpage}
+\newcommand{\tab}{\hspace*{5em}}
+\newcommand{\conj}{\overline}
+\newcommand{\dd}{\partial}
+\newcommand{\ep}{\epsilon}
+\newcommand{\openm}{\begin{pmatrix}}
+\newcommand{\closem}{\end{pmatrix}}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\Null}{null}
+\newcommand{\nc}{\newcommand}
+\newcommand{\rn}{\mathbb{R}}
+\nc{\cn}{\mathbb{C}}
+\nc{\ssn}[1]{\subsubsection*{#1}}
+\nc{\inner}[2]{\langle #1,#2\rangle}
+\nc{\h}[1]{\widehat{#1}}
+\nc{\tl}[1]{\widetilde{#1}}
+\nc{\norm}[1]{\left\|{#1}\right\|}
+\begin{document}
+
+Name: Hall Liu
+
+Date: \today 
+\vspace{1.5cm}
+
+\subsection*{3}
+Since $B$ is positive definite, the operation $\inner{x}{y}_B=x^TBy$ is an inner product on $\rn^n$. Then, if we write $\|g\|^2_2=g^Tg=g^TB(B^{-1}g)=\inner{g}{B^{-1}g}_B$, we can apply Cauchy-Schwarz for inner product spaces to this to get 
+\[\|g\|_2^4=\inner{g}{B^{-1}g}_B^2\leq\|g\|_B^2\|B^{-1}g\|_B^2=(g^TBg)(g^TB^{-1}BB^{-1}g)=(g^TBg)(g^TB^{-1}g)\]
+and dividing this by the denominator shows that the fraction is bounded above by $1$. Since Cauchy-Schwarz asserts that equality iff the two vectors are parallel, if we want equality, we must have that $g$ and $B^{-1}g$ are parallel. If we had done this with the inner product being $xB^{-1}y$, we would have required that $g$ and $Bg$ are parallel, so they must both hold true.
+\subsection*{4}
+By the derivation given in the hint, we have that 
+\[\phi'(\lambda)=\|p(\lambda)\|^{-3}\sum\frac{(q_i^Tg)^2}{(\lambda_i+\lambda)^3}\]
+In addition, we have that $p_l=-(B+\lambda^{(l)}I)^{-1}g=p(\lambda^{(l)}$ and $\|q_l\|^2=\sum\frac{(q_i^Tg)^2}{(\lambda_i+\lambda)^3}$ (given in the hint), so putting all these things together into (4.44) gives
+\begin{align*}
+    \lambda^{(l+1)}&=\lambda^{(l)}+\frac{\|p(\lambda^{(l)})\|^2}{\phi'(\lambda^{(l)})\|p(\lambda^{(l)}\|^3}\left(\frac{\|p(\lambda^{(l)})\|-\Delta}{\Delta}\right)\\
+                   &=\lambda^{(l)}+\frac{1}{\phi'(\lambda^{(l)})}\left(\frac{1}{\Delta}-\frac{1}{\|p(\lambda^{(l)})\|}\right)\\
+                   &=\lambda^{(l)}+\frac{\phi(\lambda^{(l)})}{\phi'(\lambda^{(l)})}\\
+\end{align*}
+as desired.
+\end{document}
