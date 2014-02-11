@@ -23,6 +23,7 @@ function g = rosen_gr(x)
         g(2*i-1) = -2*(1-x(2*i-1))+20*x(2*i-1)*(x(2*i)-x(2*i-1)^2);
         g(2*i) = 20*(x(2*i)-x(2*i-1)^2);
     end
+    g = g.';
 end
 
 function H = rosen_H(x)
