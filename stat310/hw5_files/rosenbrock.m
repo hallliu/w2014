@@ -20,7 +20,7 @@ function g = rosen_gr(x)
     N = length(x) / 2;
     g = 1:2*N;
     for i=1:N
-        g(2*i-1) = -2*(1-x(2*i-1))+20*x(2*i-1)*(x(2*i)-x(2*i-1)^2);
+        g(2*i-1) = -2*(1-x(2*i-1))-40*x(2*i-1)*(x(2*i)-x(2*i-1)^2);
         g(2*i) = 20*(x(2*i)-x(2*i-1)^2);
     end
     g = g.';
@@ -38,15 +38,15 @@ function H = rosen_H(x)
 
         row_inds(4*i-2) = 2*i-1;
         col_inds(4*i-2) = 2*i;
-        data(4*i-2) = 20;
+        data(4*i-2) = -40*x(2*i-1);
 
         row_inds(4*i-1) = 2*i;
         col_inds(4*i-1) = 2*i-1;
-        data(4*i-1) = 20;
+        data(4*i-1) = -40*x(2*i-1);
 
         row_inds(4*i) = 2*i-1;
         col_inds(4*i) = 2*i-1;
-        data(4*i) = 2 + 20*x(2*i)-60*x(2*i-1)^2;
+        data(4*i) = 2 - 40*x(2*i)+120*x(2*i-1)^2;
     end
     H = sparse(row_inds, col_inds, data, 2*N, 2*N);
 end

@@ -30,7 +30,39 @@ Name: Hall Liu
 
 Date: \today 
 \vspace{1.5cm}
+\subsection*{1}
+For both methods, sizes in $\{100, 200, 300, 400, 500, 650, 800, 1000, 1330, 1660, 2000, 3000, 4000\}$ were tested. For both, the stopping criterion was $\|\nabla f(x_k)\|\leq 10^6$. For the dogleg method, the number of iterations and the number of factorizations were  both $9$ for sizes at or below $1330$, and both $10$ for all other sizes. The number of function evaluations is one greater than the number of iterations. Parameters were $\delta=0.05$ (the modification threshold for LDL), $\h{\Delta}=10$ and $\eta=0.2$.
 
+For backtracking, all sizes gave $10$ iterations, $10$ factorizations, and $19$ function evaluations. Parameters were $\delta=0.1$, $\rho=0.5$, and $c=0.1$. The dogleg method is considerably cheaper in terms of number of function evaluations
+
+In order to evaluate superlinear convergence, we can pretend that the point we stopped on, $x_K$, is $x^*$, calculate $\frac{\|x_{k+1}-x^*\|}{x_k-x^*}$ for all $k\in[1..K-1]$, and plot it to see if we get something decreasing. Then, for $n=3000$ and $\epsilon=10^{-8}$, here are the plots of that value for dogleg (right) and backtracking (left).
+
+\includegraphics[width=0.5\textwidth]{hw5_files/bt_superlinear}
+\includegraphics[width=0.5\textwidth]{hw5_files/dogleg_superlinear}
+
+We do see superlinear convergence here, as the ratios tend to zero.
+\subsection*{2}
+For dogleg, here is a table of average iterations/function evaluations and factorizations. Note that they're distinct because the factorization gets saved over if the new point gets rejected.
+
+\begin{tabular}{c|ccccccccccc}
+    Sizes&100&200&300&400&500&650&800&1000&1330&1660&2000\\
+    \hline
+    Iterations&28.35&28.20&28.75&49.90&44.40&39.25&42.55&53.50&41.20&59.00&64.55\\
+    Factorizations&22.25&23.25&24.20&44.75&39.20&33.85&37.85&47.60&36.25&53.45&59.00\\
+\end{tabular}
+
+Here's the same table for backtracking
+
+\begin{tabular}{c|ccccccccccc}
+    Sizes&100&200&300&400&500&650&800&1000&1330&1660&2000\\
+    \hline
+    Iterations&16.60&18.30&18.55&19.25&19.10&19.70&19.65&19.60&20.00&20.30&20.50\\
+    Function evaluations&43.80&50.15&50.65&52.85&52.75&55.00&54.45&54.40&55.50&56.35&57.05\\
+\end{tabular}
+
+Backtracking seems to perform better here in terms of factorizations, but worse for function evaluations at least until size 2000. 
+
+The correction did get triggered, implying that we ended up in regions of non-positive curvature somewhere. 
 \subsection*{3}
 Since $B$ is positive definite, the operation $\inner{x}{y}_B=x^TBy$ is an inner product on $\rn^n$. Then, if we write $\|g\|^2_2=g^Tg=g^TB(B^{-1}g)=\inner{g}{B^{-1}g}_B$, we can apply Cauchy-Schwarz for inner product spaces to this to get 
 \[\|g\|_2^4=\inner{g}{B^{-1}g}_B^2\leq\|g\|_B^2\|B^{-1}g\|_B^2=(g^TBg)(g^TB^{-1}BB^{-1}g)=(g^TBg)(g^TB^{-1}g)\]

@@ -16,6 +16,7 @@ function [xi, iters, facs] = optimize_dl(f, start, ldl_delta, Dhat, eta, epsilon
         if norm(gx) < epsilon
             break
         end
+        
         iters = iters + 1;
         if updated
             [L, D, p] = modified_ldl(Hx, ldl_delta);
@@ -23,7 +24,6 @@ function [xi, iters, facs] = optimize_dl(f, start, ldl_delta, Dhat, eta, epsilon
         end
         
         pk = calculate_pk(L, D, p, gx, TR_size);
-        
         old_fx = fx;
         old_gx = gx;
         old_Hx = Hx;
@@ -31,7 +31,7 @@ function [xi, iters, facs] = optimize_dl(f, start, ldl_delta, Dhat, eta, epsilon
         [fx, gx, Hx] = f((x + pk).', 2);
         fevals = fevals + 1;
         
-        rho_k = (old_fx - fx) / (fx - quad_model(fx, gx, L, D, p, pk));
+        rho_k = (old_fx - fx) / (old_fx - quad_model(fx, gx, L, D, p, pk));
         
         if rho_k < 0.25
             TR_size = TR_size / 4;
