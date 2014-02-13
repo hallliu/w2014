@@ -76,7 +76,7 @@ void test_incrementing(char *lock_type, void *lock_info, int n_workers, int coun
 
     struct test_info2 info = {
         .l = l,
-        .num_incs = counter_val / n_workers,
+        .num_incs = counter_val,
         .counter = &counter,
         .array = ctr_array,
     };
@@ -119,7 +119,7 @@ static void *test_worker2(void *_info) {
             break;
         }
         int tmp = *info->counter;
-        *info->counter++;
+        (*info->counter)++;
         __sync_fetch_and_add (info->array + tmp, 1);
         l->unlock(l);
     }
@@ -132,7 +132,7 @@ static void *test_worker2(void *_info) {
 // repeatedly until time is up. test_time is in us as usual.
 
 struct test_info3 {
-    volatile int done;
+    volatile int *done;
     int test_time;
 };
 
@@ -141,7 +141,7 @@ static void *test3_alarm(void *);
 void test_lock_nohang(char *lock_type, void *lock_info, int test_time) {
     struct lock_t *l = create_lock (lock_type, lock_info);
     volatile int done = 0;
-    struct test_info3 info = {.done = done, .test_time = test_time};
+    struct test_info3 info = {.done = &done, .test_time = test_time};
 
     pthread_t alarm;
     pthread_create(&alarm, NULL, test3_alarm, &info);
@@ -157,7 +157,7 @@ void test_lock_nohang(char *lock_type, void *lock_info, int test_time) {
 static void *test3_alarm(void *_info) {
     struct test_info3 *info = _info;
     usleep (info->test_time);
-    info->done = 1;
+    *info->done = 1;
     return NULL;
 }
 
