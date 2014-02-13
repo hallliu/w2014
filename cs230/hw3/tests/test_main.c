@@ -37,14 +37,14 @@ int main(int argc, char *argv[]) {
     if (!strcmp(argv[1], "incrementing")) {
         if (!strcmp(argv[2], "backoff")) {
             struct backoff_info info = {atoi(argv[3]), atoi(argv[4])};
-            test_hold_lock(argv[2], &info, atoi(argv[5]), atoi(argv[6]));
+            test_incrementing(argv[2], &info, atoi(argv[5]), atoi(argv[6]));
         }
         else if (!strcmp(argv[2], "Alock")) {
             int n_workers = atoi(argv[3]);
-            test_hold_lock(argv[2], &n_workers, atoi(argv[4]), atoi(argv[5]));
+            test_incrementing(argv[2], &n_workers, atoi(argv[4]), atoi(argv[5]));
         }
         else {
-            test_hold_lock(argv[2], NULL, atoi(argv[3]), atoi(argv[4]));
+            test_incrementing(argv[2], NULL, atoi(argv[3]), atoi(argv[4]));
         }
         return 0;
     }
@@ -52,14 +52,14 @@ int main(int argc, char *argv[]) {
     if (!strcmp(argv[1], "lock_nohang")) {
         if (!strcmp(argv[2], "backoff")) {
             struct backoff_info info = {atoi(argv[3]), atoi(argv[4])};
-            test_hold_lock(argv[2], &info, atoi(argv[5]));
+            test_lock_nohang(argv[2], &info, atoi(argv[5]));
         }
         else if (!strcmp(argv[2], "Alock")) {
             int n_workers = atoi(argv[3]);
-            test_hold_lock(argv[2], &n_workers, atoi(argv[4]));
+            test_lock_nohang(argv[2], &n_workers, atoi(argv[4]));
         }
         else {
-            test_hold_lock(argv[2], NULL, atoi(argv[3]));
+            test_lock_nohang(argv[2], NULL, atoi(argv[3]));
         }
         return 0;
     }
@@ -67,14 +67,14 @@ int main(int argc, char *argv[]) {
     if (!strcmp(argv[1], "ordering")) {
         if (!strcmp(argv[2], "backoff")) {
             struct backoff_info info = {atoi(argv[3]), atoi(argv[4])};
-            test_hold_lock(argv[2], &info, atoi(argv[5]), atoi(argv[6]));
+            test_ordering(argv[2], &info, atoi(argv[5]));
         }
         else if (!strcmp(argv[2], "Alock")) {
             int n_workers = atoi(argv[3]);
-            test_hold_lock(argv[2], &n_workers, atoi(argv[4]));
+            test_ordering(argv[2], &n_workers, atoi(argv[4]));
         }
         else {
-            test_hold_lock(argv[2], NULL, atoi(argv[3]));
+            test_ordering(argv[2], NULL, atoi(argv[3]));
         }
         return 0;
     }

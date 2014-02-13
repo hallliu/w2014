@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <sys/time.h>
+#include <pthread.h>
 #include "../locks.h"
 
 static void usleep(int n) {
@@ -27,13 +28,13 @@ void test_hold_lock(char *lock_type, void *lock_info, int n_workers, int test_ti
     volatile int done = 0;
     struct test_info1 info = {.l = l, .done = &done};
 
-    pthread_t *threads = calloc (n_spawned, sizeof(pthread_t));
-    for (int i = 0; i < n_spawned; i++) {
+    pthread_t *threads = calloc (n_workers, sizeof(pthread_t));
+    for (int i = 0; i < n_workers; i++) {
         pthread_create (&threads[i], NULL, test_worker1, &info);
     }
     usleep(test_time);
     done = 1;
-    for (int i = 0; i < n_spawned; i++) {
+    for (int i = 0; i < n_workers; i++) {
         pthread_join (threads[i], NULL);
     }
     free (threads);
@@ -62,7 +63,7 @@ static void *test_worker1(void *_info) {
 struct test_info2 {
     struct lock_t *l;
     int num_incs;
-    volatile int *counter
+    volatile int *counter;
     volatile char *array;
 };
 
@@ -75,21 +76,21 @@ void test_incrementing(char *lock_type, void *lock_info, int n_workers, int coun
 
     struct test_info2 info = {
         .l = l,
-        .num_incs = counter_val / n_workers;
-        .counter = &counter;
-        .array = ctr_array;
-    }
+        .num_incs = counter_val / n_workers,
+        .counter = &counter,
+        .array = ctr_array,
+    };
     
-    pthread_t *threads = calloc (n_spawned, sizeof(pthread_t));
-    for (int i = 0; i < n_spawned; i++) {
+    pthread_t *threads = calloc (n_workers, sizeof(pthread_t));
+    for (int i = 0; i < n_workers; i++) {
         pthread_create (&threads[i], NULL, test_worker2, &info);
     }
 
-    for (int i = 0; i < n_spawned; i++) {
+    for (int i = 0; i < n_workers; i++) {
         pthread_join (threads[i], NULL);
     }
 
-    if (counter != num_incs) {
+    if (counter != counter_val) {
         printf("FAIL: final result of counter is %d\n", counter);
     }
 
@@ -101,12 +102,12 @@ void test_incrementing(char *lock_type, void *lock_info, int n_workers, int coun
     }
 
     free (threads);
-    free (ctr_array);
+    free ((void *) ctr_array);
     l->destroy_lock(l);
     return;
 }
 
-static void test_worker2(void *_info) {
+static void *test_worker2(void *_info) {
     struct test_info2 *info = _info;
     struct lock_t *l = info->l;
     int upto = info->num_incs;
@@ -140,15 +141,15 @@ static void *test3_alarm(void *);
 void test_lock_nohang(char *lock_type, void *lock_info, int test_time) {
     struct lock_t *l = create_lock (lock_type, lock_info);
     volatile int done = 0;
-    struct test_info3 = {.done = done, .test_time = test_time};
+    struct test_info3 info = {.done = done, .test_time = test_time};
 
     pthread_t alarm;
-    pthread_create(&alarm, NULL, test3_alarm, &test_info3);
+    pthread_create(&alarm, NULL, test3_alarm, &info);
     while (!done) {
         l->lock(l);
         l->unlock(l);
     }
-    pthread_join (alarm);
+    pthread_join (alarm, NULL);
     l->destroy_lock(l);
     return;
 }
