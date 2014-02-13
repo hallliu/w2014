@@ -8,6 +8,7 @@
 //static struct lock_t *create_TAS(void);
 //static struct lock_t *create_backoff(double min_delay, double max_delay);
 static struct lock_t *create_mutex(void);
+static struct lock_t *create_noop(void);
 //static struct lock_t *create_Alock(int max_threads);
 //static struct lock_t *create_CLH(void);
 //static struct lock_t *creat_MCS(void);
@@ -16,9 +17,37 @@ struct lock_t *create_lock(char *lock_type, void *lock_info) {
     if (!strcmp(lock_type, "mutex")) {
         return create_mutex();
     }
+
+    if (!strcmp(lock_type, "noop")) {
+        return create_noop();
+    }
     return NULL;
 }
+//-------------------No-op lock-------------------------------------//
+void lock_noop (struct lock_t *l __attribute__((unused))) {
+    return;
+}
 
+bool try_lock_noop (struct lock_t *l __attribute__((unused))) {
+    return true;
+}
+
+void unlock_noop (struct lock_t *l __attribute__((unused))) {
+    return;
+}
+
+void destroy_noop (struct lock_t *l) {
+    free(l);
+}
+
+static struct lock_t *create_noop(void) {
+    struct lock_t *l = malloc (sizeof(struct lock_t));
+    l->lock = lock_noop;
+    l->try_lock = try_lock_noop;
+    l->unlock = unlock_noop;
+    l->destroy_lock = destroy_noop;
+    return l;
+}
 //-------------------Pthreads mutex lock----------------------------//
 struct mutex_lock {
     void (*lock) (struct lock_t *);
