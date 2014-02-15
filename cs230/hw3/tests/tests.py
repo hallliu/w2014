@@ -5,10 +5,11 @@ import unittest
 import itertools
 import Queue
 import random
+from ../perf import timeout_output
 
 class LockTests(unittest.TestCase):
     def setUp(self):
-        self.regular_locks = ['TAS', 'mutex', 'CLH', 'MCS']
+        self.regular_locks = ['TAS', 'mutex', 'CLH', 'MCS', 'Alock']
         self.delay_tests = [(10, 50000), (20, 25000), (100, 1000), (500, 500)]
 
     def test_hold_lock(self):
@@ -18,7 +19,8 @@ class LockTests(unittest.TestCase):
         for lock in self.regular_locks:
             for workers in 2**np.arange(5):
                 for test_time in 100000*(2**np.arange(4)):
-                    out = sp.check_output('./test_main', 'hold_lock', lock, str(workers), str(test_time))
+                    cmdstr = ['./test_main', 'hold_lock', lock, str(workers), str(test_time)]
+                    out = sp.check_output(cmdstr)
                     if len(out) > 0:
                         raise AssertionError('Failed with lock {0} with {1} workers at {2}us'.format(lock, workers, test_time))
 
@@ -28,25 +30,59 @@ class LockTests(unittest.TestCase):
         for workers in 2**np.arange(5):
             for test_time in 100000*(2**np.arange(4)):
                 for (min_delay, max_delay) in self.delay_tests:
-                    out = sp.check_output('./test_main', 'hold_lock', 'backoff', str(min_delay), str(max_delay), str(workers), str(test_time))
+                    cmdstr = ['./test_main', 'hold_lock', 'backoff', str(min_delay), str(max_delay), str(workers), str(test_time)]
+                    out = sp.check_output(cmdstr)
                     if len(out) > 0:
                         raise AssertionError('Failed on backoff at {0} with {1} workers at {2}us '.format((min_delay, max_delay), workers, test_time))
 
-        '''
-        And A-lock
-        '''
+
+    def test_incrementing(self):
+        for lock in self.regular_locks:
+            for workers in 2**np.arange(5):
+                for counter_val in [1, 100, 10000]
+                    cmdstr = ['./test_main', 'incrementing', lock, str(workers), str(counter_val)]
+                    out = sp.check_output(cmdstr)
+                    if len(out) > 0:
+                        raise AssertionError('Failed with lock {0} with {1} workers at {2}us'.format(lock, workers, counter_val))
 
         for workers in 2**np.arange(5):
-            for test_time in 100000*(2**np.arange(4)):
-                for max_threads in (workers + np.arange(1, 4)):
-                    out = sp.check_output('./test_main', 'hold_lock', 'Alock', str(min_delay), str(max_delay), str(workers), str(test_time))
+            for counter_val in [1, 100, 10000]:
+                for (min_delay, max_delay) in self.delay_tests:
+                    cmdstr = ['./test_main', 'incrementing', 'backoff', str(min_delay), str(max_delay), str(workers), str(counter_val)]
+                    out = sp.check_output(cmdstr)
                     if len(out) > 0:
-                        raise AssertionError('Failed on Alock at max_workers={0} with {1} workers at {2}us '.format(max_threads, workers, test_time))
+                        raise AssertionError('Failed on backoff at {0} with {1} workers at {2}us '.format((min_delay, max_delay), workers, counter_val))
 
 
+    def test_lock_nohang(self):
+        '''
+        First do the non-parametric locks
+        '''
+        for lock in self.regular_locks:
+            for test_time in 100000*(2**np.arange(4)):
+                cmdstr = ['./test_main', 'lock_nohang', lock, str(test_time)]
+                out = timeout_output(cmdstr, test_time * 1.5)
+                if len(out) > 0:
+                    raise AssertionError('Failed with lock {0} with at {1}us'.format(lock, test_time))
 
+        '''
+        Now backoff. 
+        '''
+        for workers in 2**np.arange(5):
+            for (min_delay, max_delay) in self.delay_tests:
+                cmdstr = ['./test_main', 'lock_nohang', 'backoff', str(min_delay), str(max_delay), str(workers), str(test_time)]
+                out = timeout_output(cmdstr, test_time * 1.5)
+                if len(out) > 0:
+                    raise AssertionError('Failed on backoff at {0} at {2}us '.format((min_delay, max_delay), test_time))
+        
+    def test_ordering(self):
+        for lock in ['Alock', 'CLH', 'MCS']
+            for workers in 2**np.arange(5):
+                cmdstr = ['./test_main', 'incrementing', lock, str(workers), str(counter_val)]
+                out = map(int, sp.check_output(cmdstr).split())
 
-
+                if !np.all(np.array(out) == np.arange(workers)):
+                    raise AssertionError('Failed with lock {0} with {1} workers with ordering {2}'.format(lock, workers, out))
 
 class QueueTests(unittest.TestCase):
     '''
