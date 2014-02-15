@@ -9,8 +9,8 @@
  * args.
  */
 struct backoff_info {
-    long min_delay;
-    long max_delay;
+    int min_delay;
+    int max_delay;
 };
 
 int main(int argc, char *argv[]) {
@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
         }
         else if (!strcmp(argv[2], "Alock")) {
             int n_workers = atoi(argv[3]);
-            test_hold_lock(argv[2], &n_workers, atoi(argv[4]), atoi(argv[5]));
+            test_hold_lock(argv[2], &n_workers, atoi(argv[3]), atoi(argv[4]));
         }
         else {
             test_hold_lock(argv[2], NULL, atoi(argv[3]), atoi(argv[4]));
