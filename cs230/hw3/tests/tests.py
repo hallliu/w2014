@@ -107,7 +107,7 @@ class LockTests(unittest.TestCase):
     def test_ordering(self):
         for lock in ['Alock', 'CLH', 'MCS']:
             for workers in 2**np.arange(5):
-                cmdstr = ['./test_main', 'incrementing', lock, str(workers), str(counter_val)]
+                cmdstr = ['./test_main', 'ordering', lock, str(workers)]
                 out = map(int, sp.check_output(cmdstr).split())
 
                 if not np.all(np.array(out) == np.arange(workers)):
