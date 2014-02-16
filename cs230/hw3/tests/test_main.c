@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "test_locks.h"
+#include "test_workers.c"
 
 /*
  * Invoke with the test name as the first arg (excluding test_)
@@ -78,6 +79,33 @@ int main(int argc, char *argv[]) {
         }
         return 0;
     }
+
+    if (!strcmp(argv[1], "general_worker")) {
+        if (!strcmp(argv[8], "backoff")) {
+            struct backoff_info info = {atoi(argv[9]), atoi(argv[10])};
+            general_test (atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),
+                    atol(argv[5]), atoi(argv[6]), atoi(argv[7]), argv[8], &info);
+        }
+
+        if (!strcmp(argv[8], "Alock")) {
+            int n_workers = atoi(argv[3]);
+            general_test (atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),
+                    atol(argv[5]), atoi(argv[6]), atoi(argv[7]), argv[8], &n_workers);
+        }
+        
+        else {
+            general_test (atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),
+                    atol(argv[5]), atoi(argv[6]), atoi(argv[7]), argv[8], NULL);
+        }
+        return 0;
+    }
+
+#ifdef TESTING1
+    if (!strcmp(argv[1], "lastqueue")) {
+        test_ordering(atoi(argv[2], atoi(argv[3])));
+        return 0;
+    }
+#endif
 
     printf("Invalid test name\n");
     return 1;

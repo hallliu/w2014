@@ -11,7 +11,7 @@
 
 #define QUEUE_DEPTH 8
 
-long parallel_dispatcher
+long general_test
         (int n_packets, 
          int n_src, 
          int worker_type,
@@ -114,11 +114,9 @@ long parallel_dispatcher
 // Fills up n_src queues, then has a single worker process them with lastqueue. We don't expect
 // all of them to get processed, but we do expect the ones that do to go in strict order
 // i.e. queue i finishes before queue j starts if queue i starts before queue j.
-void lastqueue_test(int n_packets, int n_src, long mean, int seed, int distr, char *lock_type, void *lock_data) {
+void lastqueue_test(int n_packets, int n_src) {
     Packet_t **rcvd_packets = malloc (n_packets * n_src * sizeof(Packet_t *));
-    PacketSource_t *source = createPacketSource (mean, n_src, seed);
-
-    Packet_t *(*pkt_fn)(PacketSource_t *, int) = distr ? &getUniformPacket : &getExponentialPacket;
+    PacketSource_t *source = createPacketSource (100, n_src, 0);
 
     struct l_queue *queues = create_queues (n_src, n_packets, lock_type, lock_data);
 
@@ -127,7 +125,7 @@ void lastqueue_test(int n_packets, int n_src, long mean, int seed, int distr, ch
     int packet_ctr = 0;
     for (int i = 0; i < n_src; i++) {
         for (int j = 0; j < n_packets; j++) {
-            Packet_t *pkt = pkt_fn (source, i);
+            Packet_t *pkt = getUniformPacket (source, i);
             enq (queues[i], (void *) pkt);
             rcvd_packets[packet_ctr] = pkt;
             packet_ctr += 1;
