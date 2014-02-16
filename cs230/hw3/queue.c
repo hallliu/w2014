@@ -38,19 +38,16 @@ int enq(struct l_queue *q, void *obj) {
 }
 
 int deq(struct l_queue *q, void **obj_ptr) {
-    q->lock->lock(q->lock);
     int head = q->head;
     int tail = q->tail;
     int len = q->length;
 
     if (tail == head) {
-        q->lock->unlock(q->lock);
         return 1;
     }
 
     *obj_ptr = q->items[head % len];
     q->head = head + 1;
-    q->lock->unlock(q->lock);
     return 0;
 }
 
