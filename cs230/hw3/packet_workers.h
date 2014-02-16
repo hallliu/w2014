@@ -13,7 +13,7 @@ struct thread_data {
     // the ith queue.
     int *queue_hits;
 #endif
-}
+};
 
 void *homequeue_worker (void *);
 void *random_worker (void *);

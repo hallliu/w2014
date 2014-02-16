@@ -12,13 +12,17 @@ struct l_queue *create_queues(int n_queues, int size, char *lock_type, void *loc
             q[i].lock = create_lock("noop", NULL);
         else
             q[i].lock = create_lock(lock_type, lock_info);
+        q[i].queue_id = i;
     }
     return q;
 }
 
 void destroy_queues(int n_queues, struct l_queue *q) {
-    for (int i = 0; i < n_queues; i++)
+    for (int i = 0; i < n_queues; i++) {
+        q[i].lock->destroy_lock (q[i].lock);
         free (q[i].items);
+    }
+
     free (q);
 }
 
@@ -43,8 +47,17 @@ int deq(struct l_queue *q, void **obj_ptr) {
     int len = q->length;
 
     if (tail == head) {
+#ifdef TESTING1
+        printf("%d empty\n", q->queue_id);
+#endif
         return 1;
     }
+
+#ifdef TESTING1
+    if (tail - head == len) {
+        printf("%d started\n", q->queue_id);
+    }
+#endif
 
     *obj_ptr = q->items[head % len];
     q->head = head + 1;

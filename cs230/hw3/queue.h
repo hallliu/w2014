@@ -8,6 +8,7 @@ struct l_queue {
     void **items;
     int n_enqueues;
     struct lock_t *lock;
+    int queue_id;
 };
 
 struct l_queue *create_queues(int, int, char *, void *);
