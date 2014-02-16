@@ -5,13 +5,18 @@
 #include <stdbool.h>
 #include "locks.h"
 
+static void usleep(int n) {
+    struct timespec sleep_time = {.tv_sec = n / 1000000, .tv_nsec = (n % 1000000) * 1000};
+    nanosleep(&sleep_time, NULL);
+}
+
 static struct lock_t *create_TAS(void);
 static struct lock_t *create_backoff(int min_delay, int max_delay);
 static struct lock_t *create_mutex(void);
 static struct lock_t *create_noop(void);
 static struct lock_t *create_Alock(int n_threads);
-//static struct lock_t *create_CLH(void);
-//static struct lock_t *creat_MCS(void);
+static struct lock_t *create_CLH(void);
+static struct lock_t *create_MCS(void);
 
 struct lock_t *create_lock(char *lock_type, void *lock_info) {
     if (!strcmp(lock_type, "TAS")) {
@@ -19,13 +24,21 @@ struct lock_t *create_lock(char *lock_type, void *lock_info) {
     }
 
     if (!strcmp(lock_type, "backoff")) {
-        int *delays = lock_info
+        int *delays = lock_info;
         return create_backoff(delays[0], delays[1]);
     }
 
     if (!strcmp(lock_type, "Alock")) {
         int *threads = lock_info;
         return create_Alock(*threads);
+    }
+
+    if (!strcmp(lock_type, "CLH")) {
+        return create_CLH();
+    }
+
+    if (!strcmp(lock_type, "MCS")) {
+        return create_MCS();
     }
 
     if (!strcmp(lock_type, "mutex")) {
@@ -73,12 +86,12 @@ struct TAS_lock {
 };
 
 void lock_TAS (struct lock_t *_l) {
-    struct TAS_lock *l = (struct TAS_lock) _l;
+    struct TAS_lock *l = (struct TAS_lock *) _l;
     while (__sync_lock_test_and_set(&l->locked, 1));
 }
 
 bool try_lock_TAS (struct lock_t *_l) {
-    struct TAS_lock *l = (struct TAS_lock) _l;
+    struct TAS_lock *l = (struct TAS_lock *) _l;
     if (!__sync_lock_test_and_set(&l->locked, 1)) {
         return true;
     }
@@ -86,12 +99,12 @@ bool try_lock_TAS (struct lock_t *_l) {
 }
 
 void unlock_TAS (struct lock_t *_l) {
-    struct TAS_lock *l = (struct TAS_lock) _l;
+    struct TAS_lock *l = (struct TAS_lock *) _l;
     __sync_lock_release(&l->locked);
 }
 
 void destroy_TAS (struct lock_t *_l) {
-    struct TAS_lock *l = (struct TAS_lock) _l;
+    struct TAS_lock *l = (struct TAS_lock *) _l;
     free (l);
 }
 
@@ -134,7 +147,7 @@ void lock_backoff (struct lock_t *_l) {
 }
 
 bool try_lock_backoff (struct lock_t *_l) {
-    struct backoff_lock *l = (struct backoff_lock) _l;
+    struct backoff_lock *l = (struct backoff_lock *) _l;
     if (!__sync_lock_test_and_set(&l->locked, 1)) {
         return true;
     }
@@ -142,12 +155,12 @@ bool try_lock_backoff (struct lock_t *_l) {
 }
 
 void unlock_backoff (struct lock_t *_l) {
-    struct backoff_lock *l = (struct backoff_lock) _l;
+    struct backoff_lock *l = (struct backoff_lock *) _l;
     __sync_lock_release(&l->locked);
 }
 
 void destroy_backoff (struct lock_t *_l) {
-    struct backoff_lock *l = (struct backoff_lock) _l;
+    struct backoff_lock *l = (struct backoff_lock *) _l;
     free (l);
 }
 
@@ -174,12 +187,12 @@ struct Alock_lock {
     volatile int tail;
     pthread_key_t slots;
     int size;
-}
+};
 
 struct padded_flag {
     volatile int unlocked;
     char padding[64-sizeof(int)];
-} __attribute__((packed, align(64)));
+} __attribute__((packed));
 
 
 void lock_Alock (struct lock_t *_l) {
@@ -222,8 +235,8 @@ void unlock_Alock (struct lock_t *_l) {
 
 void destroy_Alock (struct lock_t *_l) {
     struct Alock_lock *l = (struct Alock_lock *) _l;
-    free (l->flags);
-    pthread_key_destroy(l->slots);
+    free ((void *) l->flags);
+    pthread_key_delete(l->slots);
     free (l);
 }
 
@@ -234,8 +247,8 @@ static struct lock_t *create_Alock(int n_threads) {
     l->try_lock = try_lock_Alock;
     l->destroy_lock = destroy_Alock;
 
-    l->flags = aligned_alloc (64, sizeof(struct padded_flag) * n_threads);
-    memset (l->flags, 0, sizeof(struct padded_flag) * n_threads);
+    int k __attribute__((unused)) = posix_memalign ((void **) &l->flags, 64, sizeof(struct padded_flag) * n_threads);
+    memset ((void *) l->flags, 0, sizeof(struct padded_flag) * n_threads);
     l->tail = 0;
     pthread_key_create(&l->slots, free);
     l->size = n_threads;
@@ -248,7 +261,7 @@ struct CLH_queue_node {
     volatile int locked;
     struct CLH_queue_node *pred;
     char padding[64-sizeof(int)-sizeof(void *)];
-} __attribute__((packed, align(64)));
+} __attribute__((packed));
 
 struct CLH_lock {
     void (*lock) (struct lock_t *);
@@ -257,18 +270,18 @@ struct CLH_lock {
     void (*destroy_lock) (struct lock_t *);
     volatile struct CLH_queue_node *tail;
     pthread_key_t nodes;
-}
+};
 
 void lock_CLH (struct lock_t *_l) {
     struct CLH_lock *l = (struct CLH_lock *) _l;
     struct CLH_queue_node *node = pthread_getspecific(l->nodes);
     if (node == NULL) {
-        node = aligned_alloc(64, sizeof(struct CLH_queue_node));
+        int k __attribute__((unused)) = posix_memalign ((void **) &node, 64, sizeof(struct CLH_queue_node));
         pthread_setspecific(l->nodes, node);
     }
 
     node->locked = true;
-    node->pred = __sync_lock_test_and_set(&l->tail, node);
+    node->pred = (struct CLH_queue_node *) __sync_lock_test_and_set(&l->tail, node);
     while (node->pred->locked);
 }
 
@@ -291,7 +304,7 @@ void unlock_CLH (struct lock_t *_l) {
 
 void destroy_CLH (struct lock_t *_l) {
     struct CLH_lock *l = (struct CLH_lock *) _l;
-    pthread_key_destroy (l->nodes);
+    pthread_key_delete (l->nodes);
     // This is supposed to guard against the nodes getting in a looped state. Start at 
     // the node after the tail and set the tail's pred to null so we stop next time it
     // comes around.
@@ -313,7 +326,7 @@ static struct lock_t *create_CLH(void) {
     l->try_lock = try_lock_CLH;
     l->destroy_lock = destroy_CLH;
 
-    l->tail = aligned_alloc(64, sizeof(struct CLH_queue_node));
+    int k __attribute__((unused)) = posix_memalign ((void **) &l->tail, 64, sizeof(struct CLH_queue_node));
     l->tail->locked = 0;
     l->tail->pred = NULL;
 
@@ -327,7 +340,7 @@ struct MCS_queue_node {
     volatile int locked;
     struct MCS_queue_node *next;
     char padding[64-sizeof(int)-sizeof(void *)];
-} __attribute__((packed, align(64)));
+} __attribute__((packed));
 
 struct MCS_lock {
     void (*lock) (struct lock_t *);
@@ -336,22 +349,22 @@ struct MCS_lock {
     void (*destroy_lock) (struct lock_t *);
     volatile struct MCS_queue_node *tail;
     pthread_key_t nodes;
-}
+};
 
 void lock_MCS (struct lock_t *_l) {
     struct MCS_lock *l = (struct MCS_lock *) _l;
     struct MCS_queue_node *node = pthread_getspecific(l->nodes);
     if (node == NULL) {
-        node = aligned_alloc(64, sizeof(struct MCS_queue_node));
+        int k __attribute__((unused)) = posix_memalign((void **) &node, 64, sizeof(struct MCS_queue_node));
         node->locked = 0;
         node->next = NULL;
         pthread_setspecific(l->nodes, node);
     }
     
-    struct MCS_queue_node *prev_node = __sync_lock_test_and_set(&l->tail, node);
+    struct MCS_queue_node *prev_node = (struct MCS_queue_node *) __sync_lock_test_and_set(&l->tail, node);
     if (prev_node) {
         node->locked = 1;
-        prev->next = node;
+        prev_node->next = node;
         while (node->locked);
     }
     return;
@@ -373,13 +386,13 @@ void unlock_MCS (struct lock_t *_l) {
             return;
         while (!node->next);
     }
-    node->next.locked = 0;
+    node->next->locked = 0;
     node->next = NULL;
 }
 
 void destroy_MCS (struct lock_t *_l) {
     struct MCS_lock *l = (struct MCS_lock *) _l;
-    pthread_key_destroy (l->nodes);
+    pthread_key_delete (l->nodes);
     free (l);
 }
 
