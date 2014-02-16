@@ -118,5 +118,15 @@ class LockTests(unittest.TestCase):
                     raise AssertionError('Failed with lock {0} with {1} workers with ordering {2}'.format(lock, workers, out))
 
 class WorkerTests(unittest.TestCase):
-    def test_fingerprints(self):
+    def setUp(self):
+        self.pkts = [1, 2, 4, 8, 16, 32]
+        self.srcs = [1, 2, 4, 8, 16]
+        self.worker_types = [0, 1, 2]
+        self.worker_names = {0: 'homequeue', 1: 'random', 2: 'lastqueue'}
+        self.means = [1, 100, 1000]
+        self.distrs = [0, 1]
+        self.lock_types = ['TAS', 'backoff', 'Alock', 'mutex', 'CLH', 'MCS']
 
+    def test_fingerprints(self):
+        
+        

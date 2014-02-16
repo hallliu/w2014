@@ -17,7 +17,7 @@ LDLIBS=-pthread -lm
 all: serial_firewall
 
 serial_firewall: serial_firewall.c
-	$(CC) $(CFLAGS) $(LDFLAGS) $(LDLIBS) $< -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $(LDLIBS) $(UTIL_OBJS) $< -o $@
 
 locks.o: locks.c locks.h
 

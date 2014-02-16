@@ -8,6 +8,22 @@
 #include "Utils/fingerprint.h"
 #include "Utils/packetsource.h"
 
+void serialFirewall (int, int, long, int, short);
+
+int main(int argc, char *argv[]) {
+
+	if(argc >= 6) {
+        const int numPackets = atoi(argv[2]);
+		const int numSources = atoi(argv[3]);
+		const long mean = atol(argv[4]);
+		const int uniformFlag = atoi(argv[5]);
+		const short experimentNumber = (short) atoi(argv[6]);
+
+        serialFirewall(numPackets, numSources, mean, uniformFlag, experimentNumber);
+    }
+    return 0;
+}
+
 void serialFirewall (int numPackets,
 					 int numSources,
 					 long mean,
