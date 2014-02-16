@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include "queue.h"
 #include "locks.h"
+#include "packet_workers.h"
 #include "Utils/generators.h"
 #include "Utils/stopwatch.h"
 #include "Utils/fingerprint.h"
@@ -26,7 +27,7 @@ void *homequeue_worker (void *_data) {
             lock->unlock (lock);
             break;
         }
-        fp_sum += getFingerPrint (pkt->iterations, pkt->seed);
+        fp_sum += getFingerprint (pkt->iterations, pkt->seed);
         lock->unlock (lock);
     }
     return ((void *) fp_sum);
@@ -51,7 +52,7 @@ void *random_worker (void *_data) {
             lock->unlock (lock);
             break;
         }
-        fp_sum += getFingerPrint (pkt->iterations, pkt->seed);
+        fp_sum += getFingerprint (pkt->iterations, pkt->seed);
 #ifdef TESTING
         data->queue_hits[queue_num] += 1;
 #endif
@@ -84,7 +85,7 @@ void *lastqueue_worker (void *_data) {
                 lock->unlock (lock);
                 break;
             }
-            fp_sum += getFingerPrint (pkt->iterations, pkt->seed);
+            fp_sum += getFingerprint (pkt->iterations, pkt->seed);
             lock->unlock (lock);
 
             // Now loop and try to empty out the queue.
@@ -103,7 +104,7 @@ void *lastqueue_worker (void *_data) {
                     return ((void *) fp_sum);
                 }
 
-                fp_sum += getFingerPrint (pkt->iterations, pkt->seed);
+                fp_sum += getFingerprint (pkt->iterations, pkt->seed);
                 lock->unlock (lock);
             }
         }

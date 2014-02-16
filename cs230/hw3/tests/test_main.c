@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "test_locks.h"
-#include "test_workers.c"
+#include "test_workers.h"
 
 /*
  * Invoke with the test name as the first arg (excluding test_)

@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <stdbool.h>
-#include "queue.h"
-#include "Utils/generators.h"
-#include "Utils/stopwatch.h"
-#include "Utils/fingerprint.h"
-#include "Utils/packetsource.h"
+#include "../queue.h"
+#include "../Utils/generators.h"
+#include "../Utils/stopwatch.h"
+#include "../Utils/fingerprint.h"
+#include "../Utils/packetsource.h"
 #include "../packet_workers.h"
 
 #define QUEUE_DEPTH 8
@@ -118,7 +118,7 @@ void lastqueue_test(int n_packets, int n_src) {
     Packet_t **rcvd_packets = malloc (n_packets * n_src * sizeof(Packet_t *));
     PacketSource_t *source = createPacketSource (100, n_src, 0);
 
-    struct l_queue *queues = create_queues (n_src, n_packets, lock_type, lock_data);
+    struct l_queue *queues = create_queues (n_src, n_packets, "noop", NULL);
 
     struct thread_data worker_data = {.queues = queues, .n_queues = n_src, .home_queue = 0, .queue_hits = NULL};
     
@@ -126,7 +126,7 @@ void lastqueue_test(int n_packets, int n_src) {
     for (int i = 0; i < n_src; i++) {
         for (int j = 0; j < n_packets; j++) {
             Packet_t *pkt = getUniformPacket (source, i);
-            enq (queues[i], (void *) pkt);
+            enq (queues + i, (void *) pkt);
             rcvd_packets[packet_ctr] = pkt;
             packet_ctr += 1;
         }
@@ -139,7 +139,7 @@ void lastqueue_test(int n_packets, int n_src) {
     // Insert a NULL into the first queue so that the worker quits at some point
     while (enq(queues, NULL));
 
-    pthread_join (worker);
+    pthread_join (worker, NULL);
 
     destroy_queues (n_src, queues);
 

@@ -1,5 +1,6 @@
 #ifndef LOCKS_H
 #define LOCKS_H
+#include <stdbool.h>
 struct lock_t;
 
 struct lock_t {
