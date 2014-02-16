@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
         }
         else if (!strcmp(argv[2], "Alock")) {
             int n_workers = atoi(argv[3]);
-            test_incrementing(argv[2], &n_workers, atoi(argv[4]), atoi(argv[5]));
+            test_incrementing(argv[2], &n_workers, atoi(argv[3]), atoi(argv[4]));
         }
         else {
             test_incrementing(argv[2], NULL, atoi(argv[3]), atoi(argv[4]));
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
         }
         else if (!strcmp(argv[2], "Alock")) {
             int n_workers = atoi(argv[3]);
-            test_lock_nohang(argv[2], &n_workers, atoi(argv[4]));
+            test_lock_nohang(argv[2], &n_workers, atoi(argv[3]));
         }
         else {
             test_lock_nohang(argv[2], NULL, atoi(argv[3]));
@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
         }
         else if (!strcmp(argv[2], "Alock")) {
             int n_workers = atoi(argv[3]);
-            test_ordering(argv[2], &n_workers, atoi(argv[4]));
+            test_ordering(argv[2], &n_workers, atoi(argv[3]));
         }
         else {
             test_ordering(argv[2], NULL, atoi(argv[3]));

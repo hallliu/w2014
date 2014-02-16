@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
@@ -201,10 +202,13 @@ void lock_Alock (struct lock_t *_l) {
     __sync_bool_compare_and_swap(&l->tail, l->size, 0);
     int slot = __sync_fetch_and_add(&l->tail, 1);
 
-    if (slot >= l->size)
+    if (slot >= l->size) {
         slot -= l->size;
+    }
 
-    while (!l->flags[slot].unlocked);
+    while (!l->flags[slot].unlocked)
+        pthread_yield();
+
     int *my_slot = pthread_getspecific (l->slots);
     if (my_slot == NULL) {
         my_slot = malloc (sizeof(int)); // This might create a memory leak
@@ -228,8 +232,8 @@ void unlock_Alock (struct lock_t *_l) {
     int slot = *(_slot);
     int next_slot = (slot == l->size - 1) ? 0 : slot + 1;
     
-    l->flags[slot].unlocked = true;
-    l->flags[next_slot].unlocked = false;
+    l->flags[slot].unlocked = false;
+    l->flags[next_slot].unlocked = true;
     return;
 }
 
@@ -249,6 +253,7 @@ static struct lock_t *create_Alock(int n_threads) {
 
     int k __attribute__((unused)) = posix_memalign ((void **) &l->flags, 64, sizeof(struct padded_flag) * n_threads);
     memset ((void *) l->flags, 0, sizeof(struct padded_flag) * n_threads);
+    l->flags->unlocked = true;
     l->tail = 0;
     pthread_key_create(&l->slots, free);
     l->size = n_threads;
@@ -259,8 +264,7 @@ static struct lock_t *create_Alock(int n_threads) {
 //-------------------CLH Queue lock---------------------------------//
 struct CLH_queue_node {
     volatile int locked;
-    struct CLH_queue_node *pred;
-    char padding[64-sizeof(int)-sizeof(void *)];
+    char padding[64-sizeof(int)];
 } __attribute__((packed));
 
 struct CLH_lock {
@@ -270,6 +274,7 @@ struct CLH_lock {
     void (*destroy_lock) (struct lock_t *);
     volatile struct CLH_queue_node *tail;
     pthread_key_t nodes;
+    pthread_key_t prevs;
 };
 
 void lock_CLH (struct lock_t *_l) {
@@ -281,8 +286,13 @@ void lock_CLH (struct lock_t *_l) {
     }
 
     node->locked = true;
-    node->pred = (struct CLH_queue_node *) __sync_lock_test_and_set(&l->tail, node);
-    while (node->pred->locked);
+    struct CLH_queue_node *prev = (struct CLH_queue_node *) __sync_lock_test_and_set(&l->tail, node);
+    pthread_setspecific (l->prevs, prev);
+
+    volatile int *locked = &prev->locked;
+    while (*locked) {
+        pthread_yield();
+    }
 }
 
 bool try_lock_CLH (struct lock_t *_l) {
@@ -296,8 +306,9 @@ bool try_lock_CLH (struct lock_t *_l) {
 void unlock_CLH (struct lock_t *_l) {
     struct CLH_lock *l = (struct CLH_lock *) _l;
     struct CLH_queue_node *node = pthread_getspecific (l->nodes);
-    struct CLH_queue_node *prev_node = node->pred;
-    node->locked = 0;
+    struct CLH_queue_node *prev_node = pthread_getspecific (l->prevs);
+
+    node->locked = false;
     pthread_setspecific(l->nodes, prev_node);
     return;
 }
@@ -305,17 +316,7 @@ void unlock_CLH (struct lock_t *_l) {
 void destroy_CLH (struct lock_t *_l) {
     struct CLH_lock *l = (struct CLH_lock *) _l;
     pthread_key_delete (l->nodes);
-    // This is supposed to guard against the nodes getting in a looped state. Start at 
-    // the node after the tail and set the tail's pred to null so we stop next time it
-    // comes around.
-    volatile struct CLH_queue_node *curr = l->tail->pred;
-    struct CLH_queue_node *pred;
-    l->tail->pred = NULL;
-    while (curr) {
-        pred = curr->pred;
-        free ((void *) curr);
-        curr = pred;
-    }
+    pthread_key_delete (l->prevs);
     free (l);
 }
 
@@ -328,9 +329,9 @@ static struct lock_t *create_CLH(void) {
 
     int k __attribute__((unused)) = posix_memalign ((void **) &l->tail, 64, sizeof(struct CLH_queue_node));
     l->tail->locked = 0;
-    l->tail->pred = NULL;
 
     pthread_key_create (&l->nodes, free);
+    pthread_key_create (&l->prevs, NULL);
 
     return (struct lock_t *) l;
 }

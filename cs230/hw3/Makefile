@@ -8,7 +8,7 @@ TEST_OBJS=$(TEST_FILES:%.c=tests/%.o)
 .PHONY: tests clean
 
 CC=gcc
-override CFLAGS += -O3 -Wall -Werror -std=gnu99
+override CFLAGS += -O0 -Wall -Werror -std=gnu99 -g
 
 LDLIBS=-pthread -lm
 
