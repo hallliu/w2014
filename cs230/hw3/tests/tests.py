@@ -117,3 +117,6 @@ class LockTests(unittest.TestCase):
                 if not np.all(np.array(out) == np.arange(workers)):
                     raise AssertionError('Failed with lock {0} with {1} workers with ordering {2}'.format(lock, workers, out))
 
+class WorkerTests(unittest.TestCase):
+    def test_fingerprints(self):
+

@@ -14,6 +14,10 @@ LDLIBS=-pthread -lm
 
 #firewall: $(OBJS) $(UTIL_OBJS) firewall.c
 #	$(CC) $(LDFLAGS) $(LDLIBS) $(CFLAGS) $(OBJS) $(UTIL_OBJS) firewall.c -o firewall
+all: serial_firewall
+
+serial_firewall: serial_firewall.c
+	$(CC) $(CFLAGS) $(LDFLAGS) $(LDLIBS) $< -o $@
 
 locks.o: locks.c locks.h
 
