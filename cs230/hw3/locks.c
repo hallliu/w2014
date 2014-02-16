@@ -88,7 +88,8 @@ struct TAS_lock {
 
 void lock_TAS (struct lock_t *_l) {
     struct TAS_lock *l = (struct TAS_lock *) _l;
-    while (__sync_lock_test_and_set(&l->locked, 1));
+    while (__sync_lock_test_and_set(&l->locked, 1))
+        pthread_yield();
 }
 
 bool try_lock_TAS (struct lock_t *_l) {
@@ -136,7 +137,9 @@ void lock_backoff (struct lock_t *_l) {
     struct backoff_lock *l = (struct backoff_lock *) _l;
     int curr_delay = l->min_delay;
     while (1) {
-        while (l->locked);
+        while (l->locked)
+            pthread_yield();
+
         if (!__sync_lock_test_and_set(&l->locked, 1))
             return;
         usleep (rand() % curr_delay);
@@ -366,7 +369,9 @@ void lock_MCS (struct lock_t *_l) {
     if (prev_node) {
         node->locked = 1;
         prev_node->next = node;
-        while (node->locked);
+        while (node->locked) {
+            pthread_yield();
+        }
     }
     return;
 }
@@ -385,7 +390,8 @@ void unlock_MCS (struct lock_t *_l) {
     if (node->next == NULL) {
         if (__sync_bool_compare_and_swap(&l->tail, node, NULL))
             return;
-        while (!node->next);
+        while (!node->next)
+            pthread_yield();
     }
     node->next->locked = 0;
     node->next = NULL;

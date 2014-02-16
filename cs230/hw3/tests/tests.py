@@ -49,6 +49,7 @@ class LockTests(unittest.TestCase):
             for workers in 2**np.arange(5):
                 for test_time in 5000*(2**np.arange(4)):
                     cmdstr = ['./test_main', 'hold_lock', lock, str(workers), str(test_time)]
+                    print cmdstr
                     out = sp.check_output(cmdstr)
                     if len(out) > 0:
                         raise AssertionError('Failed with lock {0} with {1} workers at {2}us'.format(lock, workers, test_time))
@@ -70,6 +71,7 @@ class LockTests(unittest.TestCase):
             for workers in 2**np.arange(5):
                 for counter_val in [1, 10, 100, 1000]:
                     cmdstr = ['./test_main', 'incrementing', lock, str(workers), str(counter_val)]
+                    print cmdstr
                     out = sp.check_output(cmdstr)
                     if len(out) > 0:
                         raise AssertionError('Failed with lock {0} with {1} workers at {2}us'.format(lock, workers, counter_val))
@@ -90,6 +92,7 @@ class LockTests(unittest.TestCase):
         for lock in self.regular_locks:
             for test_time in 100000*(2**np.arange(4)):
                 cmdstr = ['./test_main', 'lock_nohang', lock, str(test_time)]
+                print cmdstr
                 out = timeout_output(cmdstr, test_time * 1.5)
                 if len(out) > 0:
                     raise AssertionError('Failed with lock {0} with at {1}us'.format(lock, test_time))
@@ -108,6 +111,7 @@ class LockTests(unittest.TestCase):
         for lock in ['Alock', 'CLH', 'MCS']:
             for workers in 2**np.arange(5):
                 cmdstr = ['./test_main', 'ordering', lock, str(workers)]
+                print cmdstr
                 out = map(int, sp.check_output(cmdstr).split())
 
                 if not np.all(np.array(out) == np.arange(workers)):
