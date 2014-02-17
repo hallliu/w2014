@@ -172,8 +172,18 @@ static struct lock_t *create_backoff(int min_delay, int max_delay) {
     l->unlock = unlock_backoff;
     l->try_lock = try_lock_backoff;
     l->destroy_lock = destroy_backoff;
-    l->min_delay = min_delay;
-    l->max_delay = max_delay;
+
+    if (min_delay <= 0)
+        l->min_delay = 1;
+    else
+        l->min_delay = min_delay;
+
+    if (l->max_delay <= l->min_delay)
+        l->max_delay = l->min_delay;
+    else
+        l->max_delay = max_delay;
+
+
     l->locked = 0;
 
     return (struct lock_t *) l;
