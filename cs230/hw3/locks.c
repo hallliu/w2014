@@ -88,8 +88,7 @@ struct TAS_lock {
 
 void lock_TAS (struct lock_t *_l) {
     struct TAS_lock *l = (struct TAS_lock *) _l;
-    while (__sync_lock_test_and_set(&l->locked, 1))
-        pthread_yield();
+    while (__sync_lock_test_and_set(&l->locked, 1));
 }
 
 bool try_lock_TAS (struct lock_t *_l) {
@@ -137,8 +136,7 @@ void lock_backoff (struct lock_t *_l) {
     struct backoff_lock *l = (struct backoff_lock *) _l;
     int curr_delay = l->min_delay;
     while (1) {
-        while (l->locked)
-            pthread_yield();
+        while (l->locked);
 
         if (!__sync_lock_test_and_set(&l->locked, 1))
             return;
@@ -215,8 +213,7 @@ void lock_Alock (struct lock_t *_l) {
         slot -= l->size;
     }
 
-    while (!l->flags[slot].unlocked)
-        pthread_yield();
+    while (!l->flags[slot].unlocked);
 
     int *my_slot = pthread_getspecific (l->slots);
     if (my_slot == NULL) {
@@ -300,9 +297,7 @@ void lock_CLH (struct lock_t *_l) {
     pthread_setspecific (l->prevs, prev);
 
     volatile int *locked = &prev->locked;
-    while (*locked) {
-        pthread_yield();
-    }
+    while (*locked);
 }
 
 bool try_lock_CLH (struct lock_t *_l) {
@@ -376,9 +371,7 @@ void lock_MCS (struct lock_t *_l) {
     if (prev_node) {
         node->locked = 1;
         prev_node->next = node;
-        while (node->locked) {
-            pthread_yield();
-        }
+        while (node->locked);
     }
     return;
 }
@@ -397,8 +390,7 @@ void unlock_MCS (struct lock_t *_l) {
     if (node->next == NULL) {
         if (__sync_bool_compare_and_swap(&l->tail, node, NULL))
             return;
-        while (!node->next)
-            pthread_yield();
+        while (!node->next);
     }
     node->next->locked = 0;
     node->next = NULL;

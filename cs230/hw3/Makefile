@@ -5,46 +5,38 @@ UTIL_OBJS=$(UTIL_FILES:%.c=Utils/%.o)
 TEST_FILES=test_main.c test_locks.c test_workers.c
 TEST_OBJS=$(TEST_FILES:%.c=tests/%.o)
 
-.PHONY: tests clean
+PERF_FILES=counter.c
+PERF_OBJS=$(PERF_FILES:%.c=perf/%.so)
+
+.PHONY: perfs tests clean
 
 CC=gcc
-override CFLAGS += -O0 -Wall -Werror -std=gnu99 -g
+override CFLAGS += -O3 -Wall -Werror -std=gnu99
 
 LDLIBS=-pthread -lm
-
-#firewall: $(OBJS) $(UTIL_OBJS) firewall.c
-#	$(CC) $(LDFLAGS) $(LDLIBS) $(CFLAGS) $(OBJS) $(UTIL_OBJS) firewall.c -o firewall
-all: serial_firewall
 
 serial_firewall: serial_firewall.c
 	$(CC) $(CFLAGS) $(LDFLAGS) $(LDLIBS) $(UTIL_OBJS) $< -o $@
 
-locks.o: locks.c locks.h
-
-queue.o: queue.c queue.h
-
-packet_workers.o: packet_workers.c packet_workers.h
+%.o: %.c %.h
+	$(CC) -c $(CFLAGS) $(LDFLAGS) $(LDLIBS) -fPIC $< -o $@
 
 Utils/%.o: %.c %.h
-	$(CC) -c $(CFLAGS) $(LDFLAGS) $(LDLIBS) $< -o $@
-
-#tests/test_locks.o: tests/test_locks.c
-#	$(CC) -c $(CFLAGS) $(LDFLAGS) $(LDLIBS) $< -o $@
-#
-#tests/test_workers.o: tests/test_workers.c
-#	$(CC) -c $(CFLAGS) $(LDFLAGS) $(LDLIBS) $< -o $@
-#
-#tests/test_main.o: tests/test_main.c
-#	$(CC) -c $(CFLAGS) $(LDFLAGS) $(LDLIBS) $< -o $@
+	$(CC) -c $(CFLAGS) $(LDFLAGS) $(LDLIBS) -fPIC $< -o $@
 
 tests/%.o: %.c %.h
 	$(CC) -c $(CFLAGS) $(LDFLAGS) $(LDLIBS) $< -o $@
-	
+
+perf/counter.so: perf/counter.c $(OBJS) $(UTIL_OBJS)
+	$(CC) -shared -fPIC $(LDFLAGS) $(CFLAGS) $(UTIL_OBJS) $(OBJS) $< -o $@ $(LDLIBS)
+
+perfs: $(PERF_OBJS)
+
 tests: $(TEST_OBJS) $(OBJS) $(UTIL_OBJS)
 	$(CC) $(LDFLAGS) $(CFLAGS) $(TEST_OBJS) $(UTIL_OBJS) $(OBJS) -o tests/test_main $(LDLIBS)
 
 clean:
-	rm *.o Utils/*.o
+	rm *.o Utils/*.o perf/*.so
 
 testclean:
 	rm tests/*.o tests/test_main
