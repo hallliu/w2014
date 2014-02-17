@@ -11,7 +11,7 @@ PERF_OBJS=$(PERF_FILES:%.c=perf/%.so)
 .PHONY: perfs tests clean
 
 CC=gcc
-override CFLAGS += -O0 -Wall -Werror -std=gnu99 -g
+override CFLAGS += -O3 -Wall -Werror -std=gnu99
 
 LDLIBS=-pthread -lm
 
