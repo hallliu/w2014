@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <string.h>
 #include <stdbool.h>
+#include <sys/time.h>
 #include "locks.h"
 
 static void usleep(int n) {
@@ -130,6 +131,7 @@ struct backoff_lock {
     int min_delay;
     int max_delay;
     volatile int locked;
+    volatile unsigned rand_seed;
 };
 
 void lock_backoff (struct lock_t *_l) {
@@ -140,7 +142,8 @@ void lock_backoff (struct lock_t *_l) {
 
         if (!__sync_lock_test_and_set(&l->locked, 1))
             return;
-        usleep (rand() % curr_delay);
+        unsigned rs = __sync_fetch_and_add(&l->rand_seed, 20);
+        usleep (rand_r(&rs) % curr_delay);
         curr_delay *= 2;
         if (curr_delay > l->max_delay)
             curr_delay = l->max_delay;
@@ -173,8 +176,8 @@ static struct lock_t *create_backoff(int min_delay, int max_delay) {
     l->try_lock = try_lock_backoff;
     l->destroy_lock = destroy_backoff;
 
-    if (min_delay <= 0)
-        l->min_delay = 1;
+    if (min_delay <= 1)
+        l->min_delay = 2;
     else
         l->min_delay = min_delay;
 
@@ -185,6 +188,7 @@ static struct lock_t *create_backoff(int min_delay, int max_delay) {
 
 
     l->locked = 0;
+    l->rand_seed = time(0);
 
     return (struct lock_t *) l;
 }
