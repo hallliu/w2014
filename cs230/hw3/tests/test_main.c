@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
 
 #ifdef TESTING1
     if (!strcmp(argv[1], "lastqueue")) {
-        test_ordering(atoi(argv[2], atoi(argv[3])));
+        lastqueue_test(atoi(argv[2]), atoi(argv[3]));
         return 0;
     }
 #endif

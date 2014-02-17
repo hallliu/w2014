@@ -164,3 +164,21 @@ class WorkerTests(unittest.TestCase):
             for c in counts:
                 if np.matrix(c).std() > pkts/srcs:
                     raise AssertionError('Stddev too high at {0}: data is {1}'.format((pkts, srcs, mean, distr, l_type), c))
+
+    def test_lastqueue_order(self):
+        for (pkts, srcs) in itertools.product([100, 200, 400], [1, 2, 4, 8, 16]):
+            out = sp.check_output(['./test_main', 'lastqueue', str(pkts), str(srcs)]).split('\n')[:-1]
+            no_rpts = []
+            for l in out:
+                if l not in no_rpts:
+                    no_rpts.append(l)
+            def kf(y):
+                x = y.split()
+                if x[1] == 'started':
+                    return int(x[0])
+                else:
+                    return -int(x[0])
+            no_rpts = np.array(map(kf, no_rpts))
+
+            if not np.all(no_rpts[0::2] == -no_rpts[1::2]):
+                raise AssertionError('Out-of-order at {0}'.format((pkts, srcs)))

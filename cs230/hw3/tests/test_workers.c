@@ -11,6 +11,11 @@
 
 #define QUEUE_DEPTH 8
 
+static void usleep(int n) {
+    struct timespec sleep_time = {.tv_sec = n / 1000000, .tv_nsec = (n % 1000000) * 1000};
+    nanosleep(&sleep_time, NULL);
+}
+
 long general_test
         (int n_packets, 
          int n_src, 
@@ -137,6 +142,7 @@ void lastqueue_test(int n_packets, int n_src) {
     pthread_create (&worker, NULL, lastqueue_worker, &worker_data);
 
     // Insert a NULL into the first queue so that the worker quits at some point
+    usleep(n_packets * n_src / 2); 
     while (enq(queues, NULL));
 
     pthread_join (worker, NULL);
