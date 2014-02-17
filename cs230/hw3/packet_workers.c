@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <time.h>
 #include "queue.h"
 #include "locks.h"
 #include "packet_workers.h"
@@ -39,8 +40,10 @@ void *random_worker (void *_data) {
     Packet_t *pkt = NULL;
     long fp_sum = 0;
     int queue_num;
+    unsigned s_val = time(NULL);
+
     while (1) {
-        queue_num = rand() % data->n_queues;
+        queue_num = rand_r(&s_val) % data->n_queues;
         struct lock_t *lock = (data->queues + queue_num)->lock;
 
         lock->lock (lock);
@@ -68,8 +71,9 @@ void *lastqueue_worker (void *_data) {
     long fp_sum = 0;
     int queue_num;
 
+    unsigned s_val = time(NULL);
     while (1) {
-        queue_num = rand() % data->n_queues;
+        queue_num = rand_r(&s_val) % data->n_queues;
         struct l_queue *q = data->queues + queue_num;
         struct lock_t *lock = q->lock;
 

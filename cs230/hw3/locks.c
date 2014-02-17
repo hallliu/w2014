@@ -202,10 +202,16 @@ struct padded_flag {
 void lock_Alock (struct lock_t *_l) {
     struct Alock_lock *l = (struct Alock_lock *) _l;
 
+    int slot = __sync_fetch_and_add(&l->tail, 1) % l->size;
     __sync_bool_compare_and_swap(&l->tail, l->size, 0);
-    int slot = __sync_fetch_and_add(&l->tail, 1);
 
     if (slot >= l->size) {
+        printf("pre: %d\n", slot);
+        slot -= l->size;
+    }
+
+    if (slot >= l->size) {
+        printf("%d\n", slot);
         slot -= l->size;
     }
 
@@ -223,7 +229,7 @@ void lock_Alock (struct lock_t *_l) {
 
 bool try_lock_Alock (struct lock_t *_l) {
     struct Alock_lock *l = (struct Alock_lock *) _l;
-    if (!l->flags[l->tail].unlocked)
+    if (!l->flags[l->tail % l->size].unlocked)
         return false;
     lock_Alock(_l);
     return true;
@@ -242,6 +248,7 @@ void unlock_Alock (struct lock_t *_l) {
 
 void destroy_Alock (struct lock_t *_l) {
     struct Alock_lock *l = (struct Alock_lock *) _l;
+    l->size = -1;
     free ((void *) l->flags);
     pthread_key_delete(l->slots);
     free (l);

@@ -22,7 +22,6 @@ void destroy_queues(int n_queues, struct l_queue *q) {
         q[i].lock->destroy_lock (q[i].lock);
         free (q[i].items);
     }
-
     free (q);
 }
 

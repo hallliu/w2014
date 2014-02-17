@@ -81,22 +81,24 @@ int main(int argc, char *argv[]) {
     }
 
     if (!strcmp(argv[1], "general_worker")) {
+        long fp = 0;
         if (!strcmp(argv[8], "backoff")) {
             struct backoff_info info = {atoi(argv[9]), atoi(argv[10])};
-            general_test (atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),
+            fp = general_test (atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),
                     atol(argv[5]), atoi(argv[6]), atoi(argv[7]), argv[8], &info);
         }
 
-        if (!strcmp(argv[8], "Alock")) {
+        else if (!strcmp(argv[8], "Alock")) {
             int n_workers = atoi(argv[3]);
-            general_test (atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),
+            fp = general_test (atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),
                     atol(argv[5]), atoi(argv[6]), atoi(argv[7]), argv[8], &n_workers);
         }
         
         else {
-            general_test (atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),
+            fp = general_test (atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),
                     atol(argv[5]), atoi(argv[6]), atoi(argv[7]), argv[8], NULL);
         }
+        printf("%ld\n", fp);
         return 0;
     }
 

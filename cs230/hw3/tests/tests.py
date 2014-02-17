@@ -119,14 +119,48 @@ class LockTests(unittest.TestCase):
 
 class WorkerTests(unittest.TestCase):
     def setUp(self):
-        self.pkts = [1, 2, 4, 8, 16, 32]
-        self.srcs = [1, 2, 4, 8, 16]
+        self.pkts = [1, 2, 4, 32, 1024 ]
+        self.srcs = [1, 2, 4, 5]
         self.worker_types = [0, 1, 2]
         self.worker_names = {0: 'homequeue', 1: 'random', 2: 'lastqueue'}
-        self.means = [1, 100, 1000]
+        self.means = [1, 1000]
         self.distrs = [0, 1]
         self.lock_types = ['TAS', 'backoff', 'Alock', 'mutex', 'CLH', 'MCS']
 
     def test_fingerprints(self):
-        
-        
+        for (pkts, srcs, w_type, mean, distr, l_type) in itertools.product(
+                self.pkts, self.srcs, self.worker_types, self.means, self.distrs, self.lock_types):
+            if l_type == 'backoff':
+                cmdstr = ['./test_main', 'general_worker', str(pkts), str(srcs), str(w_type), str(mean), '0', str(distr), 
+                        l_type, '10', '1000']
+            else:
+                cmdstr = ['./test_main', 'general_worker', str(pkts), str(srcs), str(w_type), str(mean), '0', str(distr), 
+                        l_type]
+
+            print cmdstr
+            out = sp.check_output(cmdstr)
+            fp = int(out.split()[-1])
+
+            serial_cmdstr = ['../serial_firewall', str(pkts), str(srcs), str(mean), str(distr), '0']
+            serial_fp = int(sp.check_output(serial_cmdstr))
+            
+            if fp != serial_fp:
+                raise AssertionError('Fingerprint incorrect at {0}'.format((pkts, srcs, w_type, mean, distr, l_type)))
+
+    def test_random_distrs(self):
+        for (pkts, srcs, mean, distr, l_type) in itertools.product(
+                [100, 200, 500], self.srcs, self.means, self.distrs, self.lock_types):
+
+            if l_type == 'backoff':
+                cmdstr = ['./test_main', 'general_worker', str(pkts), str(srcs), '1', str(mean), '0', str(distr), 
+                        l_type, '10', '1000']
+            else:
+                cmdstr = ['./test_main', 'general_worker', str(pkts), str(srcs), '1', str(mean), '0', str(distr), 
+                        l_type]
+ 
+            print cmdstr
+            out = sp.check_output(cmdstr)
+            counts = out.split('\n')[:-1]
+            for c in counts:
+                if np.matrix(c).std() > pkts/srcs:
+                    raise AssertionError('Stddev too high at {0}: data is {1}'.format((pkts, srcs, mean, distr, l_type), c))
