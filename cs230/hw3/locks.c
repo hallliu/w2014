@@ -136,7 +136,7 @@ struct backoff_lock {
 
 void lock_backoff (struct lock_t *_l) {
     struct backoff_lock *l = (struct backoff_lock *) _l;
-    int curr_delay = l->min_delay;
+    int curr_delay = l->min_delay <= 0 ? 1 : l->min_delay;
     while (1) {
         while (l->locked);
 
@@ -145,7 +145,7 @@ void lock_backoff (struct lock_t *_l) {
         unsigned rs = __sync_fetch_and_add(&l->rand_seed, 20);
         usleep (rand_r(&rs) % curr_delay);
         curr_delay *= 2;
-        if (curr_delay > l->max_delay)
+        if (curr_delay > l->max_delay || curr_delay < 0)
             curr_delay = l->max_delay;
     }
     return;
