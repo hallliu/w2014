@@ -1,0 +1,59 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage[namelimits,sumlimits]{amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage[cm]{fullpage}
+\newcommand{\tab}{\hspace*{5em}}
+\newcommand{\conj}{\overline}
+\newcommand{\dd}{\partial}
+\newcommand{\ep}{\epsilon}
+\newcommand{\openm}{\begin{pmatrix}}
+\newcommand{\closem}{\end{pmatrix}}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\Null}{null}
+\newcommand{\nc}{\newcommand}
+\newcommand{\rn}{\mathbb{R}}
+\nc{\cn}{\mathbb{C}}
+\nc{\ssn}[1]{\subsubsection*{#1}}
+\nc{\inner}[2]{\langle #1,#2\rangle}
+\nc{\h}[1]{\widehat{#1}}
+\nc{\tl}[1]{\widetilde{#1}}
+\nc{\norm}[1]{\left\|{#1}\right\|}
+\begin{document}
+
+Name: Hall Liu
+
+Date: \today 
+\vspace{1.5cm}
+
+\subsection*{3}
+Assume that $B_k=H_k^{-1}$. Then, the inverse of $B_{k+1}=B_k+\frac{r_kr_k^T}{r_k^Ts_k}$, where $r_k=y_k-B_ks_k$, is, by the Sherman-Woodson formula, 
+\[H_k-\frac{\frac{H_kr_kr_k^TH_k}{r_k^Ts_k}}{1+\frac{r_k^TH_kr_k}{r_k^Ts_k}}\]
+Now, noting that $H_kr_k=H_ky_k-s_k$, we have
+\[H_k-\frac{(H_ky_k-s_k)(H_ky_k-s_k)^T}{r_k^Ts_k+r_k^T(H_ky_k-s_k)}\]
+Now, we have in the denominator $r_k^TH_ky_k=(H_kr_k)^Ty_k=(H_ky_k-s_k)^Ty_k$. Canceling out the negatives in the numerator and taking the negative out of the denominator, we end up with (6.25).
+\subsection*{4}
+\ssn{a}
+Given $x, y$, assume that they're both nonzero (otherwise the problem is trivial), and find some set of vectors $w_1,\ldots,w_{n-1}$ which form a basis when taken together with $x$. Define $Q$ as the matrix formed by taking this basis as columns. Then, we have $Qe_1=x$ so $Q^{-1}x=e_1$, and therefore $\det(I+xy^T)=\det(Q^{-1}(I+xy^T)Q)=\det(I+e_1y^TQ)$. The matrix $e_1y^TQ$ has the first row as $y^TQ$ and zero elsewhere, so adding this to $I$ produces an upper triangular matrix whose determinant is the product of the diagonal, or $1$ plus the first entry of $y^TQ$. This first entry is $y^TQe_i=y^Tx$, so we have that the determinant is $1+y^Tx$.
+\ssn{b}
+First suppose that $x$ and $u$ are linearly independent. If not, then factor out a scalar and reduce to the previous problem. Then, define the $Q$ matrix with its first column as $x$, second column as $u$, and the other columns as a completion of the basis. We then get that $Qe_1=x$ and $Qe_2=u$, so similarly to above, we can write $\det(I+xy^T+uv^T)=\det(I+e_1y^TQ+e_2v^TQ)$. The first and second coordinates of $y^TQ$ are $y^Tx$ and $y^Tu$, and the first and second coordinates of $v^TQ$ are $v^Tx$ and $v^Tu$, respectively. Then, the matrix we're taking the determinant of looks like this:
+\[\openm 1+y^Tx&y^Tu&y^TQe_3&\hdots&&y^TQe_n\\
+v^Tx&1+v^Tu&v^TQe_3&\hdots&&v^TQe_n\\
+0&0&1&0&\hdots&0\\
+\vdots&\vdots&&\ddots\\
+0&0&\hdots&&&1\\
+\closem\]
+Expand by minors along the first column. We then get $(1+y^Tx)(1+v^Tu)-(v^Tx)(y^Tu)$ as desired.
+\ssn{c}
+We have 
+\[B_k^{-1}B_{k+1}=I-\frac{s_k(B_ks_k)^T}{s_k^TB_ks_k}+\frac{B_k^{-1}y_ky_k^T}{y_k^Ts_k}\]
+Then, the determinant of the LHS is $\frac{\det(B_{k+1})}{\det(B_k)}$, and we can apply the above formula to the RHS with $x=\frac{s_k}{s_k^TB_ks_k}$, $y=-B_ks_k$, $u=B_k^{-1}y_k$, and $v=\frac{y_k}{y_k^Ts_k}$ to obtain
+\[\left(1-\frac{s_k^TB_ks_k}{s_k^TB_ks_k}\right)\left(1+\frac{y_k^TB_k^{-1}y_k}{y_k^Ts_k}\right)-\left(\frac{y^Ts_k}{y_k^Ts_k\cdot s_k^TB_ks_k}\right)\left(-s_k^TB_k^{-1}B_ky_k\right)
+\]
+The first term goes away entirely, and the second term simplifies to $\frac{s_k^Ty_k}{s_k^TB_ks_k}$, which gives us what we want after multiplying out by $\det(B_k)$.
+\end{document}
