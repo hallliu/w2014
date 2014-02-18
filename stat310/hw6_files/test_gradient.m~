@@ -1,0 +1,24 @@
+function test_gradient()
+    X = lattice3(10);
+    theta1 = [0.1; 0.1; 0.1];
+    theta2 = 10 * theta1;
+    
+    y1 = sample_from_matern(X, theta1, 1);
+    y2 = sample_from_matern(X, theta2, 1);
+    
+    
+    
+end
+
+% Returns a lattice of points in [0,3]^3
+function V = lattice3(nincr)
+    a = linspace(0, 3, nincr);
+    V = zeros(3, nincr^3);
+    for i = 1:nincr
+        for j = 1:nincr
+            for k = 1:nincr
+                V(:, (i-1)*nincr^2+(j-1)*nincr+k) = [a(i);a(j);a(k)];
+            end
+        end
+    end                
+end

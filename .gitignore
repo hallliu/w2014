@@ -38,3 +38,4 @@
 *.tdo
 __pycache__
 *.pyc
+*.mexa64
