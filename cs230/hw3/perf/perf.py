@@ -147,8 +147,8 @@ def uniform_speedup():
     for (w_ind, s_ind) in product(range(len(works)), range(len(srcs))):
         for rep in range(n_reps):
             print('uniform speedup lockfree work {0} source {1} rep {2}'.format(works[w_ind], srcs[s_ind], rep))
-            out = timeout_output(['./perf_main', 'parallel_dispatcher', '2000', str(srcs[s_ind]), '0', str(works[w_ind]), str(rep), '1', 'noop'], 4)
-            lockfree_tps[w_ind, s_ind] += float(out) / 2000
+            out = timeout_output(['./perf_main', 'parallel_dispatcher', '1500', str(srcs[s_ind]), '0', str(works[w_ind]), str(rep), '1', 'noop'], 4)
+            lockfree_tps[w_ind, s_ind] += float(out) / 1500
 
     lockfree_tps /= n_reps
 
@@ -158,12 +158,12 @@ def uniform_speedup():
     for (w_ind, s_ind, l_ind) in product(range(len(works)), range(len(srcs)), range(len(locks))):
         for rep in range(n_reps):
             print('uniform speedup random work {0} source {1} lock {2} rep {3}'.format(works[w_ind], srcs[s_ind], locks[l_ind], rep))
-            out = timeout_output(['./perf_main', 'parallel_dispatcher', '2000', str(srcs[s_ind]), '1', str(works[w_ind]), str(rep), '1', locks[l_ind]], 4)
-            random_tps[w_ind, s_ind, l_ind] += float(out) / 2000
+            out = timeout_output(['./perf_main', 'parallel_dispatcher', '1500', str(srcs[s_ind]), '1', str(works[w_ind]), str(rep), '1', locks[l_ind]], 4)
+            random_tps[w_ind, s_ind, l_ind] += float(out) / 1500
 
             print('uniform speedup homequeue work {0} source {1} lock {2} rep {3}'.format(works[w_ind], srcs[s_ind], locks[l_ind], rep))
-            out = timeout_output(['./perf_main', 'parallel_dispatcher', '2000', str(srcs[s_ind]), '2', str(works[w_ind]), str(rep), '1', locks[l_ind]], 4)
-            home_tps[w_ind, s_ind, l_ind] += float(out) / 2000
+            out = timeout_output(['./perf_main', 'parallel_dispatcher', '1500', str(srcs[s_ind]), '2', str(works[w_ind]), str(rep), '1', locks[l_ind]], 4)
+            home_tps[w_ind, s_ind, l_ind] += float(out) / 1500
 
     random_tps /= n_reps
     home_tps /= n_reps
@@ -174,16 +174,16 @@ def uniform_speedup():
     return (lockfree_tps, random_tps, home_tps)
 
 def exp_speedup():
-    works = [1000]#, 2000, 4000, 8000]
-    srcs = [1, 3]#, 7, 15]
-    n_reps = 1
+    works = [1000, 2000, 4000, 8000]
+    srcs = [1, 3, 7, 15]
+    n_reps = 3
 
     lockfree_tps = np.zeros((len(works), len(srcs)), dtype='float64')
     for (w_ind, s_ind) in product(range(len(works)), range(len(srcs))):
         for rep in range(n_reps):
             print('exp speedup lockfree work {0} source {1} rep {2}'.format(works[w_ind], srcs[s_ind], rep))
-            out = timeout_output(['./perf_main', 'parallel_dispatcher', '2000', str(srcs[s_ind]), '0', str(works[w_ind]), str(rep), '0', 'noop'], 4)
-            lockfree_tps[w_ind, s_ind] += float(out) / 2000
+            out = timeout_output(['./perf_main', 'parallel_dispatcher', '1500', str(srcs[s_ind]), '0', str(works[w_ind]), str(rep), '0', 'noop'], 4)
+            lockfree_tps[w_ind, s_ind] += float(out) / 1500
 
     lockfree_tps /= n_reps
 
@@ -193,12 +193,12 @@ def exp_speedup():
     for (w_ind, s_ind, l_ind) in product(range(len(works)), range(len(srcs)), range(len(locks))):
         for rep in range(n_reps):
             print('exp speedup random work {0} source {1} lock {2} rep {3}'.format(works[w_ind], srcs[s_ind], locks[l_ind], rep))
-            out = timeout_output(['./perf_main', 'parallel_dispatcher', '2000', str(srcs[s_ind]), '1', str(works[w_ind]), str(rep), '0', locks[l_ind]], 4)
-            random_tps[w_ind, s_ind, l_ind] += float(out) / 2000
+            out = timeout_output(['./perf_main', 'parallel_dispatcher', '1500', str(srcs[s_ind]), '1', str(works[w_ind]), str(rep), '0', locks[l_ind]], 4)
+            random_tps[w_ind, s_ind, l_ind] += float(out) / 1500
 
             print('exp speedup homequeue work {0} source {1} lock {2} rep {3}'.format(works[w_ind], srcs[s_ind], locks[l_ind], rep))
-            out = timeout_output(['./perf_main', 'parallel_dispatcher', '2000', str(srcs[s_ind]), '2', str(works[w_ind]), str(rep), '0', locks[l_ind]], 4)
-            home_tps[w_ind, s_ind, l_ind] += float(out) / 2000
+            out = timeout_output(['./perf_main', 'parallel_dispatcher', '1500', str(srcs[s_ind]), '2', str(works[w_ind]), str(rep), '0', locks[l_ind]], 4)
+            home_tps[w_ind, s_ind, l_ind] += float(out) / 1500
 
     random_tps /= n_reps
     home_tps /= n_reps
