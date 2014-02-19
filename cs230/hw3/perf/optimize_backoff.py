@@ -1,11 +1,17 @@
 #!/usr/bin/python2
 import scipy.optimize as so
 import numpy as np
+import sys
 from ctypes import *
 
 ctr = CDLL('./counter.so')
 ctr.parallel_work_test.restype = c_double
 ctr.parallel_time_test.restype = c_int
+logfile = open('/home/hallliu/opt.log', 'w', 0)
+sys.stdout = logfile
+
+def _log(msg):
+    logfile.write('{0}      {1}'.format(datetime.datetime.utcnow(), msg))
 
 class BackoffConfig(Structure):
     _fields_ = [('min_delay', c_int), ('max_delay', c_int)]
