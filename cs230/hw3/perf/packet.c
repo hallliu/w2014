@@ -27,7 +27,7 @@ static void usleep(int n) {
 
 void *alarm(void *_num_ms) {
     int *num_ms = (int *) _num_ms;
-    usleep(*num_ms);
+    usleep(*num_ms * 1000);
     *num_ms = 0;
     return NULL;
 }

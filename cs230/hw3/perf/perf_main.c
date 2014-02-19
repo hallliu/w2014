@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "counter.h"
+#include "packet.h"
 
 /*
  * Invoke with the test name as the first arg (excluding test_)
@@ -36,6 +37,12 @@ int main(int argc, char *argv[]) {
     if (!strcmp(argv[1], "parallel_time")) {
         long n = parallel_time_test(argv[2], NULL, atoi(argv[3]), atoi(argv[4]));
         printf("%ld\n", n);
+        return 0;
+    }
+
+    if (!strcmp(argv[1], "parallel_dispatcher")) {
+        parallel_dispatcher(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), 
+                atol(argv[5]), atoi(argv[6]), atoi(argv[7]), argv[8]);
         return 0;
     }
 
