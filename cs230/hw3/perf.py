@@ -12,10 +12,10 @@ logfile = None
 Class that implements timeout procedures for our tests
 '''
 class RunSP(threading.Thread):
-    def __init__(self, cmd, timeout):
+    def __init__(self, fn, args):
         threading.Thread.__init__(self)
-        self.timeout = timeout
-        self.cmd = cmd
+        self.fn = fn
+        self.args = args
 
     def run(self):
         self.proc = Popen(self.cmd, stdout=PIPE)

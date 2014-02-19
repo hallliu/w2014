@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <sys/time.h>
+#include <math.h>
 #include "locks.h"
 
 static void usleep(int n) {
@@ -200,9 +201,9 @@ struct Alock_lock {
     bool (*try_lock) (struct lock_t *);
     void (*destroy_lock) (struct lock_t *);
     volatile struct padded_flag *flags;
-    volatile int tail;
+    volatile unsigned tail;
     pthread_key_t slots;
-    int size;
+    unsigned size; // This is actually a power-of-two, so size=6 corresponds to 64 capacity.
 };
 
 struct padded_flag {
@@ -214,22 +215,12 @@ struct padded_flag {
 void lock_Alock (struct lock_t *_l) {
     struct Alock_lock *l = (struct Alock_lock *) _l;
 
-    int slot = __sync_fetch_and_add(&l->tail, 1) % l->size;
-    __sync_bool_compare_and_swap(&l->tail, l->size, 0);
-
-    if (slot >= l->size) {
-        printf("pre: %d\n", slot);
-        slot -= l->size;
-    }
-
-    if (slot >= l->size) {
-        printf("%d\n", slot);
-        slot -= l->size;
-    }
+    unsigned slot = __sync_fetch_and_add(&l->tail, 1);
+    slot = slot - slot >> l->size;
 
     while (!l->flags[slot].unlocked);
 
-    int *my_slot = pthread_getspecific (l->slots);
+    unsigned *my_slot = pthread_getspecific (l->slots);
     if (my_slot == NULL) {
         my_slot = malloc (sizeof(int)); // This might create a memory leak
         pthread_setspecific(l->slots, my_slot);
@@ -240,7 +231,10 @@ void lock_Alock (struct lock_t *_l) {
 
 bool try_lock_Alock (struct lock_t *_l) {
     struct Alock_lock *l = (struct Alock_lock *) _l;
-    if (!l->flags[l->tail % l->size].unlocked)
+    unsigned cur_tail = l->tail;
+    cur_tail = cur_tail - cur_tail >> l->size;
+
+    if (!l->flags[cur_tail].unlocked)
         return false;
     lock_Alock(_l);
     return true;
@@ -248,9 +242,9 @@ bool try_lock_Alock (struct lock_t *_l) {
 
 void unlock_Alock (struct lock_t *_l) {
     struct Alock_lock *l = (struct Alock_lock *) _l;
-    int *_slot = pthread_getspecific (l->slots);
-    int slot = *(_slot);
-    int next_slot = (slot == l->size - 1) ? 0 : slot + 1;
+    unsigned *_slot = pthread_getspecific (l->slots);
+    unsigned slot = *(_slot);
+    unsigned next_slot = (slot == (1 << l->size) - 1) ? 0 : slot + 1;
     
     l->flags[slot].unlocked = false;
     l->flags[next_slot].unlocked = true;
@@ -259,7 +253,6 @@ void unlock_Alock (struct lock_t *_l) {
 
 void destroy_Alock (struct lock_t *_l) {
     struct Alock_lock *l = (struct Alock_lock *) _l;
-    l->size = -1;
     free ((void *) l->flags);
     pthread_key_delete(l->slots);
     free (l);
@@ -277,7 +270,7 @@ static struct lock_t *create_Alock(int n_threads) {
     l->flags->unlocked = true;
     l->tail = 0;
     pthread_key_create(&l->slots, free);
-    l->size = n_threads;
+    l->size = (unsigned) log2((double) n_threads) + 1;
 
     return (struct lock_t *) l;
 }
