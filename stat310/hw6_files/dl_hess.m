@@ -1,22 +1,23 @@
-function [xi, iters] = dl_sr1(X, sample, start, Dhat, ldl_delta, eta, epsilon)
+function [xi, iters] = dl_hess(X, sample, start, Dhat, ldl_delta, eta, epsilon)
     x = start;
     iters = 0;
     TR_size = Dhat;
     
     [fx, gx] = matern_fn(X, sample, x);
-    n = length(start);
-    B = eye(n);
     
     xi = {x};
     xval_ctr = 2;
+    updated = true;
     
     while 1
         if norm(gx) < epsilon
             break
         end
-        norm(gx)
         iters = iters + 1;
-        [L, D, p] = modified_ldl(B, ldl_delta);
+        if updated
+            B = calc_hess(X, sample, gx, x);
+            [L, D, p] = modified_ldl(B, ldl_delta);
+        end
         
         pk = calculate_pk(L, D, p, gx, TR_size);
         old_fx = fx;
@@ -25,7 +26,6 @@ function [xi, iters] = dl_sr1(X, sample, start, Dhat, ldl_delta, eta, epsilon)
         [fx, gx] = matern_fn(X, sample, (x + pk));
         
         rho_k = (old_fx - fx) / (old_fx - quad_model(old_fx, old_gx, L, D, p, pk));
-        B = update_sr1(B, pk, gx - old_gx);
 
         if rho_k < 0.25
             TR_size = TR_size / 4;
@@ -36,15 +36,27 @@ function [xi, iters] = dl_sr1(X, sample, start, Dhat, ldl_delta, eta, epsilon)
             x = x + pk;
             xi{1, xval_ctr} = x;
             xval_ctr = xval_ctr + 1;
+            updated = true;
         else
             fx = old_fx;
             gx = old_gx;
+            updated = false;
         end
         
     end
     
 end
 
+function B = calc_hess(X, y, gx, x)
+    n = length(x);
+    idn = eye(n);
+    B = zeros(n, n);
+    
+    for i = 1:n
+        [~, gxh] = matern_fn(X, y, x + (1e-8)*idn(:, i));
+        B(:, i) = (gxh - gx)/1e-8;
+    end
+end
 
 function m = quad_model(fx, gx, L, D, p, x)
     m = fx + gx.' * x + x.' * apply_ldl(L, D, p, x) / 2;

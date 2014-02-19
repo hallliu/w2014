@@ -19,7 +19,6 @@ function [xi, iters] = dl_bgfs(X, sample, start, Dhat, eta, epsilon)
             break
         end
         iters = iters + 1;
-        
         pk = calculate_pk(B, H, gx, TR_size);
         old_fx = fx;
         old_gx = gx;
@@ -75,45 +74,21 @@ function pk = calculate_pk(B, H, g, TR_size)
     end
 end
 
-function [L, D, p] = modified_ldl(A, delta)
-    [L, D, p] = ldl(A, 'vector');
-    [n, ~] = size(D);
-    i = 1;
-    while i <= n
-        if (i == n || D(i, i+1) == 0)
-            if D(i, i) < delta
-                D(i, i) = delta;
-            end
-            i = i + 1;
-            continue
-        end
-        a = D(i, i);
-        b = D(i+1, i+1);
-        c = D(i, i+1);
-        sr_val = sqrt((a-b)^2+c^2);
-        if a + b - sr_val < 2 * delta
-            k = 2*delta + sr_val - a - b;
-            D(i, i) = a + k;
-            D(i+1, i+1) = b + k;
-        end
-        i = i + 2;
+function [B1, H1] = update_bgfs(B, H, s, y)
+    skyk = s.' * y;
+    bs = B * s;
+    sbs = s.' * bs;
+    
+    if skyk < 0.2 * sbs
+        theta = (0.8 * sbs) / (sbs - skyk);
+        r = theta * y - (1 - theta) * bs;
+    else
+        r = y;
     end
-end
-
-function x = ldlsolve(L, D, p, b)
-    b = b(p);
     
-    dltx = L\b;
-    ltx = D\dltx;
-    x = L.'\ltx;
-    
-    x(p) = x;
-end
-
-function y = apply_ldl(L, D, p, x)
-    y = x(p);
-    y = L.' * y;
-    y = D * y;
-    y = L * y;
-    y(p) = y;
+    rho = 1/ (s.' * y);
+    H1 = H - rho * ((H * y) * s.' + s * (y.' * H)) + rho^2 * s * (y.' * H * y) * s.';
+    H1 = H1 + rho * (s * s.');
+   
+    B1 = B - (bs * bs.') / sbs + (r * r.') / (r.' * s);
 end

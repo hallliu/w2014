@@ -1,4 +1,4 @@
-function [xi, iters] = dl_bgfs(X, sample, start, Dhat, eta, epsilon)
+function [xi, iters] = dl_id(X, sample, start, Dhat, eta, epsilon)
     x = start;
     iters = 0;
     fevals = 0;
@@ -29,7 +29,6 @@ function [xi, iters] = dl_bgfs(X, sample, start, Dhat, eta, epsilon)
        
         fevals = fevals + 1;
         
-        [B, H] = update_bgfs(B, H, pk, gx - old_gx);
         rho_k = (old_fx - fx) / (old_fx - quad_model(old_fx, old_gx, old_B, pk));
         
         if rho_k < 0.25

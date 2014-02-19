@@ -1,28 +1,18 @@
 function [fx, gx] = matern_fn(X, y, theta)
     [~, n] = size(X);
     d = length(theta);
-    persistent K L sto_theta;
-    persistent Kderivs tr_kkderiv Kdet;
-    
-    if size(K) == 0
-        K = zeros(n, n);
-    end
-    
-    % Do the hard computations if theta got updated.
-    % Strictly speaking, X should never be updated...
-    if isempty(sto_theta) || length(sto_theta) ~= length(theta) || ~all(sto_theta == theta)
-        sto_theta = theta;
-        K = matern_matrix(X, theta);
-        L = chol(K, 'lower');
         
-        Kderivs = cell([1, d]);
-        tr_kkderiv = 1:d;
-        for i = 1:d
-            Kderivs{i} = matern_deriv(K, X, theta, i);
-            tr_kkderiv(i) = trace(L.'\(L\Kderivs{i}));
-        end
-        Kdet = prod(diag(L))^2;
+    K = matern_matrix(X, theta);
+    L = chol(K, 'lower');
+        
+    Kderivs = cell([1, d]);
+    tr_kkderiv = 1:d;
+    for i = 1:d
+        Kderivs{i} = matern_deriv(K, X, theta, i);
+        tr_kkderiv(i) = trace(L.'\(L\Kderivs{i}));
     end
+    Kdet = prod(diag(L))^2;
+
     
     kinv_y = L.'\(L\y);
     fx = 0.5 * y.' * kinv_y + 0.5 * log(Kdet) + 0.5 * n * log(2*pi);

@@ -14,7 +14,6 @@ function [xi, iters] = dl_sr1(X, sample, start, Dhat, ldl_delta, eta, epsilon)
         if norm(gx) < epsilon
             break
         end
-        norm(gx)
         iters = iters + 1;
         [L, D, p] = modified_ldl(B, ldl_delta);
         
@@ -45,6 +44,15 @@ function [xi, iters] = dl_sr1(X, sample, start, Dhat, ldl_delta, eta, epsilon)
     
 end
 
+function B1 = update_sr1(B, s, y)
+    ymbs = y - B * s;
+    if abs(s.' * ymbs) < 1e-8 * norm(s) * norm(ymbs)
+        B1 = B;
+        return;
+    end
+    
+    B1 = (ymbs * ymbs.') / (ymbs.' * s);
+end
 
 function m = quad_model(fx, gx, L, D, p, x)
     m = fx + gx.' * x + x.' * apply_ldl(L, D, p, x) / 2;

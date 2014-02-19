@@ -12,14 +12,14 @@ function test_gradient()
     id = eye(3);
     gy1_fdiff = 1:3;
     for i = 1:3
-        [fy1_pert, ~] = matern_fn(X, y1, 2*theta1 + id(:, i)*10e-8);
-        gy1_fdiff(i) = (fy1_pert - fy1) / 10e-8;
+        [fy1_pert, ~] = matern_fn(X, y1, 2*theta1 + id(:, i)*1e-8);
+        gy1_fdiff(i) = (fy1_pert - fy1) / 1e-8;
     end
     
     gy2_fdiff = 1:3;
     for i = 1:3
-        [fy2_pert, ~] = matern_fn(X, y2, 2*theta2 + id(:, i)*10e-8);
-        gy2_fdiff(i) = (fy2_pert - fy2) / 10e-8;
+        [fy2_pert, ~] = matern_fn(X, y2, 2*theta2 + id(:, i)*1e-8);
+        gy2_fdiff(i) = (fy2_pert - fy2) / 1e-8;
     end
 
 end
