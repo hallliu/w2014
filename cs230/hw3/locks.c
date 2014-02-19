@@ -216,7 +216,7 @@ void lock_Alock (struct lock_t *_l) {
     struct Alock_lock *l = (struct Alock_lock *) _l;
 
     unsigned slot = __sync_fetch_and_add(&l->tail, 1);
-    slot = slot - (slot >> l->size);
+    slot = slot - ((slot >> l->size) << l->size);
 
     while (!l->flags[slot].unlocked);
 
@@ -232,7 +232,7 @@ void lock_Alock (struct lock_t *_l) {
 bool try_lock_Alock (struct lock_t *_l) {
     struct Alock_lock *l = (struct Alock_lock *) _l;
     unsigned cur_tail = l->tail;
-    cur_tail = cur_tail - (cur_tail >> l->size);
+    cur_tail = cur_tail - ((cur_tail >> l->size) << l->size);
 
     if (!l->flags[cur_tail].unlocked)
         return false;
@@ -265,12 +265,13 @@ static struct lock_t *create_Alock(int n_threads) {
     l->try_lock = try_lock_Alock;
     l->destroy_lock = destroy_Alock;
 
-    int k __attribute__((unused)) = posix_memalign ((void **) &l->flags, 64, sizeof(struct padded_flag) * n_threads);
-    memset ((void *) l->flags, 0, sizeof(struct padded_flag) * n_threads);
+    l->size = (unsigned) log2((double) n_threads) + 1;
+
+    int k __attribute__((unused)) = posix_memalign ((void **) &l->flags, 64, sizeof(struct padded_flag) * (1 << l->size));
+    memset ((void *) l->flags, 0, sizeof(struct padded_flag) * (1 << l->size));
     l->flags->unlocked = true;
     l->tail = 0;
     pthread_key_create(&l->slots, free);
-    l->size = (unsigned) log2((double) n_threads) + 1;
 
     return (struct lock_t *) l;
 }
