@@ -52,7 +52,7 @@ def counter_overhead_time():
     lock_tps = np.zeros(len(locks_here), dtype='float64')
     for (i, l) in enumerate(locks_here):
         for j in range(4):
-            print('counter_overhead_time: lock {0} iteration {1}'.format(l, j))
+            _log('counter_overhead_time: lock {0} iteration {1}'.format(l, j))
             out = timeout_output(['./perf_main', 'parallel_time', l, '2000', '1'], 3000)
             lock_tps[i] += float(out.split()[-1])
             lock_tps[i] /= 2000
@@ -68,7 +68,7 @@ def counter_overhead_work():
 
     for (i, l) in enumerate(locks_here):
         for j in range(4):
-            print('counter_overhead_work: lock {0} iteration {1}'.format(l, j))
+            _log('counter_overhead_work: lock {0} iteration {1}'.format(l, j))
             lock_tps[i] = count_to / float(timeout_output(['./perf_main', 'parallel_work', l, str(count_to), '1'], 3000))
 
     lock_tps /= 4
@@ -81,7 +81,7 @@ def counter_scaling_time():
 
     for (i, j) in product(range(len(locks)), range(len(num_threads))):
         for k in range(3):
-            print('counter_scaling_time: lock {0} threads {1} iteration {2}'.format(locks[i], num_threads[j], k))
+            _log('counter_scaling_time: lock {0} threads {1} iteration {2}'.format(locks[i], num_threads[j], k))
             out = timeout_output(['./perf_main', 'parallel_time', locks[i], '2000', str(num_threads[j])], 4)
             lock_tps[i, j] += float(out.split()[-1])
 
@@ -97,7 +97,7 @@ def counter_scaling_work():
 
     for (i, j) in product(range(len(locks)), range(len(num_threads))):
         for k in range(3):
-            print('counter_scaling_work: lock {0} threads {1} iteration {2}'.format(locks[i], num_threads[j], k))
+            _log('counter_scaling_work: lock {0} threads {1} iteration {2}'.format(locks[i], num_threads[j], k))
             lock_tps[i, j] = count_tos[j] /  float(timeout_output(['./perf_main', 'parallel_work', locks[i], str(count_tos[j]), str(num_threads[j])], 2))
 
     lock_tps /= 3
@@ -111,7 +111,7 @@ def counter_fairness():
 
     for (i, l) in enumerate(locks):
         for j in range(3):
-            print('counter_fairness: lock {0} iteration {1}'.format(l, j))
+            _log('counter_fairness: lock {0} iteration {1}'.format(l, j))
             outs = timeout_output(['./perf_main', 'parallel_time', l, '2000', str(num_threads)], 3000).split()
             lock_tps[i] += float(outs[-1]) / 2000
             lock_stddevs[i] += np.std(map(lambda x: float(x) / 2000, outs[:-1]))
@@ -130,7 +130,7 @@ def packet_overhead():
 
     for (w_ind, l_ind) in product(range(len(works)), range(len(locks_here))):
         for rep in range(3):
-            print('packet_overhead: work {0} lock {1} rep {2}'.format(works[w_ind], locks_here[l_ind], rep))
+            _log('packet_overhead: work {0} lock {1} rep {2}'.format(works[w_ind], locks_here[l_ind], rep))
             out = timeout_output(['./perf_main', 'parallel_dispatcher', '2000', '1', '0', str(works[w_ind]), str(rep), '1', locks_here[l_ind]], 4)
             packet_tps[w_ind, l_ind] += float(out) / 2000
 
@@ -146,7 +146,7 @@ def uniform_speedup():
     lockfree_tps = np.zeros((len(works), len(srcs)), dtype='float64')
     for (w_ind, s_ind) in product(range(len(works)), range(len(srcs))):
         for rep in range(n_reps):
-            print('uniform speedup lockfree work {0} source {1} rep {2}'.format(works[w_ind], srcs[s_ind], rep))
+            _log('uniform speedup lockfree work {0} source {1} rep {2}'.format(works[w_ind], srcs[s_ind], rep))
             out = timeout_output(['./perf_main', 'parallel_dispatcher', '1500', str(srcs[s_ind]), '0', str(works[w_ind]), str(rep), '1', 'noop'], 4)
             lockfree_tps[w_ind, s_ind] += float(out) / 1500
 
@@ -157,11 +157,11 @@ def uniform_speedup():
 
     for (w_ind, s_ind, l_ind) in product(range(len(works)), range(len(srcs)), range(len(locks))):
         for rep in range(n_reps):
-            print('uniform speedup random work {0} source {1} lock {2} rep {3}'.format(works[w_ind], srcs[s_ind], locks[l_ind], rep))
+            _log('uniform speedup random work {0} source {1} lock {2} rep {3}'.format(works[w_ind], srcs[s_ind], locks[l_ind], rep))
             out = timeout_output(['./perf_main', 'parallel_dispatcher', '1500', str(srcs[s_ind]), '1', str(works[w_ind]), str(rep), '1', locks[l_ind]], 4)
             random_tps[w_ind, s_ind, l_ind] += float(out) / 1500
 
-            print('uniform speedup homequeue work {0} source {1} lock {2} rep {3}'.format(works[w_ind], srcs[s_ind], locks[l_ind], rep))
+            _log('uniform speedup homequeue work {0} source {1} lock {2} rep {3}'.format(works[w_ind], srcs[s_ind], locks[l_ind], rep))
             out = timeout_output(['./perf_main', 'parallel_dispatcher', '1500', str(srcs[s_ind]), '2', str(works[w_ind]), str(rep), '1', locks[l_ind]], 4)
             home_tps[w_ind, s_ind, l_ind] += float(out) / 1500
 
@@ -181,7 +181,7 @@ def exp_speedup():
     lockfree_tps = np.zeros((len(works), len(srcs)), dtype='float64')
     for (w_ind, s_ind) in product(range(len(works)), range(len(srcs))):
         for rep in range(n_reps):
-            print('exp speedup lockfree work {0} source {1} rep {2}'.format(works[w_ind], srcs[s_ind], rep))
+            _log('exp speedup lockfree work {0} source {1} rep {2}'.format(works[w_ind], srcs[s_ind], rep))
             out = timeout_output(['./perf_main', 'parallel_dispatcher', '1500', str(srcs[s_ind]), '0', str(works[w_ind]), str(rep), '0', 'noop'], 4)
             lockfree_tps[w_ind, s_ind] += float(out) / 1500
 
@@ -192,11 +192,11 @@ def exp_speedup():
 
     for (w_ind, s_ind, l_ind) in product(range(len(works)), range(len(srcs)), range(len(locks))):
         for rep in range(n_reps):
-            print('exp speedup random work {0} source {1} lock {2} rep {3}'.format(works[w_ind], srcs[s_ind], locks[l_ind], rep))
+            _log('exp speedup random work {0} source {1} lock {2} rep {3}'.format(works[w_ind], srcs[s_ind], locks[l_ind], rep))
             out = timeout_output(['./perf_main', 'parallel_dispatcher', '1500', str(srcs[s_ind]), '1', str(works[w_ind]), str(rep), '0', locks[l_ind]], 4)
             random_tps[w_ind, s_ind, l_ind] += float(out) / 1500
 
-            print('exp speedup homequeue work {0} source {1} lock {2} rep {3}'.format(works[w_ind], srcs[s_ind], locks[l_ind], rep))
+            _log('exp speedup homequeue work {0} source {1} lock {2} rep {3}'.format(works[w_ind], srcs[s_ind], locks[l_ind], rep))
             out = timeout_output(['./perf_main', 'parallel_dispatcher', '1500', str(srcs[s_ind]), '2', str(works[w_ind]), str(rep), '0', locks[l_ind]], 4)
             home_tps[w_ind, s_ind, l_ind] += float(out) / 1500
 
