@@ -8,14 +8,15 @@ import threading
 import datetime
 
 logfile = None
+locks = ['TAS', 'backoff', 'mutex', 'Alock', 'CLH', 'MCS']
 '''
 Class that implements timeout procedures for our tests
 '''
 class RunSP(threading.Thread):
-    def __init__(self, fn, args):
+    def __init__(self, cmd, timeout):
         threading.Thread.__init__(self)
-        self.fn = fn
-        self.args = args
+        self.cmd = cmd
+        self.timeout = timeout
 
     def run(self):
         self.proc = Popen(self.cmd, stdout=PIPE)
@@ -44,6 +45,35 @@ def timeout_output(cmd, timeout):
 
 def _log(msg):
     logfile.write('{0}      {1}'.format(datetime.datetime.utcnow(), msg))
+
+def counter_overhead_time():
+    locks_here = locks + ['noop']
+
+    lock_tps = np.zeros(len(locks_here), dtype='float64')
+    for (i, l) in enumerate(locks_here):
+        for j in range(4):
+            print('counter_overhead_time: lock {0} iteration {1}'.format(l, j))
+            lock_tps[i] += float(timeout_output(['./perf_main', 'parallel_time', l, '2000', '1'], 3000))
+            lock_tps[i] /= 2000
+
+    lock_tps /= 4
+    np.savetxt('results/counter_overhead_work.csv', lock_tps, delimiter=',')
+    return lock_tps
+
+def counter_overhead_work():
+    count_to = 30000000
+    locks_here = locks + ['noop']
+    lock_tps = np.zeros(len(locks_here), dtype='float64')
+
+    for (i, l) in enumerate(locks_here):
+        for j in range(4):
+            print('counter_overhead_work: lock {0} iteration {1}'.format(l, j))
+            lock_tps[i] = count_to / float(timeout_output(['./perf_main', 'parallel_work', l, str(count_to), '1'], 3000))
+
+    lock_tps /= 4
+    np.savetxt('results/counter_overhead_time.csv', lock_tps, delimiter=',')
+    return lock_tps
+
 
 def parallel_overhead(exponent):
     n_iters = 5
@@ -142,16 +172,16 @@ def q_depth(exponent):
 
 if __name__ == '__main__':
     os.mkdir('results')
-    os.mkdir('results/exp_speedup')
-    os.mkdir('results/unif_speedup')
-    os.mkdir('results/parallel_overhead')
     global logfile
     logfile = open('/tmp/hallliu_log', 'w', 0)
-    parallel_overhead(24)
-    dispatcher_rate(20)
-    unif_speedup(14, 5)
-    exp_speedup(14, 5)
-    unif_speedup(10, 7)
-    exp_speedup(10, 7)
-    q_depth(14)
+
+    #counter_overhead_work()
+
+    #parallel_overhead(24)
+    #dispatcher_rate(20)
+    #unif_speedup(14, 5)
+    #exp_speedup(14, 5)
+    #unif_speedup(10, 7)
+    #exp_speedup(10, 7)
+    #q_depth(14)
     logfile.close()
