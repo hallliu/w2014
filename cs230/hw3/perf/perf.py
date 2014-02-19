@@ -87,6 +87,7 @@ def counter_scaling_time():
 
     lock_tps /= 2000
     lock_tps /= 3
+    np.savetxt('results/counter_scaling_time.csv', lock_tps, delimiter=',')
     return lock_tps
             
 def counter_scaling_work():
@@ -100,6 +101,7 @@ def counter_scaling_work():
             lock_tps[i, j] = count_tos[j] /  float(timeout_output(['./perf_main', 'parallel_work', locks[i], str(count_tos[j]), str(num_threads[j])], 2))
 
     lock_tps /= 3
+    np.savetxt('results/counter_scaling_work.csv', lock_tps, delimiter=',')
     return lock_tps
 
 def counter_fairness():
@@ -116,6 +118,8 @@ def counter_fairness():
     
     lock_tps /= 3
     lock_stddevs /= 3
+    np.savetxt('results/counter_fairness_tp.csv', lock_tps, delimiter=',')
+    np.savetxt('results/counter_fairness_stds.csv', lock_stddevs, delimiter=',')
     return (lock_tps, lock_stddevs)
 
 
