@@ -12,6 +12,7 @@ PERF_OBJS=$(PERF_FILES:%.c=perf/%.so)
 
 CC=gcc
 override CFLAGS += -O3 -Wall -Werror -std=gnu99
+#override CFLAGS += -O0 -Wall -Werror -std=gnu99 -g
 
 LDLIBS=-pthread -lm
 
