@@ -216,7 +216,7 @@ void lock_Alock (struct lock_t *_l) {
     struct Alock_lock *l = (struct Alock_lock *) _l;
 
     unsigned slot = __sync_fetch_and_add(&l->tail, 1);
-    slot = slot - slot >> l->size;
+    slot = slot - (slot >> l->size);
 
     while (!l->flags[slot].unlocked);
 
@@ -232,7 +232,7 @@ void lock_Alock (struct lock_t *_l) {
 bool try_lock_Alock (struct lock_t *_l) {
     struct Alock_lock *l = (struct Alock_lock *) _l;
     unsigned cur_tail = l->tail;
-    cur_tail = cur_tail - cur_tail >> l->size;
+    cur_tail = cur_tail - (cur_tail >> l->size);
 
     if (!l->flags[cur_tail].unlocked)
         return false;

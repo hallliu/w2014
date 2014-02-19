@@ -42,7 +42,7 @@ long general_test
         case 1:
             worker_fn = random_worker;
             break;
-        case 2:
+        default:
             worker_fn = lastqueue_worker;
             break;
     }
