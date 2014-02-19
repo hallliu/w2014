@@ -394,7 +394,7 @@ bool try_lock_MCS (struct lock_t *_l) {
 
 void unlock_MCS (struct lock_t *_l) {
     struct MCS_lock *l = (struct MCS_lock *) _l;
-    struct MCS_queue_node *node = pthread_getspecific (l->nodes);
+    volatile struct MCS_queue_node *node = pthread_getspecific (l->nodes);
     if (node->next == NULL) {
         if (__sync_bool_compare_and_swap(&l->tail, node, NULL))
             return;
