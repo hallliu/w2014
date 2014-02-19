@@ -10,10 +10,10 @@ function [fx, gx] = matern_fn(X, y, theta)
     
     % Do the hard computations if theta got updated.
     % Strictly speaking, X should never be updated...
-    if isempty(sto_theta) || ~all(sto_theta == theta)
+    if isempty(sto_theta) || length(sto_theta) ~= length(theta) || ~all(sto_theta == theta)
         sto_theta = theta;
         K = matern_matrix(X, theta);
-        L = chol(K);
+        L = chol(K, 'lower');
         
         Kderivs = cell([1, d]);
         tr_kkderiv = 1:d;
@@ -25,11 +25,11 @@ function [fx, gx] = matern_fn(X, y, theta)
     end
     
     kinv_y = L.'\(L\y);
-    fx = -0.5 * y.' * kinv_y - 0.5 * log(Kdet) - 0.5 * n * log(2*pi);
+    fx = 0.5 * y.' * kinv_y + 0.5 * log(Kdet) + 0.5 * n * log(2*pi);
     
-    gx = 1:d;
-    for i = gx
-        gx(i) = 0.5 * kinv_y.' * Kderivs{i} * kinv_y - 0.5 * tr_kkderiv(i);
+    gx = (1:d).';
+    for i = 1:d
+        gx(i) = -0.5 * (kinv_y.' * Kderivs{i} * kinv_y) + 0.5 * tr_kkderiv(i);
     end
     
 end
