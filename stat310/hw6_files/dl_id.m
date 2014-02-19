@@ -1,13 +1,15 @@
-function [xi, iters, facs] = optimize_dl(f, start, ldl_delta, Dhat, eta, epsilon)
+function [xi, iters] = dl_bgfs(X, sample, start, Dhat, eta, epsilon)
     x = start;
     iters = 0;
     fevals = 0;
-    facs = 0;
     TR_size = Dhat;
     
-    [fx, gx] = f(x.');
+    [fx, gx] = matern_fn(X, sample, x);
+    n = length(gx);
+    B = eye(n);
+    H = eye(n);
+    
     fevals = fevals + 1;
-    updated = true;
     
     xi = {x};
     xval_ctr = 2;
@@ -16,22 +18,19 @@ function [xi, iters, facs] = optimize_dl(f, start, ldl_delta, Dhat, eta, epsilon
         if norm(gx) < epsilon
             break
         end
-        
         iters = iters + 1;
-        if updated
-            [L, D, p] = modified_ldl(Hx, ldl_delta);
-            facs = facs + 1;
-        end
         
-        pk = calculate_pk(L, D, p, gx, TR_size);
+        pk = calculate_pk(B, H, gx, TR_size);
         old_fx = fx;
         old_gx = gx;
-        old_Hx = Hx;
+        old_B = B;
         
-        [fx, gx] = f((x + pk).');
+        [fx, gx] = matern_fn(X, sample, (x + pk));
+       
         fevals = fevals + 1;
         
-        rho_k = (old_fx - fx) / (old_fx - quad_model(fx, gx, L, D, p, pk));
+        [B, H] = update_bgfs(B, H, pk, gx - old_gx);
+        rho_k = (old_fx - fx) / (old_fx - quad_model(old_fx, old_gx, old_B, pk));
         
         if rho_k < 0.25
             TR_size = TR_size / 4;
@@ -40,27 +39,24 @@ function [xi, iters, facs] = optimize_dl(f, start, ldl_delta, Dhat, eta, epsilon
         end
         if rho_k > eta
             x = x + pk;
-            updated = true;
             xi{1, xval_ctr} = x;
             xval_ctr = xval_ctr + 1;
         else
             fx = old_fx;
             gx = old_gx;
-            Hx = old_Hx;
-            updated = false;
         end
     end
     
 end
 
 
-function m = quad_model(fx, gx, L, D, p, x)
-    m = fx + gx.' * x + x.' * apply_ldl(L, D, p, x) / 2;
+function m = quad_model(fx, gx, B, x)
+    m = fx + gx.' * x + x.' * B * x / 2;
 end
 
-function pk = calculate_pk(L, D, p, g, TR_size)
-    pu = -norm(g)^2 / (g.' * apply_ldl(L, D, p, g)) * g;
-    pb = -ldlsolve(L, D, p, g);
+function pk = calculate_pk(B, H, g, TR_size)
+    pu = -norm(g)^2 / (g.' * B * g) * g;
+    pb = -H * g;
     if norm(pu) >= TR_size
         pk = (TR_size / norm(pu)) * pu;
     elseif norm(pb) <= TR_size

@@ -1,13 +1,11 @@
-function [xi, iters, facs] = optimize_dl(f, start, ldl_delta, Dhat, eta, epsilon)
+function [xi, iters] = dl_sr1(X, sample, start, Dhat, ldl_delta, eta, epsilon)
     x = start;
     iters = 0;
-    fevals = 0;
-    facs = 0;
     TR_size = Dhat;
     
-    [fx, gx] = f(x.');
-    fevals = fevals + 1;
-    updated = true;
+    [fx, gx] = matern_fn(X, sample, x);
+    n = length(start);
+    B = eye(n);
     
     xi = {x};
     xval_ctr = 2;
@@ -16,23 +14,19 @@ function [xi, iters, facs] = optimize_dl(f, start, ldl_delta, Dhat, eta, epsilon
         if norm(gx) < epsilon
             break
         end
-        
+        norm(gx)
         iters = iters + 1;
-        if updated
-            [L, D, p] = modified_ldl(Hx, ldl_delta);
-            facs = facs + 1;
-        end
+        [L, D, p] = modified_ldl(B, ldl_delta);
         
         pk = calculate_pk(L, D, p, gx, TR_size);
         old_fx = fx;
         old_gx = gx;
-        old_Hx = Hx;
         
-        [fx, gx] = f((x + pk).');
-        fevals = fevals + 1;
+        [fx, gx] = matern_fn(X, sample, (x + pk));
         
-        rho_k = (old_fx - fx) / (old_fx - quad_model(fx, gx, L, D, p, pk));
-        
+        rho_k = (old_fx - fx) / (old_fx - quad_model(old_fx, old_gx, L, D, p, pk));
+        B = update_sr1(B, pk, gx - old_gx);
+
         if rho_k < 0.25
             TR_size = TR_size / 4;
         elseif rho_k > 0.75
@@ -40,15 +34,13 @@ function [xi, iters, facs] = optimize_dl(f, start, ldl_delta, Dhat, eta, epsilon
         end
         if rho_k > eta
             x = x + pk;
-            updated = true;
             xi{1, xval_ctr} = x;
             xval_ctr = xval_ctr + 1;
         else
             fx = old_fx;
             gx = old_gx;
-            Hx = old_Hx;
-            updated = false;
         end
+        
     end
     
 end
