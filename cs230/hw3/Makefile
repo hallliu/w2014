@@ -11,7 +11,7 @@ PERF_OBJS=$(PERF_FILES:%.c=perf/%.so)
 .PHONY: perfs tests clean
 
 CC=gcc
-override CFLAGS += -O3 -Wall -Werror -std=gnu99
+override CFLAGS += -O3 -Wall -Werror -std=gnu99 -DTUNED_BACKOFF
 #override CFLAGS += -O3 -Wall -Werror -std=gnu99 -g
 
 LDLIBS=-pthread -lm
@@ -37,7 +37,7 @@ tests: $(TEST_OBJS) $(OBJS) $(UTIL_OBJS)
 	$(CC) $(LDFLAGS) $(CFLAGS) $(TEST_OBJS) $(UTIL_OBJS) $(OBJS) -o tests/test_main $(LDLIBS)
 
 clean:
-	rm *.o Utils/*.o perf/*.so
+	rm *.o Utils/*.o perf/*.o
 
 testclean:
 	rm tests/*.o tests/test_main

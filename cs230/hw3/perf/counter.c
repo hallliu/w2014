@@ -47,7 +47,7 @@ void *work_worker (void *_data) {
     return NULL;
 }
 
-double parallel_work_test(long val, int n_workers, char *lock_type, void *lock_data) {
+double parallel_work_test(char *lock_type, void *lock_data, long val, int n_workers) {
     StopWatch_t w;
 
     struct lock_t *l;
@@ -106,7 +106,7 @@ long serial_time_test (int n_ms) {
     return final_value;
 }
 
-long parallel_time_test (int n_ms, int n_workers, char *lock_type, void *lock_data) {
+long parallel_time_test(char *lock_type, void *lock_data, int n_ms, int n_workers) {
     struct lock_t *l;
     if (!strcmp(lock_type, "Alock"))
         l = create_lock (lock_type, &n_workers);

@@ -8,13 +8,19 @@
 #include <math.h>
 #include "locks.h"
 
+// Tuned backoff lock parameters
+#ifdef TUNED_BACKOFF
+#define BACKOFF_MIN 476
+#define BACKOFF_MAX 3255
+#endif
+
 static void usleep(int n) {
     struct timespec sleep_time = {.tv_sec = n / 1000000, .tv_nsec = (n % 1000000) * 1000};
     nanosleep(&sleep_time, NULL);
 }
 
 static struct lock_t *create_TAS(void);
-static struct lock_t *create_backoff(int min_delay, int max_delay);
+static struct lock_t *create_backoff(int *delays);
 static struct lock_t *create_mutex(void);
 static struct lock_t *create_noop(void);
 static struct lock_t *create_Alock(int n_threads);
@@ -27,8 +33,7 @@ struct lock_t *create_lock(char *lock_type, void *lock_info) {
     }
 
     if (!strcmp(lock_type, "backoff")) {
-        int *delays = lock_info;
-        return create_backoff(delays[0], delays[1]);
+        return create_backoff((int *) lock_info);
     }
 
     if (!strcmp(lock_type, "Alock")) {
@@ -170,23 +175,27 @@ void destroy_backoff (struct lock_t *_l) {
     free (l);
 }
 
-static struct lock_t *create_backoff(int min_delay, int max_delay) {
+static struct lock_t *create_backoff(int *delays) {
     struct backoff_lock *l = malloc (sizeof(struct backoff_lock));
     l->lock = lock_backoff;
     l->unlock = unlock_backoff;
     l->try_lock = try_lock_backoff;
     l->destroy_lock = destroy_backoff;
 
-    if (min_delay <= 1)
+#ifndef TUNED_BACKOFF
+    if (delays[0] <= 1)
         l->min_delay = 2;
     else
-        l->min_delay = min_delay;
+        l->min_delay = delays[0];
 
-    if (l->max_delay <= l->min_delay)
+    if (delays[1] <= l->min_delay)
         l->max_delay = l->min_delay;
     else
-        l->max_delay = max_delay;
-
+        l->max_delay = delays[1];
+#else
+    l->min_delay = BACKOFF_MIN;
+    l->max_delay = BACKOFF_MAX;
+#endif
 
     l->locked = 0;
     l->rand_seed = time(0);
