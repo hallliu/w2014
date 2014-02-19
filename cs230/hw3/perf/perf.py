@@ -53,7 +53,8 @@ def counter_overhead_time():
     for (i, l) in enumerate(locks_here):
         for j in range(4):
             print('counter_overhead_time: lock {0} iteration {1}'.format(l, j))
-            lock_tps[i] += float(timeout_output(['./perf_main', 'parallel_time', l, '2000', '1'], 3000))
+            out = timeout_output(['./perf_main', 'parallel_time', l, '2000', '1'], 3000)
+            lock_tps[i] += float(out.split()[-1])
             lock_tps[i] /= 2000
 
     lock_tps /= 4
@@ -73,6 +74,49 @@ def counter_overhead_work():
     lock_tps /= 4
     np.savetxt('results/counter_overhead_time.csv', lock_tps, delimiter=',')
     return lock_tps
+
+def counter_scaling_time():
+    num_threads = [1, 2, 4, 8]#, 16, 32, 64] 
+    lock_tps = np.zeros((len(locks), len(num_threads)), dtype='float64')
+
+    for (i, j) in product(range(len(locks)), range(len(num_threads))):
+        for k in range(3):
+            print('counter_scaling_time: lock {0} threads {1} iteration {2}'.format(locks[i], num_threads[j], k))
+            out = timeout_output(['./perf_main', 'parallel_time', locks[i], '2000', str(num_threads[j])], 3000)
+            lock_tps[i, j] += float(out.split()[-1])
+
+    lock_tps /= 2000
+    lock_tps /= 3
+    return lock_tps
+            
+def counter_scaling_work():
+    num_threads = [1, 2, 4, 8]#, 16, 32, 64] 
+    count_tos = [10000000, 2000000, 1000000, 1000000]#, 1000000, 10000, 10000]
+    lock_tps = np.zeros((len(locks), len(num_threads)), dtype='float64')
+
+    for (i, j) in product(range(len(locks)), range(len(num_threads))):
+        for k in range(3):
+            print('counter_scaling_work: lock {0} threads {1} iteration {2}'.format(locks[i], num_threads[j], k))
+            lock_tps[i, j] = count_tos[j] /  float(timeout_output(['./perf_main', 'parallel_work', locks[i], str(count_tos[j]), str(num_threads[j])], 2))
+
+    lock_tps /= 3
+    return lock_tps
+
+def counter_fairness():
+    num_threads = 4 
+    lock_tps = np.zeros(len(locks), dtype='float64')
+    lock_stddevs = np.zeros(len(locks), dtype='float64')
+
+    for (i, l) in enumerate(locks):
+        for j in range(3):
+            print('counter_fairness: lock {0} iteration {1}'.format(l, j))
+            outs = timeout_output(['./perf_main', 'parallel_time', l, '2000', str(num_threads)], 3000).split()
+            lock_tps[i] += float(outs[-1])
+            lock_stddevs[i] += np.std(map(float, outs[:-1]))
+    
+    lock_tps /= 3
+    lock_stddevs /= 3
+    return (lock_tps, lock_stddevs)
 
 
 def parallel_overhead(exponent):

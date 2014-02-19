@@ -79,13 +79,17 @@ void *time_worker (void *_data) {
 
     struct lock_t *l = data->lock;
 
+    int iters = 0;
     while(!data->stop) {
         for (int i = 0; i < 100; i++) {
             l->lock (l);
             data->counter++;
             l->unlock (l);
         }
+        iters += 1;
     }
+
+    printf("%d\n", iters * 100);
     return NULL;
 }
 
