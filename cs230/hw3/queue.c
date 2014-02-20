@@ -8,7 +8,7 @@ struct l_queue *create_queues(int n_queues, int size, char *lock_type, void *loc
     struct l_queue *q = calloc (n_queues, sizeof(struct l_queue));
     for (int i = 0; i < n_queues; i++) {
         q[i].items = calloc (size, sizeof(void *));
-        q[i].length = size;
+        q[i].length = (unsigned) size;
         if (lock_type == NULL) 
             q[i].lock = create_lock("noop", NULL);
         else
@@ -35,7 +35,7 @@ int enq(struct l_queue *q, void *obj) {
         return 1;
     }
 
-    q->items[tail % len] = obj;
+    q->items[tail & (len - 1)] = obj;
     q->n_enqueues += 1;
     q->tail = tail + 1;
     return 0;
@@ -59,7 +59,7 @@ int deq(struct l_queue *q, void **obj_ptr) {
     }
 #endif
 
-    *obj_ptr = q->items[head % len];
+    *obj_ptr = q->items[head & (len - 1)];
     q->head = head + 1;
     return 0;
 }

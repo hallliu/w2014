@@ -4,7 +4,7 @@
 
 struct l_queue {
     volatile int head, tail;
-    int length;
+    unsigned length;
     void **items;
     int n_enqueues;
     struct lock_t *lock;

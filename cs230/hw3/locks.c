@@ -212,7 +212,7 @@ struct Alock_lock {
     volatile struct padded_flag *flags;
     volatile unsigned tail;
     pthread_key_t slots;
-    unsigned size; // This is actually a power-of-two, so size=6 corresponds to 64 capacity.
+    unsigned size; 
 };
 
 struct padded_flag {
@@ -225,7 +225,7 @@ void lock_Alock (struct lock_t *_l) {
     struct Alock_lock *l = (struct Alock_lock *) _l;
 
     unsigned slot = __sync_fetch_and_add(&l->tail, 1);
-    slot = slot - ((slot >> l->size) << l->size);
+    slot = slot & (l->size - 1);
 
     while (!l->flags[slot].unlocked);
 
@@ -241,7 +241,7 @@ void lock_Alock (struct lock_t *_l) {
 bool try_lock_Alock (struct lock_t *_l) {
     struct Alock_lock *l = (struct Alock_lock *) _l;
     unsigned cur_tail = l->tail;
-    cur_tail = cur_tail - ((cur_tail >> l->size) << l->size);
+    cur_tail = cur_tail & (l->size - 1);
 
     if (!l->flags[cur_tail].unlocked)
         return false;
@@ -253,7 +253,7 @@ void unlock_Alock (struct lock_t *_l) {
     struct Alock_lock *l = (struct Alock_lock *) _l;
     unsigned *_slot = pthread_getspecific (l->slots);
     unsigned slot = *(_slot);
-    unsigned next_slot = (slot == (1 << l->size) - 1) ? 0 : slot + 1;
+    unsigned next_slot = (slot == l->size - 1) ? 0 : slot + 1;
     
     l->flags[slot].unlocked = false;
     l->flags[next_slot].unlocked = true;
@@ -274,10 +274,10 @@ static struct lock_t *create_Alock(int n_threads) {
     l->try_lock = try_lock_Alock;
     l->destroy_lock = destroy_Alock;
 
-    l->size = (unsigned) log2((double) n_threads) + 1;
+    l->size = 1 << ((unsigned) log2((double) n_threads) + 1);
 
-    int k __attribute__((unused)) = posix_memalign ((void **) &l->flags, 64, sizeof(struct padded_flag) * (1 << l->size));
-    memset ((void *) l->flags, 0, sizeof(struct padded_flag) * (1 << l->size));
+    int k __attribute__((unused)) = posix_memalign ((void **) &l->flags, 64, sizeof(struct padded_flag) * l->size);
+    memset ((void *) l->flags, 0, sizeof(struct padded_flag) * l->size);
     l->flags->unlocked = true;
     l->tail = 0;
     pthread_key_create(&l->slots, free);
