@@ -209,21 +209,20 @@ def exp_speedup():
     return (lockfree_tps, random_tps, home_tps)
 
 def new_workers():
-    works = [1000, 2000, 4000, 8000]
-    srcs = [3]#, 15]
-    n_reps = 2
+    works = [1000, 2000]
+    n_reps = 3
 
-    stat_tps = np.zeros((len(works), len(srcs), len(locks)), dtype='float64')
+    stat_tps = np.zeros((len(works), len(locks)), dtype='float64')
 
-    for (w_ind, s_ind, l_ind) in product(range(len(works)), range(len(srcs)), range(len(locks))):
+    for (w_ind, l_ind) in product(range(len(works)), range(len(locks))):
         for rep in range(n_reps):
-            #print('exp speedup stat work {0} source {1} lock {2} rep {3}'.format(works[w_ind], srcs[s_ind], locks[l_ind], rep))
-            out = timeout_output(['./perf_main', 'parallel_dispatcher', '1000', str(srcs[s_ind]), '2', str(works[w_ind]), str(rep), '0', locks[l_ind]], 4)
-            stat_tps[w_ind, s_ind, l_ind] += float(out) / 1000
+            _log('exp speedup stat work {0} lock {1} rep {2}'.format(works[w_ind], locks[l_ind], rep))
+            out = timeout_output(['./perf_main', 'parallel_dispatcher', '1500', '15', '2', str(works[w_ind]), str(rep), '0', locks[l_ind]], 4)
+            stat_tps[w_ind, l_ind] += float(out) / 1500
 
     stat_tps /= n_reps
 
-    #np.save('results/exp/stat', stat_tps)
+    np.save('results/stat', stat_tps)
     return stat_tps
 
 if __name__ == '__main__':
@@ -240,11 +239,12 @@ if __name__ == '__main__':
 
     counter_scaling_time()
     counter_scaling_work()
-    '''
 
     counter_fairness()
     packet_overhead()
     uniform_speedup()
     exp_speedup()
+    '''
+    new_workers()
     
     logfile.close()

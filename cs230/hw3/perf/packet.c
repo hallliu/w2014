@@ -64,7 +64,7 @@ void parallel_dispatcher
             worker_fn = statistical_worker;
             break;
         default:
-            worker_fn = statistical_worker1;
+            worker_fn = statistical_worker;
             break;
     }
 
