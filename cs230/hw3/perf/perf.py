@@ -208,6 +208,24 @@ def exp_speedup():
     np.save('results/exp/home', home_tps)
     return (lockfree_tps, random_tps, home_tps)
 
+def new_workers():
+    works = [1000, 2000, 4000, 8000]
+    srcs = [3]#, 15]
+    n_reps = 2
+
+    stat_tps = np.zeros((len(works), len(srcs), len(locks)), dtype='float64')
+
+    for (w_ind, s_ind, l_ind) in product(range(len(works)), range(len(srcs)), range(len(locks))):
+        for rep in range(n_reps):
+            #print('exp speedup stat work {0} source {1} lock {2} rep {3}'.format(works[w_ind], srcs[s_ind], locks[l_ind], rep))
+            out = timeout_output(['./perf_main', 'parallel_dispatcher', '1000', str(srcs[s_ind]), '3', str(works[w_ind]), str(rep), '0', locks[l_ind]], 4)
+            stat_tps[w_ind, s_ind, l_ind] += float(out) / 1500
+
+    stat_tps /= n_reps
+
+    #np.save('results/exp/stat', stat_tps)
+    return stat_tps
+
 if __name__ == '__main__':
     os.mkdir('results')
     os.mkdir('results/exp')
