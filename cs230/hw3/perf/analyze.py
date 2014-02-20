@@ -11,11 +11,12 @@ srcs = [1, 3, 7, 15]
 locks = ['TAS', 'backoff', 'mutex', 'Alock', 'CLH', 'MCS']
 
 def uniform_speedup():
-    lockfree_data = np.load('results_packet/unif/lockfree.npy')
-    random_data = np.load('results_packet/unif/random.npy')
-    lq_data = np.load('results_packet/unif/home.npy')
+    lockfree_data = np.load('results/unif/lockfree.npy')
+    random_data = np.load('results/unif/random.npy')
+    lq_data = np.load('results/unif/home.npy')
     
     # Generate 8 graphs...
+    '''
     for (w_ind, w) in enumerate(works):
         plt.figure()
         plots = []
@@ -26,7 +27,7 @@ def uniform_speedup():
         plt.xlim((0, 16))
         plt.xscale('log', basex=2)
         plt.legend(plots, locks + ['lockfree'], loc=0)
-        import ipdb;ipdb.set_trace()
+        plt.savefig('../img/rand_{0}.png'.format(w), dpi=150, bbox_inches='tight')
 
         plt.figure()
         plots = []
@@ -37,9 +38,129 @@ def uniform_speedup():
         plt.xlim((0, 16))
         plt.xscale('log', basex=2)
         plt.legend(plots, locks + ['lockfree'], loc=0)
-        import ipdb;ipdb.set_trace()
+        plt.savefig('../img/lq_{0}.png'.format(w), dpi=150, bbox_inches='tight')
+    '''
 
+def exp_speedup():
+    lockfree_data = np.load('results/exp/lockfree.npy')
+    random_data = np.load('results/exp/random.npy')
+    lq_data = np.load('results/exp/home.npy')
     
+    # Generate 8 graphs...
+    '''
+    for (w_ind, w) in enumerate(works):
+        plt.figure()
+        plots = []
+        for ind, l in enumerate(locks):
+            plots.append(plt.plot(srcs, random_data[w_ind, :, ind], color=colors[ind+1], linestyle='-')[0])
+        plots.append(plt.plot(srcs, lockfree_data[w_ind, :], color=colors[0], linestyle='-')[0])
+
+        plt.xlim((0, 16))
+        plt.xscale('log', basex=2)
+        plt.legend(plots, locks + ['lockfree'], loc=0)
+        plt.savefig('../img/exp/rand_{0}.png'.format(w), dpi=150, bbox_inches='tight')
+
+        plt.figure()
+        plots = []
+        for ind, l in enumerate(locks):
+            plots.append(plt.plot(srcs, lq_data[w_ind, :, ind], color=colors[ind+1], linestyle='-')[0])
+        plots.append(plt.plot(srcs, lockfree_data[w_ind, :], color=colors[0], linestyle='-')[0])
+
+        plt.xlim((0, 16))
+        plt.xscale('log', basex=2)
+        plt.legend(plots, locks + ['lockfree'], loc=0)
+        plt.savefig('../img/exp/lq_{0}.png'.format(w), dpi=150, bbox_inches='tight')
+        '''
+
+def packet_overhead():
+    data = np.loadtxt('./results/packet_overhead.csv', delimiter=',')
+    works = [25, 50, 100, 200, 400, 800]
+    data = data.T
+
+    locked_data = data[:-1, :]
+    locked_data[:, :2] /= 2 #screwed something up in perf.py....
+    import ipdb;ipdb.set_trace()
+    lockfree_data = data[-1. :]
+
+    locked_data /= lockfree_data
+
+    plt.figure()
+    plots = []
+    for ind, l in enumerate(locks):
+        plots.append(plt.plot(works, locked_data[ind, :], color=colors[ind], linestyle='-')[0])
+
+    plt.xlim((20, 1000))
+    plt.xscale('log', basex=2)
+    plt.legend(plots, locks, loc=0)
+    plt.savefig('../img/pkt_overhead.png', dpi=150, bbox_inches='tight')
+
+def counter_overhead_time():
+    data = np.loadtxt('./results/counter_overhead_time.csv')
+    data_locks = data[:-1] / data[-1]
+    for i in data_locks:
+        print '{:0.3f}&'.format(i),
+
+def counter_overhead_work():
+    data = np.loadtxt('./results/counter_overhead_work.csv')
+    data_locks = data[:-1] / data[-1]
+    for i in data_locks:
+        print '{:0.3f}&'.format(i),
+
+def counter_scaling_time():
+    data_main = np.loadtxt('./results/counter_scaling_time.csv', delimiter=',') / 3
+    no_lock_tp = np.loadtxt('./results/counter_overhead_time.csv', delimiter=',')[-1]
+    srcs = [1, 2, 4, 8, 16, 32]#, 64] 
+
+    data_main /= no_lock_tp
+
+    plt.figure()
+    plots = []
+    for ind, l in enumerate(locks):
+        plots.append(plt.plot(srcs, data_main[ind, :], color=colors[ind], linestyle='-')[0])
+
+    plt.xlim((0, 32))
+    plt.xscale('log', basex=2)
+    plt.xticks(srcs)
+    plt.legend(plots, locks, loc=0)
+    plt.savefig('../img/counter_scaling_time.png', dpi=150, bbox_inches='tight')
+
+def counter_scaling_work():
+    data_main = np.loadtxt('./results/counter_scaling_work.csv', delimiter=',')
+    no_lock_tp = np.loadtxt('./results/counter_overhead_work.csv', delimiter=',')[-1]
+    srcs = [1, 2, 4, 8, 16, 32]#, 64] 
+
+    data_main /= no_lock_tp
+
+    plt.figure()
+    plots = []
+    for ind, l in enumerate(locks):
+        plots.append(plt.plot(srcs, data_main[ind, :], color=colors[ind], linestyle='-')[0])
+
+    plt.xlim((0, 32))
+    plt.xscale('log', basex=2)
+    plt.xticks(srcs)
+    plt.legend(plots, locks, loc=0)
+    plt.savefig('../img/counter_scaling_work.png', dpi=150, bbox_inches='tight')
+
+def counter_fairness():
+    tps = np.loadtxt('./results/counter_fairness_tp.csv')
+    stds = np.loadtxt('./results/counter_fairness_stds.csv')
+
+    plt.scatter(stds, tps)
+    for (i, l) in enumerate(locks):
+        plt.annotate(l, xy=(stds[i], tps[i]), xytext=(-40, 0), textcoords = 'offset points',
+                arrowprops = {'arrowstyle':'->'})
+
+    plt.savefig('../img/counter_fairness.png', dpi=150, bbox_inches='tight')
+
+def stat_worker():
+    stat_tps = np.loadtxt('./results/stat.npy', delimiter=',')
+    random_tps = np.load('./results/exp/random.npy')[:2,3,:]
+    lq_tps = np.load('./results/exp/home.npy')[:2,3,:]
+
+    return (stat_tps / random_tps, stat_tps / lq_tps)
+
+
 def parallel_overheads():
     srcs = np.array([1, 3, 7, 15])
     means = np.array([25, 50, 100, 200, 400, 800])

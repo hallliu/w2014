@@ -130,12 +130,12 @@ def packet_overhead():
 
     for (w_ind, l_ind) in product(range(len(works)), range(len(locks_here))):
         for rep in range(3):
-            _log('packet_overhead: work {0} lock {1} rep {2}'.format(works[w_ind], locks_here[l_ind], rep))
+            print('packet_overhead: work {0} lock {1} rep {2}'.format(works[w_ind], locks_here[l_ind], rep))
             out = timeout_output(['./perf_main', 'parallel_dispatcher', '2000', '1', '0', str(works[w_ind]), str(rep), '1', locks_here[l_ind]], 4)
             packet_tps[w_ind, l_ind] += float(out) / 2000
 
     packet_tps /= 3
-    np.savetxt('results/packet_overhead.csv', packet_tps, delimiter=',')
+    #np.savetxt('results/packet_overhead.csv', packet_tps, delimiter=',')
     return packet_tps
 
 def uniform_speedup():

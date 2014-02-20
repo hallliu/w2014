@@ -1,0 +1,122 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage[namelimits,sumlimits]{amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage{mathtools}
+\usepackage[cm]{fullpage}
+\newcommand{\tab}{\hspace*{5em}}
+\newcommand{\conj}{\overline}
+\newcommand{\dd}{\partial}
+\newcommand{\ep}{\epsilon}
+\newcommand{\openm}{\begin{pmatrix}}
+\newcommand{\closem}{\end{pmatrix}}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\Null}{null}
+\newcommand{\nc}{\newcommand}
+\newcommand{\rn}{\mathbb{R}}
+\newcommand{\zn}{\mathbb{Z}}
+\nc{\cn}{\mathbb{C}}
+\nc{\ssn}[1]{\subsubsection*{#1}}
+\nc{\inner}[2]{\langle #1,#2\rangle}
+\nc{\h}[1]{\widehat{#1}}
+\nc{\tl}[1]{\widetilde{#1}}
+\nc{\norm}[1]{\left\|{#1}\right\|}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\begin{document}
+
+Name: Hall Liu
+
+Date: \today 
+\vspace{20pt}
+
+\section*{Changes to original design}
+\subsection*{Program structure}
+The original plan to have the queue do the locking/unlocking was scuttled because I decided that it would be easier to have that logic in the packet workers instead. At one point, one of my designs called for holding onto a lock between dequeues, but that was later scuttled. This actually came back to haunt me later when I accidentally put the \verb|getFingerPrint| function inside the locked section, resulting in highly distorted performance figures.
+\subsection*{Backoff tuning}
+For the backoff tuning, I decided to make the throughput a function of \verb|min_delay| and \verb|max_delay|, then ran it through Powell's method for optimization without derivatives. The results were pretty screwed up because the function in consideration doesn't have consistent values, but after six or so runs, there was general agreement on one value.
+\section*{Results}
+Unless otherwise specified, all counter experiments were conducted with 4 iterations at the same parameter averaged together, and 3 for the packet tests.
+\subsection*{Counter overhead -- work and time}
+Instead of using an explicit serial function here, I implemented it with the noop lock, which added a very small (on the order of $1\%$) amount of overhead.
+
+\begin{tabular}{c|c|c|c|c|c}
+    TAS&backoff&mutex&Alock&CLH&MCS\\
+    0.093& 0.087& 0.114& 0.164& 0.117& 0.109\\
+\end{tabular}
+
+Here, something strange happened. The TAS and backoff locks actually had worse performance than the rest of them. One possible culprit is the test-and-set function. This is used in TAS and backoff for both lock and unlock, whereas it is not used in the Alock and only used in the lock in CLH and MCS. This is further supported by the good performance of the Alock relative to CLH and MCS.
+
+One thing that can be concluded here is that the thread-local storage isn't much of a performance hit -- the Alock makes pretty heavy use of it and still ended up having the best performance.
+
+For the work-based test, the following was observed:
+
+\begin{tabular}{c|c|c|c|c|c}
+    TAS&backoff&mutex&Alock&CLH&MCS\\
+    0.087& 0.079& 0.107& 0.156& 0.109& 0.104\\
+\end{tabular}
+
+There are higher overheads across the board. If there is a fixed decrease in the throughput for all the cases, including lockfree, we would expect to see this sort of numerical behavior. The fixed decrease can come from the fact that the timer is not fully accurate and would tend to inflate throughput by waiting too long to come back in.
+\subsection*{Lock scaling}
+I decided to forgo the 64-thread test here -- preliminary results on my machine with more threads than cores indicated that there is an extremely severe performance hit, and 32 threads would probably show that on research2. Here are the graphs for the work-based and time-based slowdowns (work-based on the left)
+
+\includegraphics[width=0.5\textwidth]{img/counter_scaling_work.png}
+\includegraphics[width=0.5\textwidth]{img/counter_scaling_time.png}
+
+My graphing software is being finicky and refuses to display the ticks on the $x$-axis, but they run from $1$ to $32$ in a base-2 log scale. 
+
+As we expect, the performance of the FIFO locks drops dramatically with any contention, but then stays relatively constant. TAS drops off in performance faster than backoff does, and the mutex lock just does its own thing. There's no perceptible difference between the work- and time-based approaches besides the small change in scale I noted earlier.
+
+The original hypothesis about the MCS lock not scaling as well is inconclusive -- the 32-thread tests actually timed out for the FIFO locks (the loop didn't stop when the timer told it to, although it was not a deadlock), so those numbers don't actually mean anything.
+\subsection*{Counter fairness}
+Here is the requested scatterplot:
+
+\includegraphics[width=0.6\textwidth]{img/counter_fairness.png}
+
+The backoff lock managed to have the highest throughput by far, and also the highest standard deviation. This isn't surprising considering the lock scaling results. With lower standard deviation we have the TAS lock, then all the FIFO locks and the mutex are clustered together with very low standard deviation. This suggests that the mutex also uses some sort of internal queue to keep things fair -- probably the operating system scheduler itself, actually. The original hypothesis about the MCS lock having slightly higher standard deviation turned out to be accurate -- 156 packets/ms for MCS versus 144 for CLH, though we should be careful about attributing statistical significance to such a small difference.
+
+\subsection*{Packet overhead}
+\includegraphics[width=0.6\textwidth]{img/pkt_overhead.png}
+
+As expected, we see less and less proportional overhead as the amount of work gets larger, with the exception of a weird hump by TAS and backoff at $W=50$. We see that TAS and backoff follow each other very closely (due to the similarity of their uncontested code paths) and end up near the bottom for performance for most values of $W$ (as expected from the discussion of test-and-set above). The Alock dominates in performance, followed by CLH then MCS, which again echos the results from the counter tests. 
+
+As for the worker rate, it's just number of packets processed by time, which is exactly the data we're collecting here. The worker rate from the last assignment is the same as the one here: for example, $W=400$ plugged into the fitted equation from last time gives a rate of 955 packets/ms, and the rate measured from lockfree was 950 here.
+\subsection*{Uniform speedup}
+Between this and the exponential speedup, there are 16 graphs. For the sake of saving some paper, I'm going to leave those in the SVN repo (in the img directory in the unif and exp subdirectories, named \verb|lq_xxxx| or \verb|rand_xxxx|, where \verb|xxxx| is the work mean), especially since many of them look really similar. 
+
+That said, here are the $W=1000$ graphs from lastqueue (left) and random queue. We can clearly see where the dispatcher rate gets hit in both graphs.
+
+\includegraphics[width=0.5\textwidth]{img/unif/lq_1000.png}
+\includegraphics[width=0.5\textwidth]{img/unif/rand_1000.png}
+
+The behavior of these differ after the dispatcher rate gets hit. lastqueue has better performance up until that point, but then drops off to about the same. This is because the two strategies basically act the same when most of the queues are empty (i.e. the dispatcher isn't fast enough) -- they both jump around randomly looking for packets to process, not staying on one queue for very long. 
+
+Curiously though, the performance of the backoff lock is much better under lastqueue than under random, and it even seems to be unaffected by the dispatcher rate barrier. This is a common theme across all the workloads. A possible explanation is the sleep call inside backoff. Even though there are 16 logical cores, a thread getting descheduled will free up time on the physical cores for other threads to run, which means that the dispatcher rate is potentially increased. In the random queue approach, a thread going to sleep means less threads to process packets, whereas in lastqueue, a thread going to sleep will potentially decrease contention on the queues that are present.
+
+In virtually all cases, the load-balanced approaches failed to beat the lockfree approach, and they only manage to approach the lockfree approach's performance from below as $W$ increases. The reasoning for this is given in the next section.
+
+\subsection*{Exponential speedup}
+Mystifyingly, the lockfree approach managed to get higher throughput on exponential packets than on uniform packets for higher values of $W$. This is totally contradictory to the findings from the last assignment, and the only thing that changed was the time-based versus the work-based approach. For packet processing, this is probably actually significant. 
+
+In the work-based approach, we had to wait for all the workers to finish their assigned workload. This means that the overall performance was bottlenecked by the unfortunate worker who got the source with the highest mean. However, in the time-based approach, no such restriction exists, as we're merely counting the total number of packets processed. This, combined with the dispatcher skipping over full queues and saving the packet for the next time it comes around, effectively means that the performance is instead pegged to the source with the \textit{lowest} mean work, as it's free to process as many packets as it wants, contributing to the overall count. Essentially, the load balancing isn't doing us any good because the dispatcher is already balancing out the load in its own odd little way.
+
+Unfortunately, this realization came a bit too late to be useful (my own scheduler could use some work), so I'm just going to plow ahead and analyze the data with this in mind. Again, we look at the $W=1000$ case, as the effect of the locks becomes more obscured as $W$ increases and the proportional overhead decreases.
+
+\includegraphics[width=0.5\textwidth]{img/exp/lq_1000.png}
+\includegraphics[width=0.5\textwidth]{img/exp/rand_1000.png}
+
+We see pretty much the same effect as the uniform case, with throughputs being a bit lower in the exponential case. The same jump in backoff lock performance occurs, and we have, for both distributions and both worker strategies, the CLH lock drooping in performance with respect to the other locks at the 15-source mark. This is interesting because we don't see this happening for other values of $W$, which suggests that it's got something to do with the dispatcher rate, and by extension, contention. However, we didn't see this effect in the counter experiments, which suggests that some more detailed experimentation is needed to figure out what's actually going on.
+\subsection*{Statistical worker}
+This is the custom load-balancing strategy. Based on the observation that lastqueue tends to do better than random-queue for exponentially distributed packets and the fact that neither strategy makes use of the fact that the sources in the exponential distribution have different means, I implemented a strategy that attempts to gravitate towards queues with more work.
+
+First, a brief description of the strategy. Each worker initializes an array of relative weights assigned to each queue. In the beginning, these weights are all set equal. Each time a packet is pulled from a queue, the worker updates the queue's relative weight by taking an exponentially weighted moving average with $\alpha=0.05$. Assuming that there are enough packets and a constant mean for each source, this should converge to the true mean and stay there. Conversely, each time a worker encounters an empty queue or contention, it degrades the weight of that queue.
+
+Once every 64 iterations, the worker calculates a cumulative density function from the relative weights. The worker follows the lastqueue strategy, except when it looks for a new queue, it samples from the calculated cdf rather than from a uniform distribution on the queues. This means that the worker is more likely to gravitate towards queues that have more work and less contention. 
+
+According to the principles I mentioned in my design document, this is likely to improve on lastqueue by shifting even more towards the extreme where the worker gravitates towards where the work is. Unfortunately, due to the aforementioned dispatcher effect, I was unable to actually observe any improvement.
+\end{document}
