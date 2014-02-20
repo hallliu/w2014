@@ -121,8 +121,8 @@ class WorkerTests(unittest.TestCase):
     def setUp(self):
         self.pkts = [1, 2, 4, 32, 1024 ]
         self.srcs = [1, 2, 4, 5]
-        self.worker_types = [0, 1, 2]
-        self.worker_names = {0: 'homequeue', 1: 'random', 2: 'lastqueue'}
+        self.worker_types = [0, 1, 2, 3]
+        self.worker_names = {0: 'homequeue', 1: 'random', 2: 'lastqueue', 3:'statistical'}
         self.means = [1, 1000]
         self.distrs = [0, 1]
         self.lock_types = ['TAS', 'backoff', 'Alock', 'mutex', 'CLH', 'MCS']
@@ -164,6 +164,16 @@ class WorkerTests(unittest.TestCase):
             for c in counts:
                 if np.matrix(c).std() > pkts/srcs:
                     raise AssertionError('Stddev too high at {0}: data is {1}'.format((pkts, srcs, mean, distr, l_type), c))
+
+    def test_statistical_distrs(self):
+        for i in range(10):
+            cmdstr = ['./test_main', 'general_worker', '80000', '4', '3', '1000', '0', '1', 'mutex']
+            out = sp.check_output(cmdstr)
+            counts = out.split('\n')[:-2]
+            m = np.zeros(4, dtype='int')
+            for c in counts:
+                m += np.matrix(c).A[0]
+            print m
 
     def test_lastqueue_order(self):
         for (pkts, srcs) in itertools.product([100, 200, 400], [1, 2, 4, 8, 16]):

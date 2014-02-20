@@ -10,6 +10,9 @@
 #include "../packet_workers.h"
 
 #define QUEUE_DEPTH 8
+#ifndef TESTING
+#error "This file should be compiled with -DTESTING"
+#endif
 
 static void usleep(int n) {
     struct timespec sleep_time = {.tv_sec = n / 1000000, .tv_nsec = (n % 1000000) * 1000};
@@ -42,8 +45,11 @@ long general_test
         case 1:
             worker_fn = random_worker;
             break;
-        default:
+        case 2:
             worker_fn = lastqueue_worker;
+            break;
+        default:
+            worker_fn = statistical_worker;
             break;
     }
 
@@ -95,7 +101,7 @@ long general_test
     // Print out the worker queue data. This is supposed to go straight
     // into Python from a stdout pipe.
    
-    if (worker_type == 1) {
+    if (worker_type == 1 || worker_type == 3) {
         for (int i = 0; i < n_src; i++) {
             for (int j = 0; j < n_src; j++) {
                 printf("%d ", worker_data[i].queue_hits[j]);
