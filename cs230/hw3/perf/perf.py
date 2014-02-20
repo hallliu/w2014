@@ -218,8 +218,8 @@ def new_workers():
     for (w_ind, s_ind, l_ind) in product(range(len(works)), range(len(srcs)), range(len(locks))):
         for rep in range(n_reps):
             #print('exp speedup stat work {0} source {1} lock {2} rep {3}'.format(works[w_ind], srcs[s_ind], locks[l_ind], rep))
-            out = timeout_output(['./perf_main', 'parallel_dispatcher', '1000', str(srcs[s_ind]), '3', str(works[w_ind]), str(rep), '0', locks[l_ind]], 4)
-            stat_tps[w_ind, s_ind, l_ind] += float(out) / 1500
+            out = timeout_output(['./perf_main', 'parallel_dispatcher', '1000', str(srcs[s_ind]), '2', str(works[w_ind]), str(rep), '0', locks[l_ind]], 4)
+            stat_tps[w_ind, s_ind, l_ind] += float(out) / 1000
 
     stat_tps /= n_reps
 
