@@ -57,8 +57,14 @@ void parallel_dispatcher
         case 1:
             worker_fn = random_worker;
             break;
-        default:
+        case 2:
             worker_fn = lastqueue_worker;
+            break;
+        case 3:
+            worker_fn = statistical_worker;
+            break;
+        default:
+            worker_fn = statistical_worker1;
             break;
     }
 
