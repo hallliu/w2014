@@ -18,4 +18,5 @@ struct thread_data {
 void *homequeue_worker (void *);
 void *random_worker (void *);
 void *lastqueue_worker (void *);
+void *statistical_worker(void *);
 #endif
