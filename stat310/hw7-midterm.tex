@@ -1,0 +1,75 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage[namelimits,sumlimits]{amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage[cm]{fullpage}
+\newcommand{\tab}{\hspace*{5em}}
+\newcommand{\conj}{\overline}
+\newcommand{\dd}{\partial}
+\newcommand{\ep}{\epsilon}
+\newcommand{\openm}{\begin{pmatrix}}
+\newcommand{\closem}{\end{pmatrix}}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\Null}{null}
+\newcommand{\nc}{\newcommand}
+\newcommand{\rn}{\mathbb{R}}
+\nc{\cn}{\mathbb{C}}
+\nc{\ssn}[1]{\subsubsection*{#1}}
+\nc{\inner}[2]{\langle #1,#2\rangle}
+\nc{\h}[1]{\widehat{#1}}
+\nc{\tl}[1]{\widetilde{#1}}
+\nc{\norm}[1]{\left\|{#1}\right\|}
+\nc{\lb}{\lambda}
+\nc{\ddx}[1]{\frac{d}{d{#1}}}
+\nc{\ddxt}[1]{\frac{d^2}{d{#1}^2}}
+\begin{document}
+
+Name: Hall Liu
+
+Date: \today 
+\vspace{1.5cm}
+
+\subsection*{1}
+\ssn{a}
+The first derivative of $\phi_2$ with respect to $\lb$ is $\frac{\ddx{\lb}\|p(\lb)\|}{\|p(\lb)\|^2}$. Differentiating again gives a $\|p(\lb)\|^2$ in the denominator (which we don't care about because it doesn't change sign), and the numerator is
+\[ \|p(\lb)\|^2\ddxt{\lb}\|p(\lb)\|-\left(\ddx{\lb}\|p(\lb)\|\right)^2\cdot2\|p(\lb)\|=\|p(\lb)\|\left(\|p(\lb)\|\ddxt{\lb}\|p(\lb)\|-2\left(\ddx{\lb}\|p(\lb)\|\right)^2\right)\]
+From (4.39) in the text, we have $\|p(\lb)\|=\sqrt{\sum\frac{(q_i^Tg)^2}{(\lb_i+\lb)^2}}$. Since $(q_i^Tg)^2$ is constant wrt $\lb$, denote it by $b_i$. Then, we have
+\[\ddx{\lb}\|p(\lb)\|=-\frac{\sum\frac{b_i}{(\lb_i+\lb)^3}}{\|p(\lb)\|}\]
+Taking the second derivative, we have
+\[-\frac{1}{\|p(\lb)\|}\cdot-3\sum\frac{b_i}{(\lb_i+\lb)^4}+\frac{1}{\|p(\lb)\|^2}\left(\sum\frac{b_i}{(\lb_i+\lb)^3}\right)\frac{\sum\frac{b_i}{(\lb_i+\lb)^3}}{\|p(\lb)\|}\]
+Simplifying, this becomes
+\[\frac{3}{\|p(\lb)\|}\sum\frac{b_i}{(\lb_i+\lb)^4}+\frac{1}{\|p(\lb)\|}\left(\ddx{\lb}\|p(\lb)\|\right)^2\]
+so the expression inside the parens in the numerator of the second derivative of $\phi_2$ is
+\[3\sum\frac{b_i}{(\lb_i+\lb)^4}-\frac{1}{\|p(\lb)\|^2}\left(\sum\frac{b_i}{(\lb_i+\lb)^3}\right)^2\]
+Thus, the second derivative will be nonnegative everywhere if we have that 
+\[\left(\sum\frac{b_i}{(\lb_i+\lb)^3}\right)^2-\left(\sum\frac{b_i}{(\lb_i+\lb)^4}\right)\left(\sum\frac{b_i}{(\lb_i+\lb)^2}\right)\leq0\]
+Expanding out the products and subtracting, the remaining terms are of the form 
+\[\frac{2b_ib_j}{(\lb_i+\lb)^3(\lb_j+\lb)^3}-\frac{b_ib_j}{(\lb_i+\lb)^4(\lb_j+\lb)^2}-\frac{b_ib_j}{(\lb_i+\lb)^4(\lb_j+\lb)^2}\]
+Factoring out the $b_ib_j$ (they're all positive), we're left with an expression of the form $2a^3b^3-a^4b^2-a^2b^4$, where $a,b\geq0$. In turn, this can be written as $-(a-b)^2a^2b^2\leq0$, which means that the whole thing is less than $0$, which means that the second derivative is nonnegative.
+\ssn{b}
+%Expressing the ``tangent below the graph'' property in the terms of this problem, we have that $\phi_2(\lb_l)-\phi_2'(\lb_l)(\lb_{l+1}-\lb_l)\leq\phi_2(\lb_{l+1})$. Substituting in $\lb_{l+1}=\lb_l-\frac{\phi_2(\lb_l)}{\phi_2'(\lb_l)}$, we have
+%\[\phi_2(\lb_l)-\phi_2'(\lb_l)\left(-\frac{\phi_2(\lb_l)}{\phi_2'(\lb_l)}\right)\leq\phi_2(\lb_{l+1})\]
+We know that $\phi_2$ is nonincreasing, so $\phi_2'(\lb)\leq0$ everywhere. If $\lb_{l}<\lb^*$, then $\phi_2(\lb_l)>0$, so $\lb_{l+1}=\lb_l-\frac{\phi_2(\lb_l)}{\phi_2'(\lb_l)}>\lb_l$. Then, using the ``tangent-below-the-graph'' property $\phi_2(\lb_l)+\phi_2'(\lb_l)(\lb^*-\lb_l)\leq\phi_2(\lb^*)=0$, we have that $\phi_2'(\lb_l)\leq-\frac{\phi_2(\lb_l)}{\lb^*-\lb_l}$, so that $\lb_l-\frac{\phi_2(\lb_l)}{\phi_2'(\lb_l)}\leq\lb_l+\frac{\phi_2(\lb_l)}{\frac{\phi_2(\lb_l)}{\lb^*-\lb_l}}=\lb^*$.
+
+Otherwise if $\lb_l>\lb^*$, then the inequality $\phi_2(\lb_l)+\phi_2'(\lb_l)(\lb^*-\lb_l)\leq0$ turns into $\phi_2'(\lb_l)\geq-\frac{\phi_2(\lb_l)}{\lb^*-\lb_l}$. Since we now have $\phi_2(\lb_l)<0$, then $\lb_l-\frac{\phi_2(\lb_l)}{\phi_2'(\lb_l)}\leq\lb_l+\frac{\phi_2(\lb_l)}{\frac{\phi_2(\lb_l)}{\lb^*-\lb_l}}=\lb^*$
+\ssn{c}
+First, note that the ``otherwise'' condition will be hit only finitely times -- if the initial point is to the right of $\lb^*$, then that condition will be executed until $\tl{\lb}^{l+1}$ ends up to the right of $-\lb_1$ or until the iteration of the second condition takes $\lb^l$ to the left of $\lb^*$ (which is guaranteed to occur in a finite number of steps). Then, once the point is in $(-\lb_1,lb^*)$, all subsequent points will lie in that interval also by (b). Thus, all we need to worry about in the tail of the sequence is the Newton's method updating.
+
+We already know that the algorithm converges to something in $(-\lb_1, \lb^*]$ due to the sequence being monotonic and bounded. Suppose that the sequence converges to something less than $\lb^*$, call it $x^*$. Let $\phi_2(x^*)=M>0$, and let $N$ be a uniform bound on $|\phi_2'(\lb)|$ on some open interval $I$ containing $x^*$. Then, we have for any $\lb^l\in I$, $\lb^l<x^*$ that $\lb^{l+1}=\lb^l+\frac{\phi_2(\lb^l)}{|\phi_2(\lb^l)|}\geq\lb^l+\frac{M}{N}$. Then, for $\lb^l$ sufficiently close to $x^*$, $\lb^{l+1}>x^*$, contradicting convergence.
+
+To show quadratic convergence, for any $l$, we have by Taylor's theorem that
+\[0=\phi_2(\lb^*)=\phi_2(\lb^l+(\lb^*-\lb^l))=\phi_2(\lb^l)+\phi_2'(\lb^l)(\lb^*-\lb^l)+\frac{1}{2}(\lb^*-\lb^l)^2\phi_2''(t)\]
+for some $t\in[\lb^l,\lb^*]$. Then, dividing by $\phi_2'(\lb^l)(\lb^*-\lb^l)^2$ and rearranging gives
+\[0=\frac{\frac{\phi_2(\lb^l)}{\phi_2'(\lb^l)}+\lb^*-\lb^l}{(\lb^*-\lb^l)^2}+\frac{\phi_2''(t)}{\phi_2'(\lb^l)}\]
+The first term is the ratio that we care about -- we want to show that it's bounded above. Fortunately, the second derivative is uniformly bounded above on $(\lb^k, lb^*)$ where $\lb^k$ is the first iterate in $(-\lb_1,lb^*)$, and the magnitude of first derivative is uniformly bounded below on the same interval. Thus, we have quadratic convergence.
+\ssn{d}
+
+
+
+\end{document}
+
