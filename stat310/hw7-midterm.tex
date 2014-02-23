@@ -3,6 +3,7 @@
 \usepackage[namelimits,sumlimits]{amsmath}
 \usepackage{amssymb,amsfonts}
 \usepackage{multicol}
+\usepackage{algpseudocode}
 \usepackage{graphicx}
 \usepackage[cm]{fullpage}
 \newcommand{\tab}{\hspace*{5em}}
@@ -68,8 +69,63 @@ for some $t\in[\lb^l,\lb^*]$. Then, dividing by $\phi_2'(\lb^l)(\lb^*-\lb^l)^2$ 
 \[0=\frac{\frac{\phi_2(\lb^l)}{\phi_2'(\lb^l)}+\lb^*-\lb^l}{(\lb^*-\lb^l)^2}+\frac{\phi_2''(t)}{\phi_2'(\lb^l)}\]
 The first term is the ratio that we care about -- we want to show that it's bounded above. Fortunately, the second derivative is uniformly bounded above on $(\lb^k, lb^*)$ where $\lb^k$ is the first iterate in $(-\lb_1,lb^*)$, and the magnitude of first derivative is uniformly bounded below on the same interval. Thus, we have quadratic convergence.
 \ssn{d}
+To solve the subproblem, we are given a matrix $B$ and the value of the gradient and the function at the particular point. The characterization theorem gives us necessary and sufficient criteria for a solution. First, we want to check to see whether there is a solution with $\|p\|<\Delta$. If this is to be true, then we must have $\lb=0$, which means that $B$ must be pos. semidef. and there is a solution to $Bp=-g$. Since we're going to be using the eigenvalue decomposition, we can achieve this step as follows:
 
+\begin{algorithmic}
+    \State let $QDQ^T=B$
+    \If{all entries of $D$ are nonnegative}
+        \State attempt to compute a solution to $DQ^Tp=-Q^Tg$
+        \If{solution exists}
+            \State return solution
+        \Else
+            \State assert that $\|p\|=\Delta$ and proceed to iterative solution
+        \EndIf
+    \Else
+        \State assert that $\|p\|=\Delta$ and proceed to iterative solution
+    \EndIf
+\end{algorithmic}
 
+We also need to ensure that $q_1^Tg\neq0$. If this doesn't hold, then we can just use (4.45) to compute $p$ and be done with it. Now, for the iteration, we have
 
+\begin{algorithmic}
+    \State Initialize $\lb=\lb^0$, $c$.
+    \While{$|\phi_2(\lb)|>\ep$}
+        \State Compute $\phi_2(\lb)$ and $\phi_2'(\lb)$ according to formulas from (a)
+        \State $\tl{\lb}\gets\lb-\frac{\phi_2(\lb)}{\phi_2'(\lb)}$
+        \If{$\tl{\lb}\leq-\lb_1$}
+            \State $\lb\gets-c\lb_1+(1-c)\lb$
+        \Else
+            \State $\lb\gets\tl{\lb}$
+        \EndIf
+    \EndWhile
+\end{algorithmic}
+\subsection*{2}
+The backtracking approach gives us a pair of inequalities. The first is identical to the Goldstein conditions:  $f(x_k+\alpha p_k)\leq f(x_k)+c\alpha\nabla f_k^Tp_k$. The second comes from the termination of the iteration: $f(x_k+\alpha p_k/\rho)>f(x_k)+c\alpha\nabla f_k^Tp_k/\rho$, where $\rho\in(0,1)$. 
+
+Define $g(t)=f(x_k+t\alpha p_k/\rho)$. Then $g(0)=f(x_k)$ and $g(1)=f(x_k+\alpha p_k/\rho)$. We have 
+\[g(1)-g(0)=\int_0^1\frac{d}{dt}g(t)dt=\int_0^1\alpha\nabla f(x_k+t\alpha p_k/\rho)^Tp_k=\frac{\alpha}{\rho}\nabla f(x_k+t\alpha p_k/\rho)^Tp_k\]
+for some $t\in[0,1]$, the latter equality by the mean value theorem. Plugging this into the second inequality from backtracking, we have
+\[\alpha\nabla f(x_k+t\alpha p_k/\rho)^Tp_k>c\alpha\nabla f(x_k)^Tp_k\]
+Subtracting $\alpha\nabla f(x_k)^Tp_k$ from both sides and collecting terms, we have
+\[\alpha_k\left(\nabla f(x_k+t\alpha p_k/\rho)-\nabla f(x_k)\right)^Tp_k>\alpha(c-1)\nabla f(x_k)^Tp_k\]
+Since the RHS is positive, we can apply Cauchy-Schwarz then the Lipschitz condition to the LHS to get
+\[\frac{L\alpha^2t}{\rho}\|p_k\|^2>\alpha(c-1)\nabla f(x_k)^Tp_k\]
+Since $t\in[0,1]$, we can discard it. Rearranging so that we get a bound on $\alpha$, we have 
+\[\alpha>\frac{\rho(c-1)\nabla f(x_k)^Tp_k}{L\|p_k\|^2}\]
+Then, plugging this into the first inequality gives us
+\[f(x_k)-f(x_{k+1})\geq-c\alpha\nabla f(x_k)^Tp_k>-\frac{\rho(c^2-c)\left(\nabla f(x_k)^Tp_k\right)^2}{L\|p_k\|^2}\]
+Now since $a^Tb=\|a\|\|b\|\cos(\theta)$, we have that the above is equal to 
+\[\frac{\rho(c-c^2)\|\nabla f(x_k)\|^2\cos^2(\theta_k)}{L}\]
+Thus, the sum of the above expression over all $k$ is bounded above by the sum of $f(x_k)-f(x_{k+1})$ over all $k$(ignoring the constant terms $\rho$ and $c$), which is a bounded telescoping sum due to the below-boundedness of $f$. Thus, we have convergence.
+\subsection*{3}
+We know from the structure of the trust region and line search algorithms that the sequence of function values is monotonic -- $f(x_{k+1})\leq f(x_k)$ for all $k$. The second part of the assumption gives us that there is a unique, isolated minimizer $x^*$ somewhere in $L$. Then, we know that if $f(x_k)$ converges to $f(x^*)$, we have by continuity of $f$ that $x_k$ converges to $x^*$.
+
+Translate the function such that $f(x^*)=0$. Suppose that $f(x_k)$ does not converge to $0$. Then, since the sequence of function values is monotonic, we must have that $f(x_k)$ is bounded below by some $\ep>0$, which means that all $x_k$ remain outside the set $\{x: f(x)\leq\ep/2\}$. However, since there is a limit point $x^\sharp$ of the $x_k$ with $\|\nabla f(x^\sharp)\|=0$, this means that $f(x^\sharp)\geq\ep/2$ and $\|\nabla f(x^\sharp)\|=0$, which contradicts the strong convexity that the assumption gives us.
+\subsection*{4}
+\ssn{a}
+Differentiating $P(x)$ wrt $d$, we have $f'(x)+df''(x)+\frac{1}{2}d^2f'''(x)$. Finding the roots of this (the stationary points) with the quadratic formula, we have 
+\[d=\frac{-f''(x)+\sqrt{\left(f''(x)\right)^2-2f'(x)f'''(x)}}{f'''(x)}\]
+As $x\to x^*$, the term inside the square root approaches $\left(f''(x)\right)^2$ because $f'''(x)$ and $f''(x)$ are both bounded both above and away from zero near $x^*$. Thus, we have a stationary point $d$ that approaches zero as $x\to x^*$
+\ssn{b}
 \end{document}
 
