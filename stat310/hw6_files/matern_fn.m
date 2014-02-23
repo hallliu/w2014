@@ -11,11 +11,11 @@ function [fx, gx] = matern_fn(X, y, theta)
         Kderivs{i} = matern_deriv(K, X, theta, i);
         tr_kkderiv(i) = trace(L.'\(L\Kderivs{i}));
     end
-    Kdet = prod(diag(L))^2;
+    log_kdet = sum(log(diag(L)))*2;
 
     
     kinv_y = L.'\(L\y);
-    fx = 0.5 * y.' * kinv_y + 0.5 * log(Kdet) + 0.5 * n * log(2*pi);
+    fx = 0.5 * y.' * kinv_y + 0.5 * log_kdet + 0.5 * n * log(2*pi);
     
     gx = (1:d).';
     for i = 1:d
