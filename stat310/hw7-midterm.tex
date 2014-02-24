@@ -75,19 +75,27 @@ To solve the subproblem, we are given a matrix $B$ and the value of the gradient
     \State let $QDQ^T=B$
     \If{all entries of $D$ are nonnegative}
         \State attempt to compute a solution to $DQ^Tp=-Q^Tg$
-        \If{solution exists}
-            \State return solution
-        \Else
-            \State assert that $\|p\|=\Delta$ and proceed to iterative solution
+        \If{the zeros in $D$ are in the same place as in $Q^Tg$}
+            \If{the solution has norm less than or equal to $\Delta$}
+                \State return solution
+            \EndIf
         \EndIf
-    \Else
-        \State assert that $\|p\|=\Delta$ and proceed to iterative solution
     \EndIf
+    \State assert that $\|p\|=\Delta$ and proceed to iterative solution
 \end{algorithmic}
 
 We also need to ensure that $q_1^Tg\neq0$. If this doesn't hold, then we can just use (4.45) to compute $p$ and be done with it. Now, for the iteration, we have
 
 \begin{algorithmic}
+    \State Partition $Q$ by columns into $Q_1$ and $Q_2$, with $Q_1$ containing all eigenvectors with the lowest eigenvalue.
+    \State Let $D$ be the array of eigenvalues in increasing order. Partition it similarly to $Q$.
+    \If{$Q_1^Tg=0$}
+        \State $u\gets Q_2^Tg$
+        \State $d\gets D_2+\lambda_1$
+        \State $\tau\gets\sqrt{\Delta-\sum\left(\frac{u_i}{d_i}\right)^2}$
+        \State return $\sum_{i\in Q_2}\left(\frac{u_i}{d_i}\right)q_i+\tau Q_1(1)$
+    \EndIf
+
     \State Initialize $\lb=\lb^0$, $c$.
     \While{$|\phi_2(\lb)|>\ep$}
         \State Compute $\phi_2(\lb)$ and $\phi_2'(\lb)$ according to formulas from (a)
@@ -98,6 +106,7 @@ We also need to ensure that $q_1^Tg\neq0$. If this doesn't hold, then we can jus
             \State $\lb\gets\tl{\lb}$
         \EndIf
     \EndWhile
+    \State return $-\sum_{i=1}^n\frac{q_i^Tg}{\lambda_i+\lambda}q_j$
 \end{algorithmic}
 \subsection*{2}
 The backtracking approach gives us a pair of inequalities. The first is identical to the Goldstein conditions:  $f(x_k+\alpha p_k)\leq f(x_k)+c\alpha\nabla f_k^Tp_k$. The second comes from the termination of the iteration: $f(x_k+\alpha p_k/\rho)>f(x_k)+c\alpha\nabla f_k^Tp_k/\rho$, where $\rho\in(0,1)$. 
