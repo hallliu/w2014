@@ -18,10 +18,14 @@ function [xi, iters] = eig_sr1(X, sample, start, Dhat, eta, c, epsilon)
         pk = calculate_pk(B, gx, c, epsilon, TR_size);
         old_fx = fx;
         old_gx = gx;
+        norm(gx)
+        if mod(iters, 10) == 0
+            iters;
+        end
         
         [fx, gx] = matern_fn(X, sample, (x + pk));
         
-        rho_k = (old_fx - fx) / (old_fx - quad_model(old_fx, old_gx, L, D, p, pk));
+        rho_k = (old_fx - fx) / (old_fx - quad_model(old_fx, old_gx, B, pk));
         B = update_sr1(B, pk, gx - old_gx);
 
         if rho_k < 0.25
@@ -39,7 +43,6 @@ function [xi, iters] = eig_sr1(X, sample, start, Dhat, eta, c, epsilon)
         end
         
     end
-    
 end
 
 function B1 = update_sr1(B, s, y)
@@ -49,11 +52,11 @@ function B1 = update_sr1(B, s, y)
         return;
     end
     
-    B1 = (ymbs * ymbs.') / (ymbs.' * s);
+    B1 = B + (ymbs * ymbs.') / (ymbs.' * s);
 end
 
-function m = quad_model(fx, gx, L, D, p, x)
-    m = fx + gx.' * x + x.' * apply_ldl(L, D, p, x) / 2;
+function m = quad_model(fx, gx, B, x)
+    m = fx + gx.' * x + x.' * B * x / 2;
 end
 
 function pk = calculate_pk(B, gx, c, epsilon, TR_size)
@@ -72,7 +75,10 @@ function pk = calculate_pk(B, gx, c, epsilon, TR_size)
         return
     end
     
-    pk = Q * (diag(D) .* qtg);
+    pk = -Q * (qtg./diag(D));
+    if norm(pk) > TR_size
+        pk = iterate_pk(Q, D, gx, c, epsilon, TR_size);
+    end
 end
 
 function pk = iterate_pk(Q, D, gx, c, epsilon, TR_size)
@@ -85,11 +91,11 @@ function pk = iterate_pk(Q, D, gx, c, epsilon, TR_size)
         upper = qtg(~l1_inds);
         lower = eigs(~l1_inds) + eigs(0);
         tau = sqrt(TR_size - sum(upper.^2 / lower.^2));
-        pk = sum(upper./lower) .* Q(:, ~l1_inds) + tau * Q(:, 1);
+        pk = sum(bsxfun(@times, Q(:, ~l1_inds), (upper./lower).'), 2) + tau * Q(:, 1);
         return
     end
     
-    lambda = abs(eigs(1)) * 1.5; % initial value for lambda, kinda arbitrary
+    lambda = (abs(eigs(1))+1) * 1.5; % initial value for lambda, kinda arbitrary
     [phi2, dphi2] = phi2_fn(lambda, qtg, eigs, TR_size);
     while abs(phi2) > epsilon
         other_lambda = lambda - phi2 / dphi2;
@@ -101,7 +107,7 @@ function pk = iterate_pk(Q, D, gx, c, epsilon, TR_size)
         [phi2, dphi2] = phi2_fn(lambda, qtg, eigs, TR_size);
     end
     
-    pk = -sum((qtg ./ (eigs + lambda)) .* Q);
+    pk = -sum(bsxfun(@times, Q, (qtg ./ (eigs + lambda)).'), 2);
 end
 
 function [phi2, dphi2] = phi2_fn(lambda, qtg, eigs, TR_size)
@@ -113,5 +119,5 @@ function [psq, dp] = pnorm(lambda, qtg, eigs)
     lower = (eigs + lambda).^2;
     psq = sum(qtg.^2 ./ lower);
     lower3 = (eigs + lambda).^3;
-    dp = -sum(qtg.^2 ./ lower3) / sqrt(p);
+    dp = -sum(qtg.^2 ./ lower3) / sqrt(psq);
 end
