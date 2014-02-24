@@ -1,4 +1,4 @@
-function [xi, iters] = eig_sr1(X, sample, start, Dhat, eta, epsilon)
+function [xi, iters] = eig_sr1(X, sample, start, Dhat, eta, c, epsilon)
     x = start;
     iters = 0;
     TR_size = Dhat;
@@ -15,7 +15,7 @@ function [xi, iters] = eig_sr1(X, sample, start, Dhat, eta, epsilon)
             break
         end
         iters = iters + 1;
-        pk = calculate_pk(B, gx);
+        pk = calculate_pk(B, gx, c, epsilon, TR_size);
         old_fx = fx;
         old_gx = gx;
         
@@ -56,3 +56,62 @@ function m = quad_model(fx, gx, L, D, p, x)
     m = fx + gx.' * x + x.' * apply_ldl(L, D, p, x) / 2;
 end
 
+function pk = calculate_pk(B, gx, c, epsilon, TR_size)
+    [Q, D] = eig(B);
+    if D(1,1) < 0
+        pk = iterate_pk(Q, D, gx, c, epsilon, TR_size);
+        return
+    end
+    
+    % Find indices where D and Q^Tg are zero (or close). If any indices of 
+    %D are zero where Q^Tg is not, then there is no solution.
+    zero_eigs = (diag(D) < 1e-10);
+    qtg = Q.' * gx;
+    if ~all(qtg(zero_eigs) < 1e-10)
+        pk = iterate_pk(Q, D, gx, c, epsilon, TR_size);
+        return
+    end
+    
+    pk = Q * (diag(D) .* qtg);
+end
+
+function pk = iterate_pk(Q, D, gx, c, epsilon, TR_size)
+    qtg = Q.' * gx;
+    eigs = diag(D);
+    % This is checking the "hard case" in the book
+    l1_inds = eigs - eigs(1) < 1e-8;
+    
+    if all(abs(qtg(l1_inds)) < 1e-10)
+        upper = qtg(~l1_inds);
+        lower = eigs(~l1_inds) + eigs(0);
+        tau = sqrt(TR_size - sum(upper.^2 / lower.^2));
+        pk = sum(upper./lower) .* Q(:, ~l1_inds) + tau * Q(:, 1);
+        return
+    end
+    
+    lambda = abs(eigs(1)) * 1.5; % initial value for lambda, kinda arbitrary
+    [phi2, dphi2] = phi2_fn(lambda, qtg, eigs, TR_size);
+    while abs(phi2) > epsilon
+        other_lambda = lambda - phi2 / dphi2;
+        if other_lambda <= -eigs(1)
+            lambda = -c * eigs(1) + (1-c) * lambda;
+        else
+            lambda = other_lambda;
+        end
+        [phi2, dphi2] = phi2_fn(lambda, qtg, eigs, TR_size);
+    end
+    
+    pk = -sum((qtg ./ (eigs + lambda)) .* Q);
+end
+
+function [phi2, dphi2] = phi2_fn(lambda, qtg, eigs, TR_size)
+    [psq, dp] = pnorm(lambda, qtg, eigs);
+    phi2 = 1/TR_size - 1/sqrt(psq);
+    dphi2 = dp / psq;
+end
+function [psq, dp] = pnorm(lambda, qtg, eigs)
+    lower = (eigs + lambda).^2;
+    psq = sum(qtg.^2 ./ lower);
+    lower3 = (eigs + lambda).^3;
+    dp = -sum(qtg.^2 ./ lower3) / sqrt(p);
+end
