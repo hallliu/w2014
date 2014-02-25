@@ -111,7 +111,7 @@ We also need to ensure that $q_1^Tg\neq0$. If this doesn't hold, then we can jus
 \ssn{e}
 For the $6^4$ grid, the average time starting from $\openm1&2&3&4\closem^T$ were $1.27$s and $3.36\times10^{-4}$s for the function evaluation and the subproblem, resp. Starting from $\openm2&4&8&16\closem^T$ gives $1.27$s and $1.74$s. With the $3^4$ grid from $\openm1&2&3&4\closem^T$, the function evaluations took $7.19\times10^{-3}$s and the subproblem took $2.24\times10^{-4}$s. Starting from the other point, the times were $7.48\times10^{-3}$ and $1.81\times10^{-4}$ seconds, respectively. This is with the C version of the function evaluation code. With the pure Matlab implementation, the function evalution took about 30 times longer. Thus, our strategy for solving the subproblem really doesn't matter in this case, since minimizing the number of function evaluations is the priority for reducing runtime.
 \subsection*{2}
-The backtracking approach gives us a pair of inequalities. The first is identical to the Goldstein conditions:  $f(x_k+\alpha p_k)\leq f(x_k)+c\alpha\nabla f_k^Tp_k$. The second comes from the termination of the iteration: $f(x_k+\alpha p_k/\rho)>f(x_k)+c\alpha\nabla f_k^Tp_k/\rho$, where $\rho\in(0,1)$. 
+The backtracking approach gives us a pair of inequalities. The first is identical to the Goldstein conditions:  $f(x_k+\alpha p_k)\leq f(x_k)+c\alpha\nabla f_k^Tp_k$. The second comes from the termination of the iteration: $f(x_k+\alpha p_k/\rho)>f(x_k)+c\alpha\nabla f_k^Tp_k/\rho$, where $\rho\in(0,1)$.
 
 Define $g(t)=f(x_k+t\alpha p_k/\rho)$. Then $g(0)=f(x_k)$ and $g(1)=f(x_k+\alpha p_k/\rho)$. We have 
 \[g(1)-g(0)=\int_0^1\frac{d}{dt}g(t)dt=\int_0^1\alpha\nabla f(x_k+t\alpha p_k/\rho)^Tp_k=\frac{\alpha}{\rho}\nabla f(x_k+t\alpha p_k/\rho)^Tp_k\]
@@ -123,6 +123,8 @@ Since the RHS is positive, we can apply Cauchy-Schwarz then the Lipschitz condit
 \[\frac{L\alpha^2t}{\rho}\|p_k\|^2>\alpha(c-1)\nabla f(x_k)^Tp_k\]
 Since $t\in[0,1]$, we can discard it. Rearranging so that we get a bound on $\alpha$, we have 
 \[\alpha>\frac{\rho(c-1)\nabla f(x_k)^Tp_k}{L\|p_k\|^2}\]
+Now, since the second inequality doesn't apply if $\alpha$ had just been accepted on the first iteration, we have to do a special case for that. However, we know the value of $\alpha$ exactly in that case -- it's $1$, so that's definitely bounded below too.
+
 Then, plugging this into the first inequality gives us
 \[f(x_k)-f(x_{k+1})\geq-c\alpha\nabla f(x_k)^Tp_k>-\frac{\rho(c^2-c)\left(\nabla f(x_k)^Tp_k\right)^2}{L\|p_k\|^2}\]
 Now since $a^Tb=\|a\|\|b\|\cos(\theta)$, we have that the above is equal to 
