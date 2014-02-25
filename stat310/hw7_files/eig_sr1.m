@@ -1,4 +1,4 @@
-function [xi, iters] = eig_sr1(X, sample, start, Dhat, eta, c, epsilon)
+function [xi, iters, t1, t2] = eig_sr1(X, sample, start, Dhat, eta, c, epsilon)
     x = start;
     iters = 0;
     TR_size = Dhat;
@@ -10,12 +10,17 @@ function [xi, iters] = eig_sr1(X, sample, start, Dhat, eta, c, epsilon)
     xi = {x};
     xval_ctr = 2;
     
+    t1 = 0;
+    t2 = 0;
+    
     while 1
         if norm(gx) < epsilon
             break
         end
         iters = iters + 1;
+        tic;
         pk = calculate_pk(B, gx, c, epsilon, TR_size);
+        t2 = t2 + toc;
         old_fx = fx;
         old_gx = gx;
         norm(gx)
@@ -23,7 +28,9 @@ function [xi, iters] = eig_sr1(X, sample, start, Dhat, eta, c, epsilon)
             iters;
         end
         
+        tic;
         [fx, gx] = matern_fn(X, sample, (x + pk));
+        t1 = t1 + toc;
         
         rho_k = (old_fx - fx) / (old_fx - quad_model(old_fx, old_gx, B, pk));
         B = update_sr1(B, pk, gx - old_gx);
@@ -43,6 +50,8 @@ function [xi, iters] = eig_sr1(X, sample, start, Dhat, eta, c, epsilon)
         end
         
     end
+    t1 = t1 / iters;
+    t2 = t2 / iters;
 end
 
 function B1 = update_sr1(B, s, y)

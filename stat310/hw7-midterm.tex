@@ -108,6 +108,8 @@ We also need to ensure that $q_1^Tg\neq0$. If this doesn't hold, then we can jus
     \EndWhile
     \State return $-\sum_{i=1}^n\frac{q_i^Tg}{\lambda_i+\lambda}q_j$
 \end{algorithmic}
+\ssn{e}
+For the $6^4$ grid, the average time starting from $\openm1&2&3&4\closem^T$ were $1.27$s and $3.36\times10^{-4}$s for the function evaluation and the subproblem, resp. Starting from $\openm2&4&8&16\closem^T$ gives $1.27$s and $1.74$s. With the $3^4$ grid from $\openm1&2&3&4\closem^T$, the function evaluations took $7.19\times10^{-3}$s and the subproblem took $2.24\times10^{-4}$s. Starting from the other point, the times were $7.48\times10^{-3}$ and $1.81\times10^{-4}$ seconds, respectively. This is with the C version of the function evaluation code. With the pure Matlab implementation, the function evalution took about 30 times longer. Thus, our strategy for solving the subproblem really doesn't matter in this case, since minimizing the number of function evaluations is the priority for reducing runtime.
 \subsection*{2}
 The backtracking approach gives us a pair of inequalities. The first is identical to the Goldstein conditions:  $f(x_k+\alpha p_k)\leq f(x_k)+c\alpha\nabla f_k^Tp_k$. The second comes from the termination of the iteration: $f(x_k+\alpha p_k/\rho)>f(x_k)+c\alpha\nabla f_k^Tp_k/\rho$, where $\rho\in(0,1)$. 
 
@@ -136,5 +138,29 @@ Differentiating $P(x)$ wrt $d$, we have $f'(x)+df''(x)+\frac{1}{2}d^2f'''(x)$. F
 \[d=\frac{-f''(x)+\sqrt{\left(f''(x)\right)^2-2f'(x)f'''(x)}}{f'''(x)}\]
 As $x\to x^*$, the term inside the square root approaches $\left(f''(x)\right)^2$ because $f'''(x)$ and $f''(x)$ are both bounded both above and away from zero near $x^*$. Thus, we have a stationary point $d$ that approaches zero as $x\to x^*$
 \ssn{b}
+I'm going to reformulate this problem as finding a point $x$ at which $g(x)\equiv f'(x)=0$ so that I can save a few tickmarks. Then, the iteration equation becomes $x_{n+1}=x_n+\frac{-g'(x_n)+\sqrt{\left(g'(x_n)\right)^2-2g(x_n)g''(x_n)}}{g''(x_n)}$. 
+
+Let $d(x_n)$ be defined as the RHS of the above. Then, we have that $d(x^*)=x^*$ and $x_{n+1}=d(x_n)$. Taylor-expand $d(x_n)$ from $x^*$ to get
+\[d(x_n)=d(x^*)+d'(x^*)(x_n-x^*)+\frac{d''(x^*)}{2}(x_n-x^*)^2+\frac{d'''(\alpha)}{6}(x_n-x^*)^3\]
+If we define $e_n=x_n-x^*$, then after moving $d(x^*)=x^*$ to the LHS, we get
+\[e_{n+1}=d'(x^*)e_n+\frac{d''(x^*)}{2}e_n^2+\frac{d'''(\alpha)}{6}e_n^3\ (*)\]
+Now, let's calculate some derivatives. The first derivative of $d$ with respect to $x$ is
+\[1+\frac{g''(x)\left(-g''(x)+\frac{2g'(x)g''(x)-2g'(x)g''(x)-2g(x)g'''(x)}{2\sqrt{g'(x)^2-2g(x)g''(x)}}\right)-(-g'(x)+\sqrt{g'(x)^2-2g(x)g''(x)})g'''(x)}{g''(x)^2}\]
+Plugging in $x^*$ to this expression, the $g(x)$ terms all become zero, and hence we have
+\[1+\frac{-g''(x^*)^2+0-(-g'(x)+g'(x))g'''(x)}{g''(x^*)^2}=0\]
+so the first term on the RHS of $(*)$ disappears.
+
+Simplifying the first derivative so that we can differentiate again, we get
+\[-\frac{g(x)g'''(x)}{g''(x)\sqrt{g'(x)^2-2g(x)g''(x)}}+\frac{g'(x)g'''(x)}{g''(x)^2}-\frac{g'''(x)\sqrt{g'(x)^2-2g(x)g''(x)}}{g''(x)^2}\]
+Differentiate this (and plugging in zeros where appropriate) to get
+\[-\frac{(g''(x^*)\sqrt{g'(x^*)^2-0})(g'(x^*)g'''(x^*)+0)-0}{g''(x^*)^2g'(x^*)^2-0}+\frac{g''(x^*)^3g'''(x^*)+g''(x^*)^2g'(x^*)g''''(x^*)-2g'(x^*)g'''(x^*)g''(x^*)g'''(x^*)}{g''(x^*)^4}\]
+\[-\frac{g''(x^*)^2\left(g''''(x^*)\sqrt{g'(x^*)^2-0}+0\right)+2g''(x^*)g'''(x^*)^2\sqrt{g'(x^*)^2-0}}{g''(x^*)^4}\]
+which simplifies down to 
+\[-\frac{g'''(x^*)g''(x^*)^2}{g''(x^*)^3}+\frac{g''(x^*)^2g'''(x^*)}{g''(x^*)^3}+\frac{g'(x^*)g''''(x^*)}{g''(x^*)^2}+\frac{2g'(x^*)g'''(x^*)^2}{g''(x^*)^3}-\frac{g''''(x^*)g'(x^*)}{g''(x^*)^2}+\frac{2g'(x^*)g'''(x^*)^2}{g''(x^*)^3}\]
+Yay, it all cancels out to zero. That means the second term in $(*)$ goes away too, and we're left with
+\[e_{n+1}=\frac{d'''(\alpha)}{6}e_n^3\]
+Dividing and taking absolute values on both sides, we get cubic convergence (assuming that $d'''$ is bounded in a neighborhood near $x^*$)
+\ssn{c}
+The hypothesis for larger order approximations would be that an order $n$ Taylor approximation yields order $n$ convergence for the optimization problem. Of course, for $n>5$, we run into problems because of Abel-Ruffini, which means that such a method would be wildly impractical. For higher dimensions, the same order of convergence is expected. The value of $d$ would be a solution to the minimization of $f(x)+\nabla f(x)^Td+\frac{1}{2}d^T\nabla^2 f(x)d+\frac{1}{6}\sum_i b_i b^TT_ib$, where $T_i$ is the $i$th slice of the three-dimensional grid of the third partial derivatives of $f$.
 \end{document}
 
