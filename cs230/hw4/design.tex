@@ -42,10 +42,31 @@ struct hashtable {
     void (*add)(void *);
     bool (*remove)(void *);
     bool (*contains)(void *);
+    void (*destroy)(struct hashtable *);
 };
 \end{verbatim}
 As with the locks, this structure will form the beginning of the specific hash table structures so we can cast between them. The details of the internals will not be exposed.
 
 Within the hash table, we will implement lock-free and regular linked lists with the following structure:
+\begin{verbatim}
+struct l_list {
+    void (*add)(void *);
+    bool (*remove)(void *);
+    bool (*contains)(void *);
+    void (*destroy)(struct l_list *);
+};
+\end{verbatim}
+For this design, I've decided to just use the pthreads mutex, since otherwise I would have to go back and modify the locks from the last assignment to support reentrancy. Therefore, there will be no lock interface like there was last time, since there will only be one type of lock.
+
+We need to implement a read-write lock for this assignment. Since there will be only one kind of read-write lock, we can dispense with the function pointer abstraction and implement the following functions as they are.
+\begin{verbatim}
+struct rw_lock; //opaque to users
+struct rw_lock *create_rw_lock();
+void lock_rw_read(struct rw_lock *);
+void lock_rw_write(struct rw_lock *);
+void unlock_rw_read(struct rw_lock *);
+void unlock_rw_write(struct rw_lock *);
+void destroy_rw_lock(struct rw_lock *);
+\end{verbatim}
 
 \end{document}
