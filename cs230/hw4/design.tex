@@ -39,9 +39,9 @@ Date: \today
 The hash table will expose the following interface to the rest of the program:
 \begin{verbatim}
 struct hashtable {
-    void (*add)(void *);
-    bool (*remove)(void *);
-    bool (*contains)(void *);
+    void (*add)(int, Packet_t *);
+    bool (*remove)(int);
+    bool (*contains)(int);
     void (*destroy)(struct hashtable *);
 };
 \end{verbatim}
@@ -50,15 +50,17 @@ As with the locks, this structure will form the beginning of the specific hash t
 Within the hash table, lock-free and regular linked lists are implemented with the following structure:
 \begin{verbatim}
 struct l_list {
-    void (*add)(void *);
-    bool (*remove)(void *);
-    bool (*contains)(void *);
+    int (*add)(int, Packet_t *);
+    bool (*remove)(int);
+    bool (*contains)(int);
     void (*destroy)(struct l_list *);
 };
 \end{verbatim}
+The \verb|add| function will use reverse bitwise ordering to facilitate the implementation of the lock-free hash table. Since order really doesn't matter much for the other designs, this won't affect them much. It returns the number of steps down the list it took to place the new node, or $-1$ if it already exists in the list.
+
 For this design, I've decided to just use the pthreads mutex, since otherwise I would have to go back and modify the locks from the last assignment to support reentrancy. Therefore, there will be no lock interface like there was last time, since there will only be one type of lock.
-\subsection*{The hash tables}
-For the lock-based closed address hash table, the implementation is fairly straightforward because it;s in the book already. Embed a read-write lock in the hash table's struct, then have the various methods call the appropriate lock function when invoked.
+\subsection*{Closed-address hash tables}
+For the lock-based closed address hash table, the implementation is fairly straightforward because it's in the book already. Embed a read-write lock in the hash table's struct, then have the various methods call the appropriate lock function when invoked. Here, no mthods are lock-free or wait-free. Deadlock-freedom can be guaranteed because each thread holds at most one lock at one time, and starvation-freedom will exist if the pthreads read-write lock is fair in some sense (which I think it can be tuned to be via parameters).
 
 For the lock-free-contains hash table, the intent of the assignment was a bit unclear, so I assumed that the following requirements: the \verb|contains| call needs to be linearizable with \verb|add|, \verb|remove|, and \verb|resize|, all without grabbing any locks, whereas the other calls may grab the reentrant lock as needed. 
 
@@ -68,5 +70,80 @@ Then, the problem is how to make \verb|resize| work well with \verb|contains|. F
 
 Resizing will work as follows: first, have \verb|add| check to see if there's a resize condition met. If so, compare-and-swap a resize-needed flag in the struct from zero to one, then call the resize function. The resize function will compare-and-swap the resize-needed flag from one to zero. If it succeeds, then it proceeds to grab all the locks in order. If it fails, then it can assume that some other thread got around to resizing and can just exit. While this flag mechanism will not guarantee that no two threads will attempt to grab all the locks at the same time, it significantly reduces the chances that one thread will be hung up trying to resize while another is resizing with all the locks held.
 
-After resize holds all the locks, the only thing it needs to worry about anymore is concurrent calls to \verb|contains|. In order to do this, resize will rehash all the nodes, copying nodes that need to be moved into their new locations. When this process is completed, it will atomically modify the hash function so that any subsequent calls to contains will look for nodes in their new locations. Only after this does it go through and remove all the nodes that were copied. The modification to the hash function is the linearization point of resize. Prior to this, contains calls will not see any change to the hash table, and afterwards, they will see the hash table in its new state (though with some possible extraneous nodes).
+After resize holds all the locks, the only thing it needs to worry about anymore is concurrent calls to \verb|contains|. In order to do this, resize will rehash all the nodes, copying nodes that need to be moved into their new locations. When this process is completed, it will atomically modify the hash function so that any subsequent calls to contains will look for nodes in their new locations. Only after this does it go through and remove all the nodes that were copied. The modification to the hash function is the linearization point of resize with respect to contains. Prior to this, contains calls will not see any change to the hash table, and afterwards, they will see the hash table in its new state (though with some possible extraneous nodes).
+
+Here, \verb|contains| is wait-free -- it makes no calls to any locks and it never has to start its traversal over again. \verb|add|, \verb|remove|, and \verb|resize| are again starvation-free and deadlock-free, add and remove due to the same arguments as the locked table, and \verb|resize|'s deadlock-freedom coming from the ordering on the locks.
+\subsection*{Linear probe table}
+First, the elements of the hash array will be as follows:
+\begin{verbatim}
+struct hash_elem {
+    void *obj;
+    int key;
+    volatile int max_dist;
+    pthreads_rwlock_t lock;
+};
+\end{verbatim}
+In addition, there will be a read-write lock on the entire hash table for which contains, add, and remove will grab the read lock for and resize will grab the write lock for the duration of each function's execution. 
+
+\verb|contains| will jump to the appropriate place in the hash table, acquire the read lock at that element, read the value of \verb|max_dist|, and advance at most that many places to look for the element, acquiring and releasing read locks as it goes. This is not lock-free due to the read locks, which may be blocked by concurrent \verb|add|s.
+
+\verb|add| will jump to the appropriate index, acquire the write lock on that index, then advance until it finds a free space, all the while holding the lock on the original node. To prevent deadlock problems, it will use try-lock on the indices it steps through, only stopping to check if it succeeds in acquiring the lock. If it takes some parameter $R$ steps without finding a free space, it will mark a resize flag and keep going, then call \verb|resize| when it exits. Otherwise, it inserts something into the free space, updates the value of \verb|max_dist| on the original index, and exits. 
+
+\verb|remove| will follow the same procedure as resize, except that when it finds the element, it will relinquish the read lock, acquire the write lock, then zero out the \verb|obj| pointer and the \verb|key| field there. 
+
+\verb|resize| will first allocate an entire new array of the new size, then acquire the write lock (thereby ensuring that no other calls will interfere with it). It will then step through the elements in the original array, rehashing them into new locations. It will then update the array pointer in the hash table to the newly allocated array, deallocate the original, and release the write lock.
+
+Again, all these operations satisfy the same progress conditions as the ones for the locking table, for similar reasoning, with the exception of \verb|add|, whose deadlock freedom is predicated upon try-lock being wait-free. 
+\subsection*{Fully lock-free hash table}
+I intend to implement the lock-free hash table using recursive split ordering for the additional hash table design. The structure/design for this is in the book, so most of the effort should come in translation to C. Here, contains is wait-free for the same reason it was in the lock-free-contains table. Adds and removes are lock-free but not wait-free due to the possiblity of starting over when there's contention, and resizing doesn't exist as an explicit operation in this scheme.
+\section*{Test plan}
+\subsection*{Serial and concurrent linked lists}
+For the serial list, the following properties are desired.
+\begin{enumerate}
+    \item Once an item is added to the list, all calls to \verb|contains| should return true until the item is removed.
+    \item The list should always be maintained in the correct ordering
+    \item Adding should fail iff an item is in the list and remove should fail iff an item is not in the list
+\end{enumerate}
+For the lock-free list, the first and third conditions are ambiguous for multithreaded environments, so the following refinements are added:
+\begin{enumerate}
+    \item If add has been completed on a set of items and no remove calls have began on that set, then all calls to contains on any item in that set should return true.
+    \item The number of add calls and the number of remove calls on a particular key that complete successfully should be either equal or off-by-one in favor of add.
+\end{enumerate}
+In addition, edge cases such as calling contains or remove on lists with few elements should be emphasized. The exact details of which tests are implemented are deferred to the final writeup.
+\subsection*{Hash table tests}
+We have the following desired (correctness) properties for the serial hash table:
+\begin{enumerate}
+    \item Once an item is added to the hash table, all calls to contains should return true until the item is removed
+    \item Adding should fail iff an item is in the table and remove should fail iff an item is not in the table
+    \item All items that were contained in the table before a resize should still be there after.
+\end{enumerate}
+
+For the parallel versions, the following should hold true:
+\begin{enumerate}
+    \item If add has been completed on a set of items and no remove calls have began on that set, then all calls to contains on any item in that set should return true.
+    \item The number of add calls and the number of remove calls on a particular key that complete successfully should be either equal or off-by-one in favor of add.
+\end{enumerate}
+
+As with the lists, these conditions should be tested under unusual parameters. These would consist of small table sizes (1 or 2), high degrees of concurrency (number of threads > number of processors), low resize limits (2), and unusual sequences of method calls (large numbers of calls to add or remove).
+\section*{Performance hypotheses}
+\subsection*{Dispatcher rate}
+First, the assignment said to use the best load-balancing strategy from last time. It was pretty evident that having the dispatcher skip over full queues and keep dispatching to open ones was the best way to do it, so that's how I intend to implement it this time. Since load-balancing isn't the parameter being measured here, it shouldn't have an effect on the results besides making throughput higher.
+
+That being said, I expect the dispatcher rate to be slightly lower for this assignment. It won't be due to any changes in the dispatcher -- it'll still just be juggling pointers around. The limit would come from the packet generation function, which now has to do more work due to computing the hash keys. I believe that this is the only factor, and therefore I propose a test that measures throughput of the hash packet generator function versus the other packet generation function. The ratio between the two should be the same as the ratio between the two dispatcher rates.
+\subsection*{Parallel overhead}
+Under the mostly reads situation, I expect the locking, lock-free contains, and the fully lock-free hash tables to have fairly similar behavior, with locking being at a disadvantage if there is any inequality. The uncontended path for contains through each of them consists of computing the hash, indexing into the array, then traversing whatever linked list until the element is found or not found. On one hand, the locks on the locking list will add some overhead, but on the other hand, the lock-free linked lists used in the other two may also introduce overhead. However, judging from the results from last time with the pthreads mutex lock overhead, I'd bet in favor of the two tables that don't require contains calls to acquire a lock.
+
+The linear probe one is a bit tricker -- it seems like it would be a lot more dependent on what size the array was initialized to, as collisions tend to snowball and destroy performance fairly quickly. If it's initialized with the same initial size, then for larger values of this initial size, it would probably beat the locking table due to one less step in the uncontended/uncollided path, but not beat the other two due to the presence of a lock. For smaller initial sizes, I'd expect to see heavy dependence on the resizing parameter $R$: low values of $R$ would probably result in the same performance as the other hash tables with the same resize parameter, but higher values of $R$ will probably degrade performance. Due to the design, traversing is more costly due to the need to acquire individual locks during the traversal.
+
+Under the heavy writes situation, the locking and lock-free-contains would probably end up having the same performance. This is again due to the similarity in code paths, but now with the lock-free-contains table having to make a lot more lock calls due to the larger number of writes. In addition, the number of resizes will increase too, but those two take the same code path in resizing.
+
+The fully-lock-free will probably beat the two other closed-address hash tables, mostly due to the vastly resizes -- there is no acquisition of a lot of locks, and no data needs to be copied around. Conversely, linear probe will probably do terribly -- many things need to be moved around, and since there is no preallocation, there'll be a call to the memory allocator in its resize operation too.
+\subsection*{Speedup}
+I'm assuming the values of $n$ given here are number of workers plus one, due to the dispatcher. 
+
+In both load configurations, lower values of $\rho$ will evidently impact performance for all the hash tables due to more traversals, but I don't expect the value of $\rho$ to affect the relative performance of the three closed-address tables. However, I do expect lower $\rho$ to negatively impact linear probe, due to the much larger amount of locking and unlocking it has to do in traversing.
+
+Under the mostly reads situation, the relative performance will probably be the same as in parallel overhead, with a somewhat larger gap between locking and lock-free-contains due to the extra contention between contains calls and add calls in the former. Since linear probe uses a much finer-grained locking scheme than the two lock-based ones, I expect better performance, especially when $n$ exceeds the number of processors. Finally, the fully-lock-free table will probably take top place in performance again, due to its lock-free nature.
+
+Under the heavy writes situation, the locking hash table will take a large performance hit due to the contention between adds and contains calls. The lock-free-contains table will also take a large hit because its add operations cannot proceed concurrently with each other. The performance of the fully-lock-free table will also suffer due to contention making add and remove calls start over, but I think it'll be less than the performance hit for the other two, and the easier resizing probably helps too.
 \end{document}
