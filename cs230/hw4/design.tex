@@ -45,9 +45,9 @@ struct hashtable {
     void (*destroy)(struct hashtable *);
 };
 \end{verbatim}
-As with the locks, this structure will form the beginning of the specific hash table structures so we can cast between them. The details of the internals will not be exposed.
+As with the locks, this structure will form the beginning of the specific hash table structures so it's possible to cast between them. The details of the internals will not be exposed.
 
-Within the hash table, we will implement lock-free and regular linked lists with the following structure:
+Within the hash table, lock-free and regular linked lists are implemented with the following structure:
 \begin{verbatim}
 struct l_list {
     void (*add)(void *);
@@ -57,16 +57,16 @@ struct l_list {
 };
 \end{verbatim}
 For this design, I've decided to just use the pthreads mutex, since otherwise I would have to go back and modify the locks from the last assignment to support reentrancy. Therefore, there will be no lock interface like there was last time, since there will only be one type of lock.
+\subsection*{The hash tables}
+For the lock-based closed address hash table, the implementation is fairly straightforward because it;s in the book already. Embed a read-write lock in the hash table's struct, then have the various methods call the appropriate lock function when invoked.
 
-We need to implement a read-write lock for this assignment. Since there will be only one kind of read-write lock, we can dispense with the function pointer abstraction and implement the following functions as they are.
-\begin{verbatim}
-struct rw_lock; //opaque to users
-struct rw_lock *create_rw_lock();
-void lock_rw_read(struct rw_lock *);
-void lock_rw_write(struct rw_lock *);
-void unlock_rw_read(struct rw_lock *);
-void unlock_rw_write(struct rw_lock *);
-void destroy_rw_lock(struct rw_lock *);
-\end{verbatim}
+For the lock-free-contains hash table, the intent of the assignment was a bit unclear, so I assumed that the following requirements: the \verb|contains| call needs to be linearizable with \verb|add|, \verb|remove|, and \verb|resize|, all without grabbing any locks, whereas the other calls may grab the reentrant lock as needed. 
 
+First, in order to make sure that the \verb|contains| call does not conflict with \verb|add| or \verb|remove|, simply implement the lock-free linked list at each address in the hash array. The only modifications that \verb|add| and \verb|remove| make are to specific linked lists, and if the lock-free list is implemented correctly, this guarantees that these three calls will proceed without problems.
+
+Then, the problem is how to make \verb|resize| work well with \verb|contains|. First, use the same striped lock paradigm as in the standard lock-based hashset, and make \verb|resize| grab all the locks to prevent conflicts with any adds and removes that may happen. This does have the added effect of preventing concurrent adds and removes on the same stripe (which is possible if the lock free list is used), but this can be mitigated with the use of a read-write lock (which I haven't decided whether I want to use yet, pending performance measurements).
+
+Resizing will work as follows: first, have \verb|add| check to see if there's a resize condition met. If so, compare-and-swap a resize-needed flag in the struct from zero to one, then call the resize function. The resize function will compare-and-swap the resize-needed flag from one to zero. If it succeeds, then it proceeds to grab all the locks in order. If it fails, then it can assume that some other thread got around to resizing and can just exit. While this flag mechanism will not guarantee that no two threads will attempt to grab all the locks at the same time, it significantly reduces the chances that one thread will be hung up trying to resize while another is resizing with all the locks held.
+
+After resize holds all the locks, the only thing it needs to worry about anymore is concurrent calls to \verb|contains|. In order to do this, resize will rehash all the nodes, copying nodes that need to be moved into their new locations. When this process is completed, it will atomically modify the hash function so that any subsequent calls to contains will look for nodes in their new locations. Only after this does it go through and remove all the nodes that were copied. The modification to the hash function is the linearization point of resize. Prior to this, contains calls will not see any change to the hash table, and afterwards, they will see the hash table in its new state (though with some possible extraneous nodes).
 \end{document}
