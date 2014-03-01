@@ -31,7 +31,29 @@ Name: Hall Liu
 
 Date: \today 
 \vspace{1.5cm}
+\subsection*{1}
+\ssn{a}
+The \verb|pcg| function accepts function pointers for the matrix $A$, so we can define a function $Q(x)$ that computes $Lx$ and adds it to $w\cdot(w^Tx)$. Since $L$ and $w$ have $O(n)$ entries, this computation should take $O(n)$ time per iteration. Additionally, if we use $L$ as the preconditioning matrix, its tridiagonal structure allows for the solve step to be done in $O(n)$ steps as well.
+\ssn{b}
+For all these, the $L$ matrix is precomputed and stored by way of persistent variables, so the time necessary for its computation is not included. 
 
+The preconditioned CG was done with $M=L=CC^T$, $C$ being the lower-triangular factorization of $L$. This is because transforming the matrix $CC^T+ww^T$ via $C^{-1}(CC^T+ww^T)C^{-T}$ gives $I+(C^{-1}w)(C^{-1}w)^T$, which is a rank-1 update to the identity, which has only two distinct eigenvalues. Thus, we expect CG to converge extremely quickly in this case (two iterations). 
+
+For the direct solution via Cholesky factorization, the directive was to use sparse linear algebra when possible, and the best way to do this was to use the Sherman-Morrison formula to compute $(L+ww^T)^{-1}f$. This gives us
+\[L^{-1}b-\frac{(w^TL^{-1}f)L^{-1}w}{1+w^TL^{-1}w}\]
+The vectors $L^{-1}w$ and $L^{-1}f$ can each be computed in $O(n)$ time by taking the Cholesky factorization of $L$ first and backsolving, and the rest of the vector-vector operations take about $8n$ operations, which actually seems considerably cheaper than the preconditioned CG method. In fact, if we look at the timing results, the direct solution was the fastest in all cases.
+
+For the data collection, I modified the set of sizes to be \verb|[400, 600, 1000, 3000, 5000, 10000]|. The time reported is the average of three runs. The plots for the methods follow, with un-preconditioned on left, pre-conditioned on right, and the direct solution below.
+
+\includegraphics[width=0.5\textwidth]{hw8_files/1_un_pre.png}
+\includegraphics[width=0.5\textwidth]{hw8_files/1_pre.png}
+
+\includegraphics[width=0.5\textwidth]{hw8_files/1_direct.png}
+
+It looks like the un-preconditioned CG method's time grows superlinearly, while the preconditioned CG and direct method's times grow linearly. The large amount of time that the unpreconditioned method took was not surprising -- the eigenvalues of $L$ are pretty spread out, and \verb|pcg| reported taking $O(n)$ iterations to converge. 
+The weird jump from $1000$ to $3000$ in the preconditioned CG is due to the fact that the method suddenly started taking 3 iterations for some reason -- it's probably due to numerical issues, since it was noted above that theoretically it should only take two iterations. Additionally, the speed of the direct solution was expected -- using the Sherman-Morrison formula to reduce everything into one factorization and two sparse backsolves seems very efficient.
+\ssn{c}
+I think I explained this above in the remark about the eigenvalues of $CC^T+ww^T$ after transforming the problem.
 \subsection*{3}
 Since preconditioned CG is derived from un-preconditioned CG by applying the un-preconditioned algorithm to the problem $(C^{-T}AC^{-1})x=C^{-T}b$, writing that algorithm gives us the initial points $r_0=(C^{-T}AC^{-1})x_0-C^{-T}b$ and $p_0=-r_0$, and the body of the loop constitutes
 \begin{align*}
