@@ -1,0 +1,75 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage[namelimits,sumlimits]{amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage{mathrsfs}
+\usepackage[cm]{fullpage}
+\newcommand{\tab}{\hspace*{5em}}
+\newcommand{\conj}{\overline}
+\newcommand{\dd}{\partial}
+\newcommand{\ep}{\epsilon}
+\newcommand{\openm}{\begin{pmatrix}}
+\newcommand{\closem}{\end{pmatrix}}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\Null}{null}
+\newcommand{\nc}{\newcommand}
+\newcommand{\rn}{\mathbb{R}}
+\nc{\cn}{\mathbb{C}}
+\nc{\ssn}[1]{\subsubsection*{#1}}
+\nc{\inner}[2]{\langle #1,#2\rangle}
+\nc{\h}[1]{\widehat{#1}}
+\nc{\tl}[1]{\widetilde{#1}}
+\nc{\norm}[1]{\left\|{#1}\right\|}
+\begin{document}
+
+Name: Hall Liu
+
+Date: \today 
+\vspace{1.5cm}
+
+\subsection*{3}
+Since preconditioned CG is derived from un-preconditioned CG by applying the un-preconditioned algorithm to the problem $(C^{-T}AC^{-1})x=C^{-T}b$, writing that algorithm gives us the initial points $r_0=(C^{-T}AC^{-1})x_0-C^{-T}b$ and $p_0=-r_0$, and the body of the loop constitutes
+\begin{align*}
+    \alpha_k&=\frac{r_k^Tr_k}{p_k^TC^{-T}AC^{-1}p_k}\\
+    x_{k+1}&=x_k+\alpha_kp_k\\
+    r_{k+1}&=r_k+\alpha_kC^{-T}AC^{-1}p_k\\
+    \beta_{k+1}&=\frac{r_{k+1}^Tr_{k+1}}{r_k^Tr_k}\\
+    p_{k+1}&=-r_{k+1}+\beta_{k+1}p_k\\
+\end{align*}
+Substituting $p_k'=C^{-1}p_k$ for all $k$ (including zero), we have the initial point $p_0'=-C^{-1}r_0$ and the loop
+\begin{align*}
+    \alpha_k&=\frac{r_k^Tr_k}{p_k'^TAp_k}\\
+    x_{k+1}&=x_k+\alpha_kCp_k'\\
+    r_{k+1}&=r_k+\alpha_kC^{-T}Ap_k'\\
+    \beta_{k+1}&=\frac{r_{k+1}^Tr_{k+1}}{r_k^Tr_k}\\
+    p_{k+1}'&=-C^{-1}r_{k+1}+\beta_{k+1}p_k'\\
+\end{align*}
+Now, substituting $r_k'=C^Tr_k$ and $x_k'=C^{-1}x_k$ gets the initial conditions $r_0'=Ax_0'-b$ and $p_0'=-C^{-1}C^{-T}r_0$. Letting $y_k\equiv C^{-1}C^{-T}r_k'\equiv M^{-1}r_k'$, we have the loop
+\begin{align*}
+    \alpha_k&=\frac{r_k'^TC^{-1}C^{-T}r_k'}{p_k'^TAp_k'}=\frac{r_k'^Ty_k}{p_k'^TAp_k}\\
+    x_{k+1}'&=x_k'+\alpha_kp_k'\\
+    r_{k+1}'&=r_k'+\alpha_kAp_k'\\
+    \beta_{k+1}&=\frac{r_{k+1}'^TC^{-1}C^{-T}r_{k+1}'}{r_k'^TC^{-1}C^{-T}r_k'}=\frac{r_{k+1}'^Ty_{k+1}}{r_k'^Ty_k}\\
+    p_{k+1}'&=-C^{-1}C^{-T}r_k'+\beta_{k+1}p_k'=-y_k+\beta_{k+1}p_k'\\
+\end{align*}
+which is exactly the same as the algorithm for preconditioned CG. Thus, we have the condition $r_i^Tr_j=0$ for all $i\neq j$ from regular CG translating to $r_i'^TC^{-1}C^{-T}r_j'=r_i'^TM^{-1}r_j'=0$, which is the condition we desired.
+\subsection*{4}
+For the Jacobian, use the Frobenius norm. We want to find a constant $M$ such that $\|J(x)-J(y)\|_F^2\leq M^2\|x-y\|^2$. By the structure of the Jacobian (10.3), we have that 
+\[\|J(x)-J(y)\|_F^2=\sum_{i=1}^m\|\nabla r_i(x)-\nabla r_i(x)\|^2\leq\sum_{i=1}^mL^2\|x-y\|=mL^2\|x-y\|\]
+so we can take $M=\sqrt{m}L$.
+
+For the gradient of the function, we have
+\[\norm{\nabla f(x)-\nabla f(y)}=\norm{\sum_{i=1}^mr_i(x)\nabla r_i(x)-r_i(y)\nabla r_i(y)}\leq\sum_{i=1}^m\norm{r_i(x)\nabla r_i(x)-r_i(y)\nabla r_i(y)}\]
+Since the set we're concerned with is compact, let $\|r_i(x)\|$ and $\|\nabla r_i(x)\|$ be bounded above by some $W$ for all $i$, $x\in\mathscr{D}$. Then, the summand is
+\begin{align*}
+    \norm{r_i(x)\nabla r_i(x)-r_i(y)\nabla r_i(y)+r_i(x)\nabla r_i(y)-r_i(x)\nabla r_i(y)}&=\norm{r_i(x)(\nabla r_i(x)-\nabla r_i(y))+(r_i(x)-r_i(y))\nabla r_i(y)}\\
+                                                                                          &\leq\|r_i(x)\|\|\nabla r_i(x)-\nabla r_i(y)\|+\|r_i(x)-r_i(y)\|\|\nabla r_i(y)\|\\
+                                                                                          &\leq 2WL\|x-y\|\\
+\end{align*}
+so overall, we have that $\norm{\nabla f(x)-\nabla f(y)}\leq2mWL\|x-y\|$.
+\end{document}
