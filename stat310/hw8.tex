@@ -4,6 +4,7 @@
 \usepackage{amssymb,amsfonts}
 \usepackage{multicol}
 \usepackage{graphicx}
+\usepackage{algpseudocode}
 \usepackage{mathrsfs}
 \usepackage[cm]{fullpage}
 \newcommand{\tab}{\hspace*{5em}}
@@ -54,6 +55,13 @@ It looks like the un-preconditioned CG method's time grows superlinearly, while 
 The weird jump from $1000$ to $3000$ in the preconditioned CG is due to the fact that the method suddenly started taking 3 iterations for some reason -- it's probably due to numerical issues, since it was noted above that theoretically it should only take two iterations. Additionally, the speed of the direct solution was expected -- using the Sherman-Morrison formula to reduce everything into one factorization and two sparse backsolves seems very efficient.
 \ssn{c}
 I think I explained this above in the remark about the eigenvalues of $CC^T+ww^T$ after transforming the problem.
+\subsection*{2}
+\ssn{a}
+To modify the L-BGFS algorithm, replace the Wolfe step with a backtracking step, then use the damping algorithm to compute some $r_k$ according to (18.15) and store that in place of the $y_k$. Since the damped update works simply by replacing $y_k$ with $r_k$, this modification should carry over into the limited memory version as well, where all we're doing differently is throwing away older information.
+
+The hard part, then, comes from computing $r_k$, which involves computing the matrix-vector product $B_ks_k$, which we cannot do with the algorithm for computing $H_kx$ that we were given. Fortunately, the update formula for $B_k$ is much simpler than that for $H_k$ -- if we store the vector $c_i=B_is_i$ for $i=k-m,\ldots,k-1$, the formula for $B_k$ is simply 
+\[B_k^0-\frac{c_{k-m}c_{k-m}^T}{s_{k-m}^Tc_{k-m}}+\frac{r_{k-m}r_{k-m}^T}{s_{k-m}^Tr_{k-m}}-\cdots-\frac{c_{k-1}c_{k-1}^T}{s_{k-1}^Tc_{k-1}}+\frac{r_{k-1}r_{k-1}^T}{s_{k-1}^Tr_{k-1}}\]
+For an initial guess of $B_k^0$, we can just use $\frac{1}{\gamma_k}I$, where $\gamma_k$ is define as in (7.20) in the text. The book didn't bother giving much justification for their choice of $H_k^0$, so I'm just going to justify this choice of $B_k^0$ by noting that it's the inverse of $H_k^0$.
 \subsection*{3}
 Since preconditioned CG is derived from un-preconditioned CG by applying the un-preconditioned algorithm to the problem $(C^{-T}AC^{-1})x=C^{-T}b$, writing that algorithm gives us the initial points $r_0=(C^{-T}AC^{-1})x_0-C^{-T}b$ and $p_0=-r_0$, and the body of the loop constitutes
 \begin{align*}
