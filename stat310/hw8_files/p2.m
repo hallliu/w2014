@@ -13,7 +13,7 @@ function [x, iters, fevals] = p2(f, x0, rho, c_val, m, epsilon)
         if norm(gx) < epsilon
             break
         end
-        %norm(gx)
+        norm(gx)
         iters = iters + 1;
         
         %pk = -compute_Hv(records, gx);
@@ -35,6 +35,7 @@ function [x, iters, fevals] = p2(f, x0, rho, c_val, m, epsilon)
         % Damped bgfs update
         sk = ak * pk;
         yk = gx - old_gx;
+        %{
         %bksk = compute_Bv(records, sk);
         bksk = B * sk;
         
@@ -46,10 +47,11 @@ function [x, iters, fevals] = p2(f, x0, rho, c_val, m, epsilon)
             theta = 0.8 * sbs / (sbs - skyk);
         end
         rk = theta * yk + (1-theta) * bksk;
-        records.add({sk, rk, 1/skyk, bksk});
+        records.add({sk, rk, 1/(sk.' * rk), bksk});
         if records.size() > m
             records.remove();
         end
+        %}
         [B, H] = update_bgfs(B, H, sk, yk);
         
     end
@@ -84,7 +86,7 @@ function hv = compute_Hv(records, v)
     
     last_data = cell(records.getLast());
     gamma = (last_data{1}.' * last_data{2}) / (last_data{2}.' * last_data{2});
-    r = q;
+    r = gamma * q;
     
     while up.hasNext()
         data = cell(up.next());
@@ -102,7 +104,7 @@ function bv = compute_Bv(records, v)
     
     last_data = cell(records.getLast());
     gamma = (last_data{1}.' * last_data{2}) / (last_data{2}.' * last_data{2});
-    bv = v;
+    bv = v / gamma;
     
     it = records.iterator();
     while it.hasNext()
@@ -126,9 +128,45 @@ function [B1, H1] = update_bgfs(B, H, s, y)
         r = y;
     end
     
-    rho = 1/ (s.' * y);
-    H1 = H - rho * ((H * y) * s.' + s * (y.' * H)) + rho^2 * s * (y.' * H * y) * s.';
+    rho = 1/ (s.' * r);
+    H1 = H - rho * ((H * r) * s.' + s * (r.' * H)) + rho^2 * s * (r.' * H * r) * s.';
     H1 = H1 + rho * (s * s.');
    
     B1 = B - (bs * bs.') / sbs + (r * r.') / (r.' * s);
+end
+
+function x = ldlsolve(L, D, p, b)
+    b = b(p);
+    
+    dltx = L\b;
+    ltx = D\dltx;
+    x = L.'\ltx;
+    
+    x(p) = x;
+end
+
+
+function [L, D, p] = modified_ldl(A, delta)
+    [L, D, p] = ldl(A, 'vector');
+    [n, ~] = size(D);
+    i = 1;
+    while i <= n
+        if (i == n || D(i, i+1) == 0)
+            if D(i, i) < delta
+                D(i, i) = delta;
+            end
+            i = i + 1;
+            continue
+        end
+        a = D(i, i);
+        b = D(i+1, i+1);
+        c = D(i, i+1);
+        sr_val = sqrt((a-b)^2+c^2);
+        if a + b - sr_val < 2 * delta
+            k = 2*delta + sr_val - a - b;
+            D(i, i) = a + k;
+            D(i+1, i+1) = b + k;
+        end
+        i = i + 2;
+    end
 end
