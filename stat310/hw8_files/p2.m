@@ -10,14 +10,16 @@ function [x, iters, fevals] = p2(f, x0, rho, c_val, m, epsilon)
     
     [fx, gx] = f(x, 1);
     while 1
-        if norm(gx) < epsilon
+        if norm(gx, 1) < epsilon
             break
         end
-        norm(gx)
+        norm(gx, 1)
         iters = iters + 1;
         
-        %pk = -compute_Hv(records, gx);
-        pk = -H * gx;
+        pk = -compute_Hv(records, gx);
+        if isnan(pk(1))
+            pk(1);
+        end
         
         % Backtracking to find the step size ak
         ak = 1;
@@ -35,9 +37,11 @@ function [x, iters, fevals] = p2(f, x0, rho, c_val, m, epsilon)
         % Damped bgfs update
         sk = ak * pk;
         yk = gx - old_gx;
-        %{
-        %bksk = compute_Bv(records, sk);
-        bksk = B * sk;
+        
+        bksk = compute_Bv(records, sk);
+        if norm(bksk - B * sk) > 1e-10
+            bksk;
+        end
         
         skyk = sk.' * yk;
         sbs = sk.' * bksk;
@@ -51,9 +55,7 @@ function [x, iters, fevals] = p2(f, x0, rho, c_val, m, epsilon)
         if records.size() > m
             records.remove();
         end
-        %}
         [B, H] = update_bgfs(B, H, sk, yk);
-        
     end
 end
 
@@ -86,7 +88,7 @@ function hv = compute_Hv(records, v)
     
     last_data = cell(records.getLast());
     gamma = (last_data{1}.' * last_data{2}) / (last_data{2}.' * last_data{2});
-    r = gamma * q;
+    r = q;
     
     while up.hasNext()
         data = cell(up.next());
@@ -104,7 +106,7 @@ function bv = compute_Bv(records, v)
     
     last_data = cell(records.getLast());
     gamma = (last_data{1}.' * last_data{2}) / (last_data{2}.' * last_data{2});
-    bv = v / gamma;
+    bv = v ;
     
     it = records.iterator();
     while it.hasNext()
