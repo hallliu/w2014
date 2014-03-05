@@ -56,7 +56,6 @@ function [x, iters, fevals] = p2(f, x0, rho, c_val, m, epsilon)
         if records.size() > m
             records.remove();
         end
-        [B, H] = update_bgfs(B, H, sk, yk);
     end
 end
 
@@ -116,60 +115,5 @@ function bv = compute_Bv(records, v)
         rk = data{2};
         ck = data{4};
         bv = bv - (ck * (ck.' * v)) / (sk.' * ck) + (rk * (rk.' * v)) / (sk.' * rk);
-    end
-end
-
-function [B1, H1] = update_bgfs(B, H, s, y)
-    skyk = s.' * y;
-    bs = B * s;
-    sbs = s.' * bs;
-    
-    if skyk < 0.2 * sbs
-        theta = (0.8 * sbs) / (sbs - skyk);
-        r = theta * y - (1 - theta) * bs;
-    else
-        r = y;
-    end
-    
-    rho = 1/ (s.' * r);
-    H1 = H - rho * ((H * r) * s.' + s * (r.' * H)) + rho^2 * s * (r.' * H * r) * s.';
-    H1 = H1 + rho * (s * s.');
-   
-    B1 = B - (bs * bs.') / sbs + (r * r.') / (r.' * s);
-end
-
-function x = ldlsolve(L, D, p, b)
-    b = b(p);
-    
-    dltx = L\b;
-    ltx = D\dltx;
-    x = L.'\ltx;
-    
-    x(p) = x;
-end
-
-
-function [L, D, p] = modified_ldl(A, delta)
-    [L, D, p] = ldl(A, 'vector');
-    [n, ~] = size(D);
-    i = 1;
-    while i <= n
-        if (i == n || D(i, i+1) == 0)
-            if D(i, i) < delta
-                D(i, i) = delta;
-            end
-            i = i + 1;
-            continue
-        end
-        a = D(i, i);
-        b = D(i+1, i+1);
-        c = D(i, i+1);
-        sr_val = sqrt((a-b)^2+c^2);
-        if a + b - sr_val < 2 * delta
-            k = 2*delta + sr_val - a - b;
-            D(i, i) = a + k;
-            D(i+1, i+1) = b + k;
-        end
-        i = i + 2;
     end
 end
