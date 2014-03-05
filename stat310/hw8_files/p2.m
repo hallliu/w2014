@@ -18,7 +18,8 @@ function [x, iters, fevals] = p2(f, x0, rho, c_val, m, epsilon)
         
         pk = -compute_Hv(records, gx);
         if isnan(pk(1))
-            pk(1);
+            iters = NaN;
+            return;
         end
         
         % Backtracking to find the step size ak
@@ -45,10 +46,10 @@ function [x, iters, fevals] = p2(f, x0, rho, c_val, m, epsilon)
         
         skyk = sk.' * yk;
         sbs = sk.' * bksk;
-        if skyk >= 0.2 * sbs
+        if skyk >= 0.002 * sbs
             theta = 1;
         else
-            theta = 0.8 * sbs / (sbs - skyk);
+            theta = 0.998 * sbs / (sbs - skyk);
         end
         rk = theta * yk + (1-theta) * bksk;
         records.add({sk, rk, 1/(sk.' * rk), bksk});
@@ -88,7 +89,7 @@ function hv = compute_Hv(records, v)
     
     last_data = cell(records.getLast());
     gamma = (last_data{1}.' * last_data{2}) / (last_data{2}.' * last_data{2});
-    r = q;
+    r = gamma * q;
     
     while up.hasNext()
         data = cell(up.next());
@@ -106,7 +107,7 @@ function bv = compute_Bv(records, v)
     
     last_data = cell(records.getLast());
     gamma = (last_data{1}.' * last_data{2}) / (last_data{2}.' * last_data{2});
-    bv = v ;
+    bv = v / gamma;
     
     it = records.iterator();
     while it.hasNext()

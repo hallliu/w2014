@@ -62,6 +62,30 @@ To modify the L-BGFS algorithm, replace the Wolfe step with a backtracking step,
 The hard part, then, comes from computing $r_k$, which involves computing the matrix-vector product $B_ks_k$, which we cannot do with the algorithm for computing $H_kx$ that we were given. Fortunately, the update formula for $B_k$ is much simpler than that for $H_k$ -- if we store the vector $c_i=B_is_i$ for $i=k-m,\ldots,k-1$, the formula for $B_k$ is simply 
 \[B_k^0-\frac{c_{k-m}c_{k-m}^T}{s_{k-m}^Tc_{k-m}}+\frac{r_{k-m}r_{k-m}^T}{s_{k-m}^Tr_{k-m}}-\cdots-\frac{c_{k-1}c_{k-1}^T}{s_{k-1}^Tc_{k-1}}+\frac{r_{k-1}r_{k-1}^T}{s_{k-1}^Tr_{k-1}}\]
 For an initial guess of $B_k^0$, we can just use $\frac{1}{\gamma_k}I$, where $\gamma_k$ is define as in (7.20) in the text. The book didn't bother giving much justification for their choice of $H_k^0$, so I'm just going to justify this choice of $B_k^0$ by noting that it's the inverse of $H_k^0$.
+
+Additionally, I changed the damping constant from $0.2$ to $0.002$ (in the formula to calculate $r_k$ from $y_k$) because $0.2$ was yielding very very bad convergence results for large $n$ and starting at random points.
+\ssn{b}
+Applying this algorithm to the Rosenbrock problem with $m$ held fixed at $20$ gives convergence with $\|\nabla f\|_1\leq0.001$ in 17 iterations for $n=100,200,400,800,1000,2000,3000$. Using randomly chosen vectors, the following iteration counts were observed:
+
+\begin{tabular}{c|c|c|c|c|c|c|c}
+    $n$&100&200&400&800&1000&2000&3000\\
+    \hline
+       &68&64&87&169&104&119&104\\
+\end{tabular}
+
+\ssn{c}
+For this part, I set the size fixed at $n=300$ and used the same random starting point for each trial. Results are below (in terms of number of iterations), with $m$ varying through the rows and $\ep$ varying through the columns. $\infty$ indicates that the trial failed to converge.
+
+\begin{tabular}{c|c|c|c}
+    &$0.01$&$0.001$&$0.0001$\\
+    \hline
+    10&179&$\infty$&$\infty$\\
+    20&76&90&98\\
+    40&82&84&92\\
+    80&97&106&115\\
+\end{tabular}
+
+It seems that higher values of $m$ actually stop helping at some point between $40$ and $80$.
 \subsection*{3}
 Since preconditioned CG is derived from un-preconditioned CG by applying the un-preconditioned algorithm to the problem $(C^{-T}AC^{-1})x=C^{-T}b$, writing that algorithm gives us the initial points $r_0=(C^{-T}AC^{-1})x_0-C^{-T}b$ and $p_0=-r_0$, and the body of the loop constitutes
 \begin{align*}
