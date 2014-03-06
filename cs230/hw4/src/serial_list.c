@@ -33,16 +33,11 @@ static inline unsigned int rev_bits(int x) {
 }
 
 /* Non-threadsafe linked list -- quick and dirty implementation */
-struct serial_list_elem {
-    Packet_t *pkt;
-    unsigned int key;
-    unsigned int rev_key;
-    struct list_elem *next;
-};
-
 struct serial_list *create_serial_list(void) {
     struct serial_list *l = malloc (sizeof(struct serial_list));
     l->head = NULL;
+    l->size = 0;
+    return l;
 }
 
 /* If key is in list, sets *in_list to true and returns the prior element.
@@ -50,9 +45,9 @@ struct serial_list *create_serial_list(void) {
  * correct place where it should be (NULL if at the head).
  */
 
-struct list_elem *s_find(struct serial_list *l, unsigned key_rev, bool *in_list) {
-    struct list_elem *e = l->head;
-    struct list_elem *prev_e = NULL;
+struct serial_list_elem *s_find(struct serial_list *l, unsigned key_rev, bool *in_list) {
+    struct serial_list_elem *e = l->head;
+    struct serial_list_elem *prev_e = NULL;
     if (!e) {
         *in_list = false;
         return NULL;
@@ -81,11 +76,11 @@ struct list_elem *s_find(struct serial_list *l, unsigned key_rev, bool *in_list)
 int s_add(struct serial_list *l, int key, Packet_t *pkt) {
     unsigned key_rev = rev_bits(key);
     bool in_list = false;
-    struct list_elem *prev = s_find (l, key_rev, &in_list);
+    struct serial_list_elem *prev = s_find (l, key_rev, &in_list);
     if (in_list)
         return -1;
 
-    struct list_elem *new_elem = malloc (sizeof(struct list_elem));
+    struct serial_list_elem *new_elem = malloc (sizeof(struct serial_list_elem));
     new_elem->key = (unsigned) key;
     new_elem->rev_key = rev_bits (key);
     new_elem->pkt = pkt;
@@ -105,7 +100,7 @@ int s_add(struct serial_list *l, int key, Packet_t *pkt) {
 bool s_remove (struct serial_list *l, int key) {
     unsigned rev_key = rev_bits (key);
     bool in_list = false;
-    struct list_elem *prev_e = s_find (l, key_rev, &in_list);
+    struct serial_list_elem *prev_e = s_find (l, key_rev, &in_list);
     if (!in_list)
         return false;
 
@@ -123,7 +118,7 @@ bool s_contains (struct serial_list *l, int key) {
 }
 
 void destroy_serial_list (struct serial_list *l, int key) {
-    struct list_elem *e = l->head, *next_e = NULL;
+    struct serial_list_elem *e = l->head, *next_e = NULL;
 
     while (e) {
         next_e = e->next;
