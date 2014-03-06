@@ -1,11 +1,32 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../src/lists.h"
+#include "../src/serial_lists.h"
 
 int main(int argc, char *argv[]) {
     char *test_type = argv[1];
-   // if (!strcmp(test_type, "serial_persist"))
+    if (!strcmp(test_type, "serial_contains")) {
+        serial_contains(atoi(argv[2]));
+        return 0;
+    }
+
+    if (!strcmp(test_type, "serial_removals")) {
+        serial_removals(atoi(argv[2]));
+        return 0;
+    }
+
+    if (!strcmp(test_type, "serial_nocontains")) {
+        serial_nocontains(atoi(argv[2]));
+        return 0;
+    }
+
+    if (!strcmp(test_type, "serial_ordering")) {
+        serial_ordering(atoi(argv[2]));
+        return 0;
+    }
+
+    printf("Invalid test\n");
+    return 1;
 }
 
 // Inserts N distinct random elements into a list, then tests that they're still all there.

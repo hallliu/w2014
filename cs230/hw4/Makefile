@@ -2,8 +2,8 @@ OBJS=locks.o queue.o packet_workers.o
 UTIL_FILES=hashgenerator.c packetsource.c generators.c
 UTIL_OBJS=$(UTIL_FILES:%.c=Utils/%.o)
 
-TEST_FILES=test_main.c test_locks.c test_workers.c
-TEST_OBJS=$(TEST_FILES:%.c=tests/%.o)
+TEST_FILES=test_lists.c
+TEST_OBJS=$(TEST_FILES:%.c=tests/%)
 
 PERF_FILES=counter.c perf_main.c packet.c
 PERF_OBJS=$(PERF_FILES:%.c=perf/%.o)
@@ -24,7 +24,7 @@ serial_firewall: serial_firewall.c
 Utils/%.o: %.c %.h
 	$(CC) -c $(CFLAGS) $(LDFLAGS) $(LDLIBS) $< -o $@
 
-tests/%.o: %.c %.h
+tests/%: %.c $(UTIL_OBJS) $(OBJS)
 	$(CC) -c $(CFLAGS) $(LDFLAGS) $(LDLIBS) $< -o $@
 
 perf: $(PERF_OBJS) $(OBJS) $(UTIL_OBJS)
