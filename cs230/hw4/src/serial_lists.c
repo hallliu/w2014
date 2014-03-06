@@ -73,12 +73,12 @@ struct serial_list_elem *s_find(struct serial_list *l, unsigned key_rev, bool *i
 }
 
 
-int s_add(struct serial_list *l, int key, Packet_t *pkt) {
+bool s_add(struct serial_list *l, int key, Packet_t *pkt) {
     unsigned key_rev = rev_bits(key);
     bool in_list = false;
     struct serial_list_elem *prev = s_find (l, key_rev, &in_list);
     if (in_list)
-        return -1;
+        return false;
 
     struct serial_list_elem *new_elem = malloc (sizeof(struct serial_list_elem));
     new_elem->key = (unsigned) key;
@@ -94,7 +94,7 @@ int s_add(struct serial_list *l, int key, Packet_t *pkt) {
         prev->next = new_elem;
     }
     l->size++;
-    return 0;
+    return true;
 }
 
 bool s_remove (struct serial_list *l, int key) {
@@ -105,7 +105,11 @@ bool s_remove (struct serial_list *l, int key) {
         return false;
 
     // Leak memory.
-    prev_e->next = prev_e->next->next;
+    if (prev_e)
+        prev_e->next = prev_e->next->next;
+    else
+        l->head = l->head->next;
+
     l->size--;
     return true;
 }

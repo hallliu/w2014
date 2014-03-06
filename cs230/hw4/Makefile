@@ -11,8 +11,8 @@ TEST_EXES=$(TEST_FILES:%.c=tests/%)
 .PHONY: perf tests clean
 
 CC=gcc
-override CFLAGS += -O3 -Wall -Werror -std=gnu99 -IUtils
-#override CFLAGS += -O0 -g -Wall -Werror -std=gnu99 -IUtils
+#override CFLAGS += -O3 -Wall -Werror -std=gnu99 -IUtils
+override CFLAGS += -O0 -g -Wall -Werror -std=gnu99 -IUtils
 
 LDLIBS=-pthread -lm
 

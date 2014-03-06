@@ -141,7 +141,7 @@ void serial_ordering (int N) {
     }
     
     struct serial_list_elem *e = l->head;
-    while (e) {
+    while (e->next) {
         if (e->rev_key >= e->next->rev_key) {
             printf("FAIL: key misorder\n");
             goto end;
