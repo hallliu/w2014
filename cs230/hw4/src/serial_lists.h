@@ -5,7 +5,7 @@
 #include <packetsource.h>
 
 struct serial_list {
-    volatile struct serial_list_elem *head;
+    struct serial_list_elem *head;
     volatile int size;
 };
 
@@ -13,7 +13,7 @@ struct serial_list_elem {
     Packet_t *pkt;
     unsigned int key;
     unsigned int rev_key;
-    struct list_elem *next;
+    struct serial_list_elem *next;
 };
 
 struct serial_list *create_serial_list(void);

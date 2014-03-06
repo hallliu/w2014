@@ -100,7 +100,7 @@ int s_add(struct serial_list *l, int key, Packet_t *pkt) {
 bool s_remove (struct serial_list *l, int key) {
     unsigned rev_key = rev_bits (key);
     bool in_list = false;
-    struct serial_list_elem *prev_e = s_find (l, key_rev, &in_list);
+    struct serial_list_elem *prev_e = s_find (l, rev_key, &in_list);
     if (!in_list)
         return false;
 
@@ -113,11 +113,11 @@ bool s_remove (struct serial_list *l, int key) {
 bool s_contains (struct serial_list *l, int key) {
     unsigned rev_key = rev_bits (key);
     bool in_list = false;
-    void *e __attribute((unused)) = (void *) s_find (l, key_rev, &in_list);
+    void *e __attribute((unused)) = (void *) s_find (l, rev_key, &in_list);
     return in_list;
 }
 
-void destroy_serial_list (struct serial_list *l, int key) {
+void destroy_serial_list (struct serial_list *l) {
     struct serial_list_elem *e = l->head, *next_e = NULL;
 
     while (e) {

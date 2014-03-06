@@ -1,7 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "../src/serial_lists.h"
+
+void serial_contains (int N);
+void serial_removals(int N);
+void serial_nocontains (int N);
+void serial_ordering (int N);
 
 int main(int argc, char *argv[]) {
     char *test_type = argv[1];

@@ -1,40 +1,34 @@
-OBJS=locks.o queue.o packet_workers.o
-UTIL_FILES=hashgenerator.c packetsource.c generators.c
+OBJS=src/serial_lists.o
+UTIL_FILES=hashgenerator.c packetsource.c generators.c crc32.c
 UTIL_OBJS=$(UTIL_FILES:%.c=Utils/%.o)
 
-TEST_FILES=test_lists.c
-TEST_OBJS=$(TEST_FILES:%.c=tests/%)
+TEST_FILES=test_lists.c 
+TEST_EXES=$(TEST_FILES:%.c=tests/%)
 
-PERF_FILES=counter.c perf_main.c packet.c
-PERF_OBJS=$(PERF_FILES:%.c=perf/%.o)
+#PERF_FILES=counter.c perf_main.c packet.c
+#PERF_OBJS=$(PERF_FILES:%.c=perf/%.o)
 
 .PHONY: perf tests clean
 
 CC=gcc
 override CFLAGS += -O3 -Wall -Werror -std=gnu99 -IUtils
+#override CFLAGS += -O0 -g -Wall -Werror -std=gnu99 -IUtils
 
 LDLIBS=-pthread -lm
 
-serial_firewall: serial_firewall.c
-	$(CC) $(CFLAGS) $(LDFLAGS) $(LDLIBS) $(UTIL_OBJS) $< -o $@
-
-%.o: %.c %.h
+src/%.o: %.c %.h
 	$(CC) -c $(CFLAGS) $(LDFLAGS) $(LDLIBS) $< -o $@
 
 Utils/%.o: %.c %.h
 	$(CC) -c $(CFLAGS) $(LDFLAGS) $(LDLIBS) $< -o $@
 
-tests/%: %.c $(UTIL_OBJS) $(OBJS)
-	$(CC) -c $(CFLAGS) $(LDFLAGS) $(LDLIBS) $< -o $@
+$(TEST_EXES): %: %.c $(UTIL_OBJS) $(OBJS)
+	$(CC) $(LDFLAGS) $(CFLAGS) $(UTIL_OBJS) $(OBJS) $< -o $@ $(LDLIBS)
 
-perf: $(PERF_OBJS) $(OBJS) $(UTIL_OBJS)
-	$(CC) $(LDFLAGS) $(CFLAGS) $(PERF_OBJS) $(UTIL_OBJS) $(OBJS) -o perf/perf_main $(LDLIBS)
-
-tests: $(TEST_OBJS) $(OBJS) $(UTIL_OBJS)
-	$(CC) $(LDFLAGS) $(CFLAGS) $(TEST_OBJS) $(UTIL_OBJS) $(OBJS) -o tests/test_main $(LDLIBS)
+tests: $(TEST_EXES)
 
 clean:
-	rm *.o Utils/*.o perf/*.o perf/perf_main
+	rm src/*.o Utils/*.o 
 
 testclean:
-	rm tests/*.o tests/test_main
+	rm tests/*.o $(TEST_EXES)
