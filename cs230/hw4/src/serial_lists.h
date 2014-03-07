@@ -20,5 +20,5 @@ struct serial_list *create_serial_lists(int);
 bool s_add (struct serial_list *, int, Packet_t *);
 bool s_remove (struct serial_list *, int);
 bool s_contains (struct serial_list *, int);
-void destroy_serial_list (struct serial_list *);
+void destroy_serial_lists (struct serial_list *, int);
 #endif

@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
 void serial_contains (int N) {
     int *keys = malloc (N * sizeof(int));
     srand (time(0));
-    struct serial_list *l = create_serial_list();
+    struct serial_list *l = create_serial_lists(1);
 
     for (int i = 0; i < N; i++) {
         keys[i] = rand();
@@ -87,7 +87,7 @@ void serial_contains (int N) {
     }
 
 end:
-    destroy_serial_list (l);
+    destroy_serial_lists (l, 1);
     free(keys);
 }
 
@@ -96,7 +96,7 @@ end:
 void serial_removals(int N) {
     int *keys = malloc (N * sizeof(int));
     srand (time(0));
-    struct serial_list *l = create_serial_list();
+    struct serial_list *l = create_serial_lists(1);
 
     for (int i = 0; i < N; i++) {
         keys[i] = rand();
@@ -127,7 +127,7 @@ void serial_removals(int N) {
     }
 
 end:
-    destroy_serial_list (l);
+    destroy_serial_lists (l, 1);
     free(keys);
 
 }
@@ -137,7 +137,7 @@ end:
 void serial_nocontains (int N) {
     int *keys = malloc (N * sizeof(int));
     srand (time(0));
-    struct serial_list *l = create_serial_list();
+    struct serial_list *l = create_serial_lists(1);
 
     for (int i = 0; i < N; i++) {
         keys[i] = rand() % (N * 2);
@@ -151,7 +151,7 @@ void serial_nocontains (int N) {
             break;
         }
     }
-    destroy_serial_list (l);
+    destroy_serial_lists (l, 1);
     free(keys);
 }
 
@@ -162,7 +162,7 @@ void serial_ordering (int N) {
 
     int *keys = malloc (N * sizeof(int));
     srand (time(0));
-    struct serial_list *l = create_serial_list();
+    struct serial_list *l = create_serial_lists(1);
 
     for (int i = 0; i < N; i++) {
         keys[i] = rand();
@@ -181,7 +181,7 @@ void serial_ordering (int N) {
     }
 
 end:
-    destroy_serial_list (l);
+    destroy_serial_lists (l, 1);
     free(keys);
 }
 
@@ -193,7 +193,7 @@ end:
 int *key_helper(int N, int limit) {
     int *keys = malloc (N * sizeof(int));
     srand (time(0));
-    struct serial_list *l = create_serial_list();
+    struct serial_list *l = create_serial_lists(1);
 
     for (int i = 0; i < N; i++) {
         keys[i] = rand() % limit;
@@ -201,7 +201,7 @@ int *key_helper(int N, int limit) {
             keys[i] = rand() % limit;
         }
     }
-    destroy_serial_list (l);
+    destroy_serial_lists (l, 1);
     return keys;
 }
 
@@ -534,4 +534,57 @@ void parallel_indistinct_add(int N, int T, int R) {
         printf("FAIL: %d successes instead of %d\n", succ_ctr, R);
     }
     return;
+}
+
+// Does a parallel add of 2N elements, then a parallel removal of the first N
+// and makes sure the order is correct.
+void parallel_ordering(int N, int T) {
+    int *keys = key_helper(2*N, INT_MAX);
+    bool *results = malloc(2*N * sizeof(bool));
+    int *ops = malloc(2*N * sizeof(int));
+    for (int i = 0; i < 2*N; i++) 
+        ops[i] = 1;
+
+    struct lockfree_list *l = create_lockfree_list();
+
+    pdata *datas = malloc (T * sizeof(pdata));
+    pthread_t *threads = malloc(T * sizeof(pthread_t));
+    for (int i = 0; i < T; i++) {
+        datas[i].l = l;
+        datas[i].keys = keys;
+        datas[i].ops = ops;
+        datas[i].begin = i * 2*N / T;
+        datas[i].end = (i + 1) * 2*N / T - 1;
+        datas[i].results = results;
+    }
+
+    for (int i = 0; i < T; i++) 
+        pthread_create(&threads[i], NULL, parallel_worker, (void *)(datas + i));
+
+    for (int i = 0; i < T; i++) 
+        pthread_join(threads[i], NULL);
+
+    for (int i = 0; i < N; i++) {
+        ops[i] = 2;
+    }
+
+    for (int i = 0; i < T; i++) {
+        datas[i].begin = i * N / T;
+        datas[i].end = (i + 1) * N / T - 1;
+    }
+
+    for (int i = 0; i < T; i++) 
+        pthread_create(&threads[i], NULL, parallel_worker, (void *)(datas + i));
+
+    for (int i = 0; i < T; i++) 
+        pthread_join(threads[i], NULL);
+
+    struct lf_elem *e = l->head;
+    while (e->next) {
+        if (e->rev_key >= e->next->rev_key) {
+            printf("FAIL: key misorder\n");
+            return;
+        }
+        e = e->next;
+    }
 }
