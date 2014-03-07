@@ -33,10 +33,12 @@ static inline unsigned int rev_bits(int x) {
 }
 
 /* Non-threadsafe linked list -- quick and dirty implementation */
-struct serial_list *create_serial_list(void) {
-    struct serial_list *l = malloc (sizeof(struct serial_list));
-    l->head = NULL;
-    l->size = 0;
+struct serial_list *create_serial_lists(int n) {
+    struct serial_list *l = malloc (n * sizeof(struct serial_list));
+    for (int i = 0; i < n; i++) {
+        l[i].head = NULL;
+        l[i].size = 0;
+   }
     return l;
 }
 
@@ -104,7 +106,6 @@ bool s_remove (struct serial_list *l, int key) {
     if (!in_list)
         return false;
 
-    // Leak memory.
     if (prev_e)
         prev_e->next = prev_e->next->next;
     else
@@ -121,13 +122,14 @@ bool s_contains (struct serial_list *l, int key) {
     return in_list;
 }
 
-void destroy_serial_list (struct serial_list *l) {
-    struct serial_list_elem *e = l->head, *next_e = NULL;
-
-    while (e) {
-        next_e = e->next;
-        free (e);
-        e = next_e;
+void destroy_serial_lists (struct serial_list *l, int size) {
+    for (int i = 0; i < size; i++) {
+        struct serial_list_elem *e = l[i].head, *next_e = NULL;
+        while (e) {
+            next_e = e->next;
+            free (e);
+            e = next_e;
+        }
     }
     free (l);
 }
