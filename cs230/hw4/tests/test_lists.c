@@ -18,6 +18,7 @@ void parallel_addcontain1(int N, int T);
 void parallel_addcontain2(int N, int T);
 void parallel_alltogether(int N, int Tc, int Ta, int Tr);
 void parallel_indistinct_add(int N, int T, int R);
+void parallel_ordering(int N, int T);
 
 int main(int argc, char *argv[]) {
     char *test_type = argv[1];
@@ -58,6 +59,11 @@ int main(int argc, char *argv[]) {
 
     if (!strcmp(test_type, "parallel_indistinct_add")) {
         parallel_indistinct_add(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]));
+        return 0;
+    }
+
+    if (!strcmp(test_type, "parallel_ordering")) {
+        parallel_ordering(atoi(argv[2]), atoi(argv[3]));
         return 0;
     }
 
