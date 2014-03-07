@@ -347,7 +347,8 @@ void parallel_addcontain2(int N, int T) {
 
 // Tests concurrent adds, contains, and removes. Add in 2N keys, then call
 // adds on N more, removes on the second N, and contains on the first N.
-// Everything should succeed.
+// Everything should succeed. Proceed to test containment on all keys. 
+// Should succeed on first N, fail on second block, succeed on third block.
 void parallel_alltogether(int N, int Tc, int Ta, int Tr) {
     int T = Tc + Ta + Tr;
 
@@ -415,7 +416,6 @@ void parallel_alltogether(int N, int Tc, int Ta, int Tr) {
         datas[i].results = results_a;
     }
 
-
     for (int i = 0; i < T; i++) 
         pthread_create(&threads[i], NULL, parallel_worker, (void *)(datas + i));
 
@@ -433,6 +433,41 @@ void parallel_alltogether(int N, int Tc, int Ta, int Tr) {
         }
         if (!results_a[i]) {
             printf("FAIL: bad return on parallel adds\n");
+            return;
+        }
+    }
+
+    results = malloc(3*N*sizeof(bool));
+    ops = malloc(3*N*sizeof(int));
+    for(int i = 0; i < 3*N; i++)
+        ops[i] = 0;
+
+    for (int i = 0; i < T; i++) {
+        datas[i].l = l;
+        datas[i].keys = keys;
+        datas[i].ops = ops;
+        datas[i].begin = i * 3 * N / T;
+        datas[i].end = (i + 1) * 3 * N / T - 1;
+        datas[i].results = results;
+    }
+
+    for (int i = 0; i < T; i++) 
+        pthread_create(&threads[i], NULL, parallel_worker, (void *)(datas + i));
+
+    for (int i = 0; i < T; i++) 
+        pthread_join(threads[i], NULL);
+
+    for (int i = 0; i < 3*N; i++) {
+        if (i < N && !results[i]) {
+            printf("FAIL: bad return on block1\n");
+            return;
+        }
+        else if (i >= N && i < 2*N && results[i]) {
+            printf("FAIL: bad return on block2\n");
+            return;
+        }
+        else if (i >= 2*N && !results[i]) {
+            printf("FAIL: bad return on block3\n");
             return;
         }
     }
