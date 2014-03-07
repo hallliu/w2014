@@ -409,14 +409,14 @@ void parallel_alltogether(int N, int Tc, int Ta, int Tr) {
 
     int *rms = malloc(N * sizeof(int));
     for (int i = 0; i < N; i++)
-        rms[i] = 0;
+        rms[i] = 2;
 
     for (int i = 0; i < Tc; i++) {
         datas[i].l = l;
         datas[i].keys = keys;
         datas[i].ops = cts;
-        datas[i].begin = i * 2 * N / Tc;
-        datas[i].end = (i + 1) * 2 * N / Tc - 1;
+        datas[i].begin = i * N / Tc;
+        datas[i].end = (i + 1) * N / Tc - 1;
         datas[i].results = results_c;
     }
 
@@ -424,8 +424,8 @@ void parallel_alltogether(int N, int Tc, int Ta, int Tr) {
         datas[i].l = l;
         datas[i].keys = keys + N;
         datas[i].ops = rms;
-        datas[i].begin = i * 2 * N / Tr;
-        datas[i].end = (i + 1) * 2 * N / Tr - 1;
+        datas[i].begin = (i-Tc) * N / Tr;
+        datas[i].end = (i-Tc + 1) * N / Tr - 1;
         datas[i].results = results_r;
     }
 
@@ -433,8 +433,8 @@ void parallel_alltogether(int N, int Tc, int Ta, int Tr) {
         datas[i].l = l;
         datas[i].keys = keys + 2*N;
         datas[i].ops = adds;
-        datas[i].begin = i * 2 * N / Ta;
-        datas[i].end = (i + 1) * 2 * N / Ta - 1;
+        datas[i].begin = (i-Tc-Tr) * N / Ta;
+        datas[i].end = (i-Tc-Tr + 1) * N / Ta - 1;
         datas[i].results = results_a;
     }
 

@@ -92,7 +92,7 @@ restart_find:
                 next = curr->next;
             }
 
-            if (rev_key < curr->rev_key) {
+            if (rev_key <= curr->rev_key) {
                 *_prev = REFOF(prev);
                 *_curr = REFOF(curr);
                 return;
