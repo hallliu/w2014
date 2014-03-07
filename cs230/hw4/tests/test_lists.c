@@ -313,7 +313,7 @@ void parallel_addcontain2(int N, int T) {
     bool *results_c = malloc(N * sizeof(bool));
     int *adds = ops;
     int *cts = malloc(N * sizeof(int));
-    for (int i = 0; i < N, i++)
+    for (int i = 0; i < N; i++)
         cts[i] = 0;
 
     for (int i = 0; i < T; i++) {
@@ -382,11 +382,11 @@ void parallel_alltogether(int N, int Tc, int Ta, int Tr) {
     bool *results_c = malloc(N * sizeof(bool));
     int *adds = ops;
     int *cts = malloc(N * sizeof(int));
-    for (int i = 0; i < N, i++)
+    for (int i = 0; i < N; i++)
         cts[i] = 0;
 
     int *rms = malloc(N * sizeof(int));
-    for (int i = 0; i < N, i++)
+    for (int i = 0; i < N; i++)
         rms[i] = 0;
 
     for (int i = 0; i < Tc; i++) {
@@ -471,4 +471,45 @@ void parallel_alltogether(int N, int Tc, int Ta, int Tr) {
             return;
         }
     }
+}
+
+// Tests to make sure that indistinct adds will fail. Attempts to insert R distinct values
+// a total of N times, and asserts that there are only R successes.
+void parallel_indistinct_add(int N, int T, int R) {
+    int *keys = key_helper(N, INT_MAX);
+    bool *results = malloc(N * sizeof(bool));
+    int *ops = malloc(N * sizeof(int));
+    for (int i = 0; i < N; i++) {
+        ops[i] = 1;
+        keys[i] = keys[i] % R;
+    }
+
+    struct lockfree_list *l = create_lockfree_list();
+
+    pdata *datas = malloc (T * sizeof(pdata));
+    pthread_t *threads = malloc(T * sizeof(pthread_t));
+    for (int i = 0; i < T; i++) {
+        datas[i].l = l;
+        datas[i].keys = keys;
+        datas[i].ops = ops;
+        datas[i].begin = i * N / T;
+        datas[i].end = (i + 1) * N / T - 1;
+        datas[i].results = results;
+    }
+
+    for (int i = 0; i < T; i++) 
+        pthread_create(&threads[i], NULL, parallel_worker, (void *)(datas + i));
+
+    for (int i = 0; i < T; i++) 
+        pthread_join(threads[i], NULL);
+
+    int succ_ctr = 0;
+    for (int i = 0; i < N; i++) {
+        if (results[i])
+            succ_ctr++;
+    }
+    if (succ_ctr != R) {
+        printf("FAIL: %d successes instead of %d\n", succ_ctr, R);
+    }
+    return;
 }
