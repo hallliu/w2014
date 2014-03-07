@@ -14,8 +14,10 @@ void serial_removals(int N);
 void serial_nocontains (int N);
 void serial_ordering (int N);
 
-void parallel_addcontain(int N, int T);
-
+void parallel_addcontain1(int N, int T);
+void parallel_addcontain2(int N, int T);
+void parallel_alltogether(int N, int Tc, int Ta, int Tr);
+void parallel_indistinct_add(int N, int T, int R);
 
 int main(int argc, char *argv[]) {
     char *test_type = argv[1];
@@ -36,6 +38,26 @@ int main(int argc, char *argv[]) {
 
     if (!strcmp(test_type, "serial_ordering")) {
         serial_ordering(atoi(argv[2]));
+        return 0;
+    }
+
+    if (!strcmp(test_type, "parallel_addcontain1")) {
+        parallel_addcontain1(atoi(argv[2]), atoi(argv[3]));
+        return 0;
+    }
+
+    if (!strcmp(test_type, "parallel_addcontain2")) {
+        parallel_addcontain2(atoi(argv[2]), atoi(argv[3]));
+        return 0;
+    }
+
+    if (!strcmp(test_type, "parallel_alltogether")) {
+        parallel_alltogether(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]));
+        return 0;
+    }
+
+    if (!strcmp(test_type, "parallel_indistinct_add")) {
+        parallel_indistinct_add(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]));
         return 0;
     }
 
@@ -198,7 +220,7 @@ typedef struct parallel_worker_data {
 } pdata;
 
 void *parallel_worker(void *_data) {
-    pdata *data = (pdata *) data;
+    pdata *data = (pdata *) _data;
     struct lockfree_list *l = data->l;
     int *keys = data->keys;
         
@@ -318,8 +340,8 @@ void parallel_addcontain2(int N, int T) {
 
     for (int i = 0; i < T; i++) {
         datas[i].l = l;
-        datas[i].begin = i * N / half_T;
-        datas[i].end = (i + 1) * N / half_T - 1;
+        datas[i].begin = (i/2) * N / half_T;
+        datas[i].end = ((i/2) + 1) * N / half_T - 1;
         if (i % 2 == 0) {
             datas[i].results = results_a;
             datas[i].keys = keys + N;
