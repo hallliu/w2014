@@ -7,8 +7,9 @@
 #include "lockfree_lists.h"
 
 #define _UNUSED_ __attribute__((unused))
-#define MARKOF(x) ((x) & (0x1))
-#define REFOF(x) ((x) & (~0x1))
+#define MARKOF(x) ((unsigned long)(x) & (0x1l))
+#define REFOF(x) (typeof(x))((unsigned long)(x) & (~0x1l))
+#define MARKED(x) (typeof(x))((unsigned long)(x) | 0x1l)
 // Lookup table for bit-reversals copy-pasted from http://stackoverflow.com/a/746203
 static char reverses[256] = {  0x00, 0x80, 0x40, 0xC0, 0x20, 0xA0, 0x60, 0xE0, 0x10, 0x90, 0x50, 0xD0, 0x30, 0xB0, 0x70, 0xF0, 
       0x08, 0x88, 0x48, 0xC8, 0x28, 0xA8, 0x68, 0xE8, 0x18, 0x98, 0x58, 0xD8, 0x38, 0xB8, 0x78, 0xF8, 
@@ -84,7 +85,7 @@ restart_find:
             }
             next = curr->next;
             while (MARKOF(next)) {
-                bool successful_phy_rm = __sync_bool_compare_and_swap (&prev->next, curr, next & (~0x1));
+                bool successful_phy_rm = __sync_bool_compare_and_swap (&prev->next, curr, REFOF(next));
                 if (!successful_phy_rm)
                     goto restart_find;
                 curr = REFOF(next);
@@ -92,12 +93,12 @@ restart_find:
             }
 
             if (rev_key < curr->rev_key) {
-                *_prev = REFOF(prev)
+                *_prev = REFOF(prev);
                 *_curr = REFOF(curr);
                 return;
             }
-            prev = REFOF(prev);
-            curr = REFOF(curr);
+            prev = REFOF(curr);
+            curr = REFOF(curr->next);
         }
     }
 }
@@ -153,7 +154,7 @@ bool lf_remove (struct lockfree_list *l, int key) {
             }
             
             next = curr->next;
-            bool successful_phy_rm = __sync_bool_compare_and_swap (&curr->next, next, next | 0x1);
+            bool successful_phy_rm = __sync_bool_compare_and_swap (&curr->next, next, MARKED(next));
             if (!successful_phy_rm)
                 continue;
             // Try a physical removal; no consequence if it fails.
@@ -168,7 +169,7 @@ bool lf_remove (struct lockfree_list *l, int key) {
 }
 
 bool lf_contains (struct lockfree_list *l, int key) {
-    unsigned key = rev_bits(key);
+    unsigned rev_key = rev_bits(key);
     struct lf_elem *curr = l->head;
     if (!curr)
         return false;

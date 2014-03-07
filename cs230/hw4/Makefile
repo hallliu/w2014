@@ -1,4 +1,4 @@
-OBJS=src/serial_lists.o
+OBJS=src/serial_lists.o src/lockfree_lists.o
 UTIL_FILES=hashgenerator.c packetsource.c generators.c crc32.c
 UTIL_OBJS=$(UTIL_FILES:%.c=Utils/%.o)
 
@@ -28,7 +28,4 @@ $(TEST_EXES): %: %.c $(UTIL_OBJS) $(OBJS)
 tests: $(TEST_EXES)
 
 clean:
-	rm src/*.o Utils/*.o 
-
-testclean:
-	rm tests/*.o $(TEST_EXES)
+	rm src/*.o Utils/*.o tests/*.o $(TEST_EXES)

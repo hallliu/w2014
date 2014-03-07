@@ -194,11 +194,11 @@ typedef struct parallel_worker_data {
 } pdata;
 
 void *parallel_worker(void *_data) {
-    pdata *data = (pdata) data;
+    pdata *data = (pdata *) data;
     struct lockfree_list *l = data->l;
     int *keys = data->keys;
         
-    for (int i = begin; i <= end; i++) {
+    for (int i = data->begin; i <= data->end; i++) {
         switch (data->ops[i]) {
             case 0:
                 data->results[i] = lf_contains(l, keys[i]);
