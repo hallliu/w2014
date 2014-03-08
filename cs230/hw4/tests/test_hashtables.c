@@ -232,9 +232,7 @@ void alltogether(char *tabtype, int N, int Tc, int Ta, int Tr) {
     int T = Tc + Ta + Tr;
 
     int *keys = key_helper(3*N, INT_MAX);
-    for (int i = 0; i < 3*N; i++) {
-        printf("%d\n", keys[i]);
-    }
+
     bool *results = malloc(2*N * sizeof(bool));
     int *ops = malloc(2*N * sizeof(int));
     for (int i = 0; i < 2*N; i++) 

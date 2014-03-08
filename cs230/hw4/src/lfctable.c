@@ -164,3 +164,20 @@ end:
     }
     return;
 }
+
+// debugging
+void dump_table(struct lfc_table *t) {
+    for (int i = 0; i < t->cap; i++) {
+        fprintf(stderr, "%d: ", t->buckets[i].size);
+        struct lf_elem *e = t->buckets[i].head;
+        while (e) {
+            fprintf(stderr, "%u ", e->key);
+            if (MARKOF(e->next)) {
+                printf("uhoh, marked\n");
+                return;
+            }
+            e = e->next;
+        }
+        fprintf(stderr, "\n");
+    }
+}
