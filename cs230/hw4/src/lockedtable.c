@@ -123,3 +123,16 @@ end:
     }
     return;
 }
+//
+// debugging
+void dump_table_l(struct locked_table *t) {
+    for (int i = 0; i < t->cap; i++) {
+        fprintf(stderr, "%d: ", t->buckets[i].size);
+        struct serial_list_elem *e = t->buckets[i].head;
+        while (e) {
+            fprintf(stderr, "%u ", e->key);
+            e = e->next;
+        }
+        fprintf(stderr, "\n");
+    }
+}

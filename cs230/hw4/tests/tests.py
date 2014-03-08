@@ -144,7 +144,7 @@ class HashTableTests(unittest.TestCase):
         for tab, N, T in product(self.tablenames, [1, 10, 100, 1000, 2000], [1,2,4,8]):
             if T > N:
                 continue
-            cmdstr = ['./test_lists', 'addcontain1', tab, str(N), str(T)]
+            cmdstr = ['./test_hashtables', 'addcontain1', tab, str(N), str(T)]
             print cmdstr
             out = sp.check_output(cmdstr)
             if len(out) > 0:
@@ -154,7 +154,7 @@ class HashTableTests(unittest.TestCase):
         for tab, N, T in product(self.tablenames, [1, 10, 100, 1000, 2000], [1,2,4,8]):
             if T > N:
                 continue
-            cmdstr = ['./test_lists', 'addcontain2', tab, str(N), str(T)]
+            cmdstr = ['./test_hashtables', 'addcontain2', tab, str(N), str(T)]
             print cmdstr
             out = sp.check_output(cmdstr)
             if len(out) > 0:
@@ -164,7 +164,7 @@ class HashTableTests(unittest.TestCase):
         for tab, N, (Tc, Ta, Tr) in product(self.tablenames, [10, 100, 1000, 2000],[(1,2,1),(2,1,1),(1,1,2),(2,4,2),(2,2,4),(4,2,2),(5,1,2),(2,5,1)]):
             if (Ta+Tc+Tr) > N:
                 continue
-            cmdstr = ['./test_lists', 'alltogether', tab, str(N), str(Tc), str(Ta), str(Tr)]
+            cmdstr = ['./test_hashtables', 'alltogether', tab, str(N), str(Tc), str(Ta), str(Tr)]
             print cmdstr
             out = sp.check_output(cmdstr)
             if len(out) > 0:
@@ -174,7 +174,7 @@ class HashTableTests(unittest.TestCase):
         for tab, N, T, R in product(self.tablenames, [1, 10, 100, 1000, 2000], [1,2,4,8], [1,2,8,16]):
             if T > N or R > N:
                 continue
-            cmdstr = ['./test_lists', 'indistinct_add', tab, str(N), str(T), str(R)]
+            cmdstr = ['./test_hashtables', 'indistinct_add', tab, str(N), str(T), str(R)]
             print cmdstr
             out = sp.check_output(cmdstr)
             if len(out) > 0:

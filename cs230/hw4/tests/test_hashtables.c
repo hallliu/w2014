@@ -103,8 +103,9 @@ void addcontain1(char *tabtype, int N, int T) {
     int *keys = key_helper(N, INT_MAX);
     bool *results = malloc(N * sizeof(bool));
     int *ops = malloc(N * sizeof(int));
-    for (int i = 0; i < N; i++) 
+    for (int i = 0; i < N; i++) {
         ops[i] = 1;
+    }
 
     if (T > N)
         T = N;
@@ -356,12 +357,14 @@ void alltogether(char *tabtype, int N, int Tc, int Ta, int Tr) {
 // Tests to make sure that indistinct adds will fail. Attempts to insert R distinct values
 // a total of N times, and asserts that there are only R successes.
 void indistinct_add(char *tabtype, int N, int T, int R) {
-    int *keys = key_helper(N, INT_MAX);
+    int *keys_low = key_helper(R, INT_MAX);
+    int *keys = malloc(N * sizeof(int));
+
     bool *results = malloc(N * sizeof(bool));
     int *ops = malloc(N * sizeof(int));
     for (int i = 0; i < N; i++) {
         ops[i] = 1;
-        keys[i] = keys[i] % R;
+        keys[i] = keys_low[i % R];
     }
 
     struct hashtable *tab = create_ht(tabtype, T);
