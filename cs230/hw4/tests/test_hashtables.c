@@ -6,14 +6,14 @@
 
 #include "../src/hashtables.h"
 #include "../src/lockedtable.h"
+#include "../src/lockfree_lists.h"
 
 int *key_helper(int N, int limit);
 
-void addcontain1(int N, int T);
-void addcontain2(int N, int T);
-void alltogether(int N, int Tc, int Ta, int Tr);
-void indistinct_add(int N, int T, int R);
-void ordering(int N, int T);
+void addcontain1(char *tabtype, int N, int T);
+void addcontain2(char *tabtype, int N, int T);
+void alltogether(char *tabtype, int N, int Tc, int Ta, int Tr);
+void indistinct_add(char *tabtype, int N, int T, int R);
 
 int main(int argc, char *argv[]) {
     char *test_type = argv[1];
@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 int *key_helper(int N, int limit) {
     int *keys = malloc (N * sizeof(int));
     srand (time(0));
-    struct serial_list *l = create_lockfree_lists(1);
+    struct lockfree_list *l = create_lockfree_lists(1);
 
     for (int i = 0; i < N; i++) {
         keys[i] = rand() % limit;

@@ -5,7 +5,7 @@
 
 #include <packetsource.h>
 
-#include "serial_lists.c"
+#include "serial_lists.h"
 #include "lockedtable.h"
 
 #define RESIZE_THRESH 4
