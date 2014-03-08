@@ -28,4 +28,4 @@ $(TEST_EXES): %: %.c $(UTIL_OBJS) $(OBJS)
 tests: $(TEST_EXES)
 
 clean:
-	rm src/*.o Utils/*.o tests/*.o $(TEST_EXES)
+	rm src/*.o Utils/*.o $(TEST_EXES)
