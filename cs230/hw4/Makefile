@@ -1,4 +1,4 @@
-OBJS=src/serial_lists.o src/lockfree_lists.o src/lockedtable.o src/hashtables.o
+OBJS=src/serial_lists.o src/lockfree_lists.o src/lockedtable.o src/lfctable.o src/hashtables.o
 UTIL_FILES=hashgenerator.c packetsource.c generators.c crc32.c
 UTIL_OBJS=$(UTIL_FILES:%.c=Utils/%.o)
 

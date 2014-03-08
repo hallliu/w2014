@@ -17,7 +17,7 @@
 bool lfc_add(struct hashtable *_t, int key, Packet_t *pkt);
 bool lfc_remove(struct hashtable *_t, int key);
 bool lfc_contains(struct hashtable *_t, int key);
-void inc_size(struct lfc_table *tab);
+void lf_inc_size(struct lfc_table *tab);
 
 struct lfc_table *create_lfctable(int cap) {
     struct lfc_table *tab = malloc (sizeof(struct lfc_table));
@@ -48,7 +48,7 @@ bool lfc_add(struct hashtable *_t, int key, Packet_t *pkt) {
     pthread_mutex_lock(tab->locks + lock_ind);
 
     int bucket_ind = key & (tab->cap - 1);
-    bool succ = s_add (tab->buckets + bucket_ind, key, pkt);
+    bool succ = lf_add (tab->buckets + bucket_ind, key, pkt);
 
     if (tab->buckets[bucket_ind].size > RESIZE_THRESH) {
         trigger_resize = true;
@@ -57,7 +57,7 @@ bool lfc_add(struct hashtable *_t, int key, Packet_t *pkt) {
     pthread_mutex_unlock (tab->locks + lock_ind);
 
     if (trigger_resize)
-        inc_size(tab);
+        lf_inc_size(tab);
 
     return succ;
 }
@@ -69,7 +69,7 @@ bool lfc_remove(struct hashtable *_t, int key) {
     pthread_mutex_lock (tab->locks + lock_ind);
 
     int bucket_ind = key & (tab->cap - 1);
-    bool succ = s_remove (tab->buckets + bucket_ind, key);
+    bool succ = lf_remove (tab->buckets + bucket_ind, key);
 
     pthread_mutex_unlock (tab->locks + lock_ind);
     return succ;
@@ -81,19 +81,17 @@ bool lfc_contains(struct hashtable *_t, int key) {
     // Resize will alter the location of this when it resizes so that 
     // it can watch the old one dwindle down to zero as the old
     // containment calls expire.
-    int *access_cnt = tab->contain_access_cnt;
+    volatile int *access_cnt = tab->contain_access_cnt;
     __sync_fetch_and_add(access_cnt, 1);
 
-    int lock_ind = key & (tab->initial_cap - 1);
-
     int bucket_ind = key & (tab->cap - 1);
-    bool succ = s_contains (tab->buckets + bucket_ind, key);
+    bool succ = lf_contains (tab->buckets + bucket_ind, key);
 
     __sync_fetch_and_add(access_cnt, -1);
     return succ;
 }
 
-void inc_size(struct lfc_table *tab) {
+void lf_inc_size(struct lfc_table *tab) {
     // First save the size so we can tell if someone else already resized
     int old_size = tab->cap;
     if (old_size >= PREALLOC_COUNT) {
@@ -118,13 +116,13 @@ void inc_size(struct lfc_table *tab) {
 
     // Go through and copy all the new elems to their new places
     for (int i = 0; i < tab->cap; i++) {
-        struct serial_list *this_bucket = tab->buckets + i;
-        struct serial_list_elem *e = this_bucket->head;
+        struct lockfree_list *this_bucket = tab->buckets + i;
+        struct lf_elem *e = this_bucket->head;
         drops[i] = NULL;
         while (e) {
             int new_ind = e->key & (tab->cap * 2 - 1);
             if (new_ind != i) {
-                s_add(tab->buckets + new_ind, e->key, e->pkt);
+                lf_add(tab->buckets + new_ind, e->key, e->pkt);
             }
             else {
                 drops[i] = e;
@@ -151,8 +149,8 @@ void inc_size(struct lfc_table *tab) {
             tab->buckets[i].head = NULL;
             continue;
         }
-        int mark = MARKOF(e->next);
-        e->next = mark;
+        unsigned long mark = MARKOF(e->next);
+        e->next = (struct lf_elem *) mark;
     }
     free (drops);
 
