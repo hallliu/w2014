@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 // the (presumably correct) lockfree list to guarantee distinctness. 
 int *key_helper(int N, int limit) {
     int *keys = malloc (N * sizeof(int));
-    srand (time(0));
+    srand (54624);
     struct lockfree_list *l = create_lockfree_lists(1);
 
     for (int i = 0; i < N; i++) {
@@ -232,6 +232,9 @@ void alltogether(char *tabtype, int N, int Tc, int Ta, int Tr) {
     int T = Tc + Ta + Tr;
 
     int *keys = key_helper(3*N, INT_MAX);
+    for (int i = 0; i < 3*N; i++) {
+        printf("%d\n", keys[i]);
+    }
     bool *results = malloc(2*N * sizeof(bool));
     int *ops = malloc(2*N * sizeof(int));
     for (int i = 0; i < 2*N; i++) 
@@ -302,15 +305,15 @@ void alltogether(char *tabtype, int N, int Tc, int Ta, int Tr) {
         pthread_join(threads[i], NULL);
 
     for (int i = 0; i < N; i++) {
-        if (!results_c[i]) {
+        if (!results_c[i] && Tc) {
             printf("FAIL: bad return on parallel contains\n");
             return;
         }
-        if (!results_r[i]) {
+        if (!results_r[i] && Tr) {
             printf("FAIL: bad return on parallel removes\n");
             return;
         }
-        if (!results_a[i]) {
+        if (!results_a[i] && Ta) {
             printf("FAIL: bad return on parallel adds\n");
             return;
         }

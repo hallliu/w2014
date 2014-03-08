@@ -1,5 +1,5 @@
-#ifndef LOCKEDTABLE_H
-#define LOCKEDTABLE_H
+#ifndef LFCTABLE_H
+#define LFCTABLE_H
 
 #include <stdbool.h>
 #include <pthread.h>

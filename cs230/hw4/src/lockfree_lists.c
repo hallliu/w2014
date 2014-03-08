@@ -156,14 +156,15 @@ bool lf_remove (struct lockfree_list *l, int key) {
             }
             
             next = curr->next;
-            bool successful_phy_rm = __sync_bool_compare_and_swap (&curr->next, next, MARKED(next));
-            if (!successful_phy_rm)
+            bool successful_log_rm = __sync_bool_compare_and_swap (&curr->next, next, MARKED(next));
+            if (!successful_log_rm)
                 continue;
             // Try a physical removal; no consequence if it fails.
             if (prev)
                 __sync_bool_compare_and_swap (&prev->next, curr, REFOF(next));
             else
                 __sync_bool_compare_and_swap (&l->head, curr, REFOF(next));
+            __sync_add_and_fetch (&l->size, -1);
             return true;
         }
         return false;
@@ -175,12 +176,10 @@ bool lf_contains (struct lockfree_list *l, int key) {
     struct lf_elem *curr = l->head;
     if (!curr)
         return false;
-    int marked = 0;
     while (curr && rev_key > curr->rev_key) {
-        marked = MARKOF(curr->next);
         curr = REFOF(curr->next);
     }
-    return (curr && curr->rev_key == rev_key && !marked);
+    return (curr && curr->rev_key == rev_key && !MARKOF(curr->next));
 }
 
 void destroy_lockfree_lists (struct lockfree_list *l, int n) {

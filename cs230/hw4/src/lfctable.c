@@ -119,16 +119,20 @@ void lf_inc_size(struct lfc_table *tab) {
         struct lockfree_list *this_bucket = tab->buckets + i;
         struct lf_elem *e = this_bucket->head;
         drops[i] = NULL;
+        int move_ctr = 0;
         while (e) {
             int new_ind = e->key & (tab->cap * 2 - 1);
             if (new_ind != i) {
-                lf_add(tab->buckets + new_ind, e->key, e->pkt);
+                if (!MARKOF(e->next))
+                    lf_add(tab->buckets + new_ind, e->key, e->pkt);
+                move_ctr++;
             }
             else {
                 drops[i] = e;
             }
-            e = e->next;
+            e = REFOF(e->next);
         }
+        this_bucket->size -= move_ctr;
     }
     
     int *new_access_cnt = malloc(sizeof(int));
