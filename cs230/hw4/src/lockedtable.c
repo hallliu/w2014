@@ -9,6 +9,8 @@
 #include "lockedtable.h"
 
 #define RESIZE_THRESH 4
+#define PREALLOC_COUNT 1<<18
+
 bool locked_add(struct hashtable *_t, int key, Packet_t *pkt);
 bool locked_remove(struct hashtable *_t, int key);
 bool locked_contains(struct hashtable *_t, int key);
@@ -19,7 +21,7 @@ struct locked_table *create_lockedtable(int cap) {
     tab->initial_cap = cap;
     tab->cap = cap;
 
-    tab->buckets = create_serial_lists(cap);
+    tab->buckets = create_serial_lists(PREALLOC_COUNT);
     tab->locks = malloc (cap * sizeof(pthread_rwlock_t));
     for (int i = 0; i < cap; i++) {
         pthread_rwlock_init (tab->locks + i, NULL);
@@ -81,6 +83,12 @@ bool locked_contains(struct hashtable *_t, int key) {
 void inc_size(struct locked_table *tab) {
     // First save the size so we can tell if someone else already resized
     int old_size = tab->cap;
+    // Stop resizing if we're at allocation.
+    if (old_size == PREALLOC_COUNT) {
+        printf("Oops -- prealloc count reached\n");
+        goto end;
+    }
+
     // Acq all the locks
     for (int i = 0; i < tab->initial_cap; i++) {
         pthread_rwlock_wrlock(tab->locks + i);
@@ -89,21 +97,24 @@ void inc_size(struct locked_table *tab) {
     if (tab->cap != old_size)
         goto end;
 
-    // Allocate a new bucket array
-    struct serial_list *new_buckets = create_serial_lists(tab->cap * 2);
     // Go through and reposition all the old elements
     for (int i = 0; i < tab->cap; i++) {
         struct serial_list *this_bucket = tab->buckets + i;
         struct serial_list_elem *e = this_bucket->head;
         while (e) {
             int new_ind = e->key & (tab->cap * 2 - 1);
-            s_add(new_buckets + new_ind, e->key, e->pkt);
-            e = e->next;
+            if (new_ind != i) {
+                s_add(tab->buckets + new_ind, e->key, e->pkt);
+                int key = e->key;
+                e = e->next;
+                s_remove (this_bucket, key);
+            }
+            else {
+                e = e->next;
+            }
         }
     }
-    // Destroy the old bucket array and adjust the size.
-    destroy_serial_lists (tab->buckets, tab->cap);
-    tab->buckets = new_buckets;
+
     tab->cap *= 2;
 
 end:
