@@ -2,7 +2,7 @@
 import subprocess as sp
 import numpy as np
 import unittest
-import itertools
+from itertools import product 
 import Queue
 import random
 import threading
@@ -38,7 +38,7 @@ def timeout_output(cmd, timeout):
 
 class ListTests(unittest.TestCase):
     def test_serial_contains(self):
-        for N in [1,2,4,100]
+        for N in [1,2,4,100]:
             cmdstr = ['./test_lists', 'serial_contains', str(N)]
             print cmdstr
             out = sp.check_output(cmdstr)
@@ -46,7 +46,7 @@ class ListTests(unittest.TestCase):
                 raise AssertionError('Failed with N={0}'.format(N))
 
     def test_serial_removals(self):
-        for N in [1,2,4,100]
+        for N in [1,2,4,100]:
             cmdstr = ['./test_lists', 'serial_removals', str(N)]
             print cmdstr
             out = sp.check_output(cmdstr)
@@ -54,7 +54,7 @@ class ListTests(unittest.TestCase):
                 raise AssertionError('Failed with N={0}'.format(N))
 
     def test_serial_nocontains(self):
-        for N in [1,2,4,100]
+        for N in [1,2,4,100]:
             cmdstr = ['./test_lists', 'serial_nocontains', str(N)]
             print cmdstr
             out = sp.check_output(cmdstr)
@@ -62,7 +62,7 @@ class ListTests(unittest.TestCase):
                 raise AssertionError('Failed with N={0}'.format(N))
 
     def test_serial_ordering(self):
-        for N in [1,2,4,100]
+        for N in [1,2,4,100]:
             cmdstr = ['./test_lists', 'serial_ordering', str(N)]
             print cmdstr
             out = sp.check_output(cmdstr)
@@ -70,7 +70,7 @@ class ListTests(unittest.TestCase):
                 raise AssertionError('Failed with N={0}'.format(N))
 
     def test_serial_empties(self):
-        for N in [1,2,4,100]
+        for N in [1,2,4,100]:
             cmdstr = ['./test_lists', 'serial_empties', str(N)]
             print cmdstr
             out = sp.check_output(cmdstr)
@@ -79,6 +79,8 @@ class ListTests(unittest.TestCase):
 
     def test_parallel_addcontain1(self):
         for N, T in product([1,2,4,100,2000], [1,2,4,8,16]):
+            if T > N:
+                continue
             cmdstr = ['./test_lists', 'parallel_addcontain1', str(N), str(T)]
             print cmdstr
             out = sp.check_output(cmdstr)
@@ -87,6 +89,8 @@ class ListTests(unittest.TestCase):
 
     def test_parallel_addcontain2(self):
         for N, T in product([1,2,4,100,2000], [1,2,4,8,16]):
+            if T > N:
+                continue
             cmdstr = ['./test_lists', 'parallel_addcontain2', str(N), str(T)]
             print cmdstr
             out = sp.check_output(cmdstr)
@@ -95,6 +99,8 @@ class ListTests(unittest.TestCase):
 
     def test_parallel_alltogether(self):
         for N, (Tc, Ta, Tr) in product([1,2,4,100,2000], [(1,2,1),(2,1,1),(1,1,2),(2,4,2),(2,2,4),(4,2,2),(5,1,2),(2,5,1)]):
+            if Ta+Tc+Tr > N:
+                continue
             cmdstr = ['./test_lists', 'parallel_alltogether', str(N), str(Tc), str(Ta), str(Tr)]
             print cmdstr
             out = sp.check_output(cmdstr)
@@ -104,6 +110,8 @@ class ListTests(unittest.TestCase):
 
     def test_parallel_indistinct_add(self):
         for N, T, R in product([1,2,4,100,2000], [1,2,4,8,16], [1,2,4,8,16]):
+            if T > N or R > N:
+                continue
             cmdstr = ['./test_lists', 'parallel_indistinct_add', str(N), str(T), str(R)]
             print cmdstr
             out = sp.check_output(cmdstr)
@@ -112,6 +120,8 @@ class ListTests(unittest.TestCase):
 
     def test_parallel_ordering(self):
         for N, T in product([1,2,4,100,2000], [1,2,4,8,16]):
+            if T > N:
+                continue
             cmdstr = ['./test_lists', 'parallel_ordering', str(N), str(T)]
             print cmdstr
             out = sp.check_output(cmdstr)
@@ -160,9 +170,9 @@ class HashTableTests(unittest.TestCase):
             if len(out) > 0:
                 raise AssertionError('Failed with table {0}, N={1}, Tc={2}, Ta={3}, Tr={4}'.format(tab, N, Tc, Ta, Tr))
 
-    def test_indistinct_att(self):
+    def test_indistinct_add(self):
         for tab, N, T, R in product(self.tablenames, [1, 10, 100, 1000, 2000], [1,2,4,8], [1,2,8,16]):
-            if T > N:
+            if T > N or R > N:
                 continue
             cmdstr = ['./test_lists', 'indistinct_add', tab, str(N), str(T), str(R)]
             print cmdstr
