@@ -1,8 +1,8 @@
-OBJS=src/serial_lists.o src/lockfree_lists.o
+OBJS=src/serial_lists.o src/lockfree_lists.o src/lockedtable.o src/hashtables.o
 UTIL_FILES=hashgenerator.c packetsource.c generators.c crc32.c
 UTIL_OBJS=$(UTIL_FILES:%.c=Utils/%.o)
 
-TEST_FILES=test_lists.c 
+TEST_FILES=test_lists.c test_hashtables.c
 TEST_EXES=$(TEST_FILES:%.c=tests/%)
 
 #PERF_FILES=counter.c perf_main.c packet.c

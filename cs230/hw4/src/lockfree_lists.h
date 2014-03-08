@@ -20,10 +20,10 @@ struct lockfree_list {
 };
 
 
-struct lockfree_list *create_lockfree_list(void);
+struct lockfree_list *create_lockfree_lists(int);
 bool lf_add (struct lockfree_list *, int, Packet_t *);
 bool lf_remove (struct lockfree_list *, int);
 bool lf_contains (struct lockfree_list *, int);
-void destroy_lockfree_list (struct lockfree_list *);
+void destroy_lockfree_lists (struct lockfree_list *, int);
 
 #endif

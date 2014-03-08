@@ -36,10 +36,12 @@ static inline unsigned int rev_bits(int x) {
             );
 }
 
-struct lockfree_list *create_lockfree_list(void) {
-    struct lockfree_list *l = malloc (sizeof(struct lockfree_list));
-    l->head = NULL;
-    l->size = 0;
+struct lockfree_list *create_lockfree_lists(int n) {
+    struct lockfree_list *l = malloc (n * sizeof(struct lockfree_list));
+    for (int i = 0; i < n; i++) {
+        l[i].head = NULL;
+        l[i].size = 0;
+    }
     return l;
 }
 
@@ -181,12 +183,14 @@ bool lf_contains (struct lockfree_list *l, int key) {
     return (curr && curr->rev_key == rev_key && !marked);
 }
 
-void destroy_lockfree_list (struct lockfree_list *l) {
-    struct lf_elem *curr = l->head, *next = NULL;
-    while (curr) {
-        next = REFOF(curr->next);
-        free (REFOF(curr));
-        curr = next;
+void destroy_lockfree_lists (struct lockfree_list *l, int n) {
+    for (int i = 0; i < n; i++) {
+        struct lf_elem *curr = l[i].head, *next = NULL;
+        while (curr) {
+            next = REFOF(curr->next);
+            free (REFOF(curr));
+            curr = next;
+        }
     }
     free (l);
 }
