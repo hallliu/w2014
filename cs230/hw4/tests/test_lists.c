@@ -13,12 +13,14 @@ void serial_contains (int N);
 void serial_removals(int N);
 void serial_nocontains (int N);
 void serial_ordering (int N);
+void serial_empties (void);
 
 void parallel_addcontain1(int N, int T);
 void parallel_addcontain2(int N, int T);
 void parallel_alltogether(int N, int Tc, int Ta, int Tr);
 void parallel_indistinct_add(int N, int T, int R);
 void parallel_ordering(int N, int T);
+void parallel_empties(int T);
 
 int main(int argc, char *argv[]) {
     char *test_type = argv[1];
@@ -39,6 +41,11 @@ int main(int argc, char *argv[]) {
 
     if (!strcmp(test_type, "serial_ordering")) {
         serial_ordering(atoi(argv[2]));
+        return 0;
+    }
+
+    if (!strcmp(test_type, "serial_empties")) {
+        serial_empties();
         return 0;
     }
 
@@ -64,6 +71,11 @@ int main(int argc, char *argv[]) {
 
     if (!strcmp(test_type, "parallel_ordering")) {
         parallel_ordering(atoi(argv[2]), atoi(argv[3]));
+        return 0;
+    }
+
+    if (!strcmp(test_type, "parallel_empties")) {
+        parallel_empties(atoi(argv[2]));
         return 0;
     }
 
@@ -189,6 +201,25 @@ void serial_ordering (int N) {
 end:
     destroy_serial_lists (l, 1);
     free(keys);
+}
+
+// Calls contain and remove several times on an empty list. Really straightforward.
+void serial_empties(void) {
+    struct serial_list *l = create_serial_lists(1);
+    srand (time(0));
+    for (int i = 0; i < 5; i++) {
+        bool cs = s_contains(l, rand());
+        if (cs) {
+            printf("contains shouldn't succeed here\n");
+            return;
+        }
+
+        bool rs = s_remove(l, rand());
+        if (rs) {
+            printf("remove shouldn't succeed here\n");
+            return;
+        }
+    }
 }
 
 // Parallel tests start here --------------------------------------
@@ -592,5 +623,40 @@ void parallel_ordering(int N, int T) {
             return;
         }
         e = e->next;
+    }
+}
+
+void parallel_empties(int T) {
+    int N = T * 6;
+    int *keys = key_helper(N, INT_MAX);
+    bool *results = malloc(N * sizeof(bool));
+    int *ops = malloc(N * sizeof(int));
+    for (int i = 0; i < N; i++) 
+        ops[i] = 2*(i%2);
+
+    struct lockfree_list *l = create_lockfree_lists(1);
+
+    pdata *datas = malloc (T * sizeof(pdata));
+    pthread_t *threads = malloc(T * sizeof(pthread_t));
+    for (int i = 0; i < T; i++) {
+        datas[i].l = l;
+        datas[i].keys = keys;
+        datas[i].ops = ops;
+        datas[i].begin = i * N / T;
+        datas[i].end = (i + 1) * N / T - 1;
+        datas[i].results = results;
+    }
+
+    for (int i = 0; i < T; i++) 
+        pthread_create(&threads[i], NULL, parallel_worker, (void *)(datas + i));
+
+    for (int i = 0; i < T; i++) 
+        pthread_join(threads[i], NULL);
+
+    for (int i = 0; i < N; i++) {
+        if (results[i]) {
+            printf("FAIL: nothing should succeed.\n");
+            return;
+        }
     }
 }
