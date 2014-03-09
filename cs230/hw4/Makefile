@@ -1,4 +1,4 @@
-OBJS=src/serial_lists.o src/lockfree_lists.o src/lockedtable.o src/lfctable.o src/hashtables.o
+OBJS=src/serial_lists.o src/lockfree_lists.o src/lockedtable.o src/lfctable.o src/probetable.o src/hashtables.o
 UTIL_FILES=hashgenerator.c packetsource.c generators.c crc32.c
 UTIL_OBJS=$(UTIL_FILES:%.c=Utils/%.o)
 
@@ -11,8 +11,8 @@ TEST_EXES=$(TEST_FILES:%.c=tests/%)
 .PHONY: perf tests clean
 
 CC=gcc
-override CFLAGS += -O3 -Wall -Werror -std=gnu99 -IUtils
-#override CFLAGS += -O0 -g -Wall -Werror -std=gnu99 -IUtils
+#override CFLAGS += -O3 -Wall -Werror -std=gnu99 -IUtils
+override CFLAGS += -O0 -g -Wall -Werror -std=gnu99 -IUtils
 
 LDLIBS=-pthread -lm
 

@@ -43,14 +43,14 @@ bool probe_add(struct hashtable *_t, int key, Packet_t *pkt) {
     pthread_rwlock_rdlock (&tab->whole_lock);
 
     int start_ind = key & (tab->cap - 1);
-    struct bucket_elem *start_elem = tab->elems[start_ind];
+    struct bucket_elem *start_elem = tab->elems + start_ind;
     
     pthread_mutex_lock (&start_elem->distlock);
     
     int num_steps = 0;
     while (num_steps <= DIST_THRESH) {
         int next_ind = (start_ind + num_steps) & (tab->cap - 1);
-        struct bucket_elem *e = tab->elems[next_ind];
+        struct bucket_elem *e = tab->elems + next_ind;
         
         pthread_mutex_lock (&e->datalock);
         if (e->pkt == NULL) {
@@ -84,12 +84,12 @@ bool probe_remove(struct hashtable *_t, int key) {
     struct probe_table *tab = (struct probe_table *) _t;
     pthread_rwlock_rdlock (&tab->whole_lock);
     int start_ind = key & (tab->cap - 1);
-    struct bucket_elem *start_elem = tab->elems[start_ind];
+    struct bucket_elem *start_elem = tab->elems + start_ind;
 
     int num_steps = 0;
     while (num_steps <= start_elem->max_dist) {
         int next_ind = (start_ind + num_steps) & (tab->cap - 1);
-        struct bucket_elem *e = tab->elems[next_ind];
+        struct bucket_elem *e = tab->elems + next_ind;
 
         pthread_mutex_lock (&e->datalock);
         if (e->key == key) {
@@ -108,12 +108,12 @@ bool probe_contains(struct hashtable *_t, int key) {
     struct probe_table *tab = (struct probe_table *) _t;
     pthread_rwlock_rdlock (&tab->whole_lock);
     int start_ind = key & (tab->cap - 1);
-    struct bucket_elem *start_elem = tab->elems[start_ind];
+    struct bucket_elem *start_elem = tab->elems + start_ind;
 
     int num_steps = 0;
     while (num_steps <= start_elem->max_dist) {
         int next_ind = (start_ind + num_steps) & (tab->cap - 1);
-        struct bucket_elem *e = tab->elems[next_ind];
+        struct bucket_elem *e = tab->elems + next_ind;
 
         if (e->key == key) {
             return true;
@@ -128,12 +128,12 @@ bool probe_contains(struct hashtable *_t, int key) {
 // a duplicate (2 should never happen).
 int lockless_add (struct bucket_elem *elems, int cap, int key, Packet_t *pkt) {
     int start_ind = key & (cap - 1);
-    struct bucket_elem *start_elem = elems[start_ind];
+    struct bucket_elem *start_elem = elems + start_ind;
 
     int num_steps = 0;
     while (num_steps <= DIST_THRESH) {
-        int next_ind = (start_ind + num_steps) & (tab->cap - 1);
-        struct bucket_elem *e = tab->elems[next_ind];
+        int next_ind = (start_ind + num_steps) & (cap - 1);
+        struct bucket_elem *e = elems + next_ind;
         
         if (e->pkt == NULL) {
             e->pkt = pkt;
@@ -168,17 +168,18 @@ void probe_inc_size(struct probe_table *tab) {
 
     bool success = true;
     int new_cap = tab->cap * 2;
+    struct bucket_elem *new_elems;
 
     // Loop until the step number is below threshold again.
     do {
         success = true;
         // Alloc a new array with double the size and initialize the fields.
-        struct bucket_elem *new_elems = calloc(new_cap, sizeof(struct bucket_elem));
+        new_elems = calloc(new_cap, sizeof(struct bucket_elem));
 
 
         // Loop through the old array and add them all in.
         for (int i = 0; i < tab->cap; i++) {
-            struct bucket_elem *e = tab->elems[i];
+            struct bucket_elem *e = tab->elems + i;
             if (e->pkt == NULL) {
                 continue;
             }
