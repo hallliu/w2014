@@ -12,6 +12,7 @@ struct locked_table {
     bool (*add)(struct hashtable *, int, Packet_t *);
     bool (*remove)(struct hashtable *, int);
     bool (*contains)(struct hashtable *, int);
+    volatile int cap;
 
     // Capacities assumed to be powers of 2
     int initial_cap;

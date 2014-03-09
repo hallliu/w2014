@@ -11,6 +11,7 @@ struct split_table {
     bool (*add)(struct hashtable *, int, Packet_t *);
     bool (*remove)(struct hashtable *, int);
     bool (*contains)(struct hashtable *, int);
+    volatile int cap;
 
     struct lockfree_list *buckets;
 };

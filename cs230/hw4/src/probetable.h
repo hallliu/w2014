@@ -19,6 +19,7 @@ struct probe_table {
     bool (*add)(struct hashtable *, int, Packet_t *);
     bool (*remove)(struct hashtable *, int);
     bool (*contains)(struct hashtable *, int);
+    volatile int cap;
 
     pthread_rwlock_t whole_lock;
     struct bucket_elem *elems;
