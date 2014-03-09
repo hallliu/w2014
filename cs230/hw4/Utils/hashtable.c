@@ -28,7 +28,7 @@ void addNoCheck_ht(SerialHashTable_t * htable,int key, volatile Packet_t * x){
     if( htable->table[index] == NULL )
     	htable->table[index] = createSerialListWithItem(key,x);
     else
-    	addNoCheck_list(htable->table[index],key,x);
+    	add_list(htable->table[index],key,x);
 }
 
 void add_ht(SerialHashTable_t * htable,int key, volatile Packet_t * x){
