@@ -19,4 +19,5 @@ struct split_table {
 };
 
 struct split_table *create_splittable(int cap);
+void initialize_index (struct split_table *tab, int index);
 #endif

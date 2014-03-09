@@ -7,6 +7,7 @@
 #include "../src/hashtables.h"
 #include "../src/lockedtable.h"
 #include "../src/lfctable.h"
+#include "../src/splittable.h"
 #include "../src/lockfree_lists.h"
 
 int *key_helper(int N, int limit);
@@ -16,6 +17,7 @@ void addcontain2(char *tabtype, int N, int T);
 void alltogether(char *tabtype, int N, int Tc, int Ta, int Tr);
 void indistinct_add(char *tabtype, int N, int T, int R);
 void resize_contains(int N, int T);
+void ind_init (int N, int T);
 
 int main(int argc, char *argv[]) {
     char *test_type = argv[1];
@@ -41,6 +43,11 @@ int main(int argc, char *argv[]) {
 
     if (!strcmp(test_type, "resize_contains")) {
         resize_contains(atoi(argv[2]), atoi(argv[3]));
+        return 0;
+    }
+
+    if (!strcmp(test_type, "ind_init")) {
+        ind_init(atoi(argv[2]), atoi(argv[3]));
         return 0;
     }
 
@@ -404,6 +411,8 @@ void indistinct_add(char *tabtype, int N, int T, int R) {
     return;
 }
 
+// Following are the table-specific white-box tests. 
+
 // Tests the linearizability of resize with contains for
 // the lock-free contains table. Adds in N elements, then launches
 // T-1 workers to call contains on these elements repeatedly.
@@ -481,5 +490,65 @@ void resize_contains(int N, int T) {
     for (int i = 0; i < T - 1; i++) 
         pthread_join(threads[i], NULL);
 
+    return;
+}
+
+// This tests the index initialization function in the split table. The procedure is to
+// create a table, initialize the first N indices in parallel with T threads, then make
+// sure that the resulting linked list (starting at index 0) has exactly N sentinal nodes.
+void *ind_init_worker (void *_data) {
+    struct worker_data *data = (struct worker_data *) _data;
+    struct split_table *tab = (struct split_table *) data->tab;
+    for (int i = data->begin; i <= data->end; i++)
+        initialize_index (tab, i);
+    return NULL;
+}
+
+void ind_init (int N, int T) {
+    struct hashtable *_tab = create_ht("split", N);
+    struct split_table *tab = (struct split_table *) _tab;
+
+    // Spawn off the workers
+    pdata *datas = malloc (T * sizeof(pdata));
+    pthread_t *threads = malloc(T * sizeof(pthread_t));
+    for (int i = 0; i < T; i++) {
+        datas[i].tab = _tab;
+        datas[i].begin = i * N / T;
+        datas[i].end = (i + 1) * N / T - 1;
+    }
+
+    for (int i = 0; i < T; i++) 
+        pthread_create(&threads[i], NULL, ind_init_worker, (void *)(datas + i));
+
+    for (int i = 0; i < T; i++) 
+        pthread_join(threads[i], NULL);
+
+    // Check that all the sentinals are in there and that there are
+    // exactly N nodes in there.
+    int *index_hits = calloc (N, sizeof(int));
+    int total_size = 0;
+    struct lf_elem *e = tab->buckets[0].head;
+    while (e) {
+        index_hits[e->key] = 1;
+        total_size++;
+        e = e->next;
+    }
+    if (total_size != N) {
+        printf("Uhoh -- total size is %d instead of %d\n", total_size, N);
+    }
+    for (int i = 0; i < N; i++) {
+        if (!index_hits[i]) {
+            printf("Uhoh -- sentinal node with key %d not found\n", i);
+            break;
+        }
+    }
+
+    // Check that all the buckets point to the right place
+    for (int i = 0; i < N; i++) {
+        if (tab->buckets[i].head->key != i) {
+            printf("Uhoh -- bucket %d points to %d instead\n", i, tab->buckets[i].head->key);
+            break;
+        }
+    }
     return;
 }
