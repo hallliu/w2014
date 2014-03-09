@@ -90,13 +90,45 @@ void initialize_index (struct split_table *tab, int index) {
 
 bool split_add(struct hashtable *_t, int key, Packet_t *pkt) {
     struct split_table *tab = (struct split_table *) _t;
-    
+    int cap = tab->cap;
+    int ind = key & (cap - 1);
+    int num_steps;
+    // Make sure index is initialized
+    if (!tab->buckets[ind].head)
+        initialize_index(tab, ind);
+
+    // Add it in
+    bool succ = lf_add (&tab->buckets[ind], key, pkt, &num_steps);
+    if (!succ)
+        return false;
+
+    // See if we need to resize
+    if (num_steps > RESIZE_THRESH)
+        __sync_bool_compare_and_swap(&tab->cap, cap, cap * 2);
+
+    return true;
 }
 
 bool split_remove(struct hashtable *_t, int key) {
-    return true;
+    struct split_table *tab = (struct split_table *) _t;
+    int cap = tab->cap;
+    int ind = key & (cap - 1);
+    int num_steps;
+    // Make sure index is initialized
+    if (!tab->buckets[ind].head)
+        initialize_index(tab, ind);
+
+    return lf_remove (&tab->buckets[ind], key);
 }
 
 bool split_contains(struct hashtable *_t, int key) {
-    return true;
+    struct split_table *tab = (struct split_table *) _t;
+    int cap = tab->cap;
+    int ind = key & (cap - 1);
+    int num_steps;
+    // Make sure index is initialized
+    if (!tab->buckets[ind].head)
+        initialize_index(tab, ind);
+
+    return lf_contains (&tab->buckets[ind], key);
 }
