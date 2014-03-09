@@ -116,36 +116,39 @@ bool lf_add(struct lockfree_list *l, int key, Packet_t *pkt) {
 
     while (1) {
         lf_find (l, rev_key, &prev, &curr);
+        __sync_add_and_fetch (&l->size, 1);
         if (prev == NULL) {
             new_elem->next = curr;
             if (curr == NULL) {
                 if (__sync_bool_compare_and_swap(&l->head, curr, new_elem)) {
-                    __sync_add_and_fetch (&l->size, 1);
                     return true;
                 }
+                __sync_add_and_fetch (&l->size, -1);
                 continue;
             }
             if (curr ->rev_key == rev_key) {
                 free (new_elem);
+                __sync_add_and_fetch (&l->size, -1);
                 return false;
             }
             if (__sync_bool_compare_and_swap(&l->head, curr, new_elem)) {
-                __sync_add_and_fetch (&l->size, 1);
                 return true;
             }
+            __sync_add_and_fetch (&l->size, -1);
             continue;
         }
 
         if (curr && curr->rev_key == rev_key) {
+            __sync_add_and_fetch (&l->size, -1);
             free (new_elem);
             return false;
         }
 
         new_elem->next = curr;
         if (__sync_bool_compare_and_swap(&prev->next, curr, new_elem)) {
-            __sync_add_and_fetch (&l->size, 1);
             return true;
         }
+        __sync_add_and_fetch (&l->size, -1);
     }
 }
 
