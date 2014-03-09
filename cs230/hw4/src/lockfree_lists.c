@@ -51,7 +51,8 @@ struct lockfree_list *create_lockfree_lists(int n) {
 // If _prev is unset but _curr is, then that indicates that we found the key at the head or that it should go at the head.
 // If _prev is set but _curr isn't, then that indicates that we didn't find the key and it should go at the tail
 // If both are unset, that means that the list is currently empty.
-void lf_find(volatile struct lockfree_list *l, unsigned rev_key, struct lf_elem **_prev, struct lf_elem **_curr) {
+// Return value is the number of steps taken
+int lf_find(volatile struct lockfree_list *l, unsigned rev_key, struct lf_elem **_prev, struct lf_elem **_curr) {
     struct lf_elem *prev = NULL, *curr = NULL, *next = NULL;
     while (1) {
 restart_find:
@@ -59,7 +60,7 @@ restart_find:
         prev = l->head;
         if (prev == NULL)
             // This means list is empty. Do nothing to the two elements.
-            return;
+            return 0;
 
         curr = prev->next;
 
@@ -73,17 +74,18 @@ restart_find:
         }
 
         if (prev == NULL)
-            return;
+            return 0;
 
         if (rev_key <= prev->rev_key) {
             *_curr = REFOF(prev);
-            return;
+            return 0;
         }
+        int num_steps = 0;
 
         while (1) {
             if (curr == NULL) {
                 *_prev = REFOF(prev);
-                return;
+                return num_steps;
             }
             next = curr->next;
             while (MARKOF(next)) {
@@ -97,10 +99,11 @@ restart_find:
             if (rev_key <= curr->rev_key) {
                 *_prev = REFOF(prev);
                 *_curr = REFOF(curr);
-                return;
+                return num_steps;
             }
             prev = REFOF(curr);
             curr = REFOF(curr->next);
+            num_steps++;
         }
     }
 }
