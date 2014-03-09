@@ -96,11 +96,13 @@ bool probe_remove(struct hashtable *_t, int key) {
             e->pkt = NULL;
             e->key = -1;
             pthread_mutex_unlock (&e->datalock);
+            pthread_rwlock_unlock (&tab->whole_lock);
             return true;
         }
         pthread_mutex_unlock (&e->datalock);
         num_steps++;
     }
+    pthread_rwlock_unlock (&tab->whole_lock);
     return false;
 }
 
@@ -116,10 +118,12 @@ bool probe_contains(struct hashtable *_t, int key) {
         struct bucket_elem *e = tab->elems + next_ind;
 
         if (e->key == key) {
+            pthread_rwlock_unlock (&tab->whole_lock);
             return true;
         }
         num_steps++;
     }
+    pthread_rwlock_unlock (&tab->whole_lock);
     return false;
 }
 

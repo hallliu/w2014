@@ -87,7 +87,7 @@ void *worker(void *_data) {
                 data->results[i] = tab->contains(tab, keys[i]);
                 break;
             case 1:
-                data->results[i] = tab->add(tab, keys[i], 0x10);
+                data->results[i] = tab->add(tab, keys[i], (Packet_t *) 0x10);
                 break;
             default:
                 data->results[i] = tab->remove(tab, keys[i]);
