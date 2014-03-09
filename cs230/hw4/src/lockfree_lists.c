@@ -82,7 +82,7 @@ restart_find:
     }
 }
 
-bool lf_add(struct lockfree_list *l, int key, Packet_t *pkt) {
+bool lf_add(struct lockfree_list *l, int key, Packet_t *pkt, int *num_steps) {
     unsigned rev_key = rev_bits(key);
     struct lf_elem *prev = NULL, *curr = NULL;
     // Allocate memory for this new elem now
@@ -92,7 +92,11 @@ bool lf_add(struct lockfree_list *l, int key, Packet_t *pkt) {
     new_elem->rev_key = rev_key;
 
     while (1) {
-        lf_find (l, rev_key, &prev, &curr);
+        if (num_steps)
+            *num_steps = lf_find (l, rev_key, &prev, &curr);
+        else
+            lf_find (l, rev_key, &prev, &curr);
+
         __sync_add_and_fetch (&l->size, 1);
         if (prev == NULL) {
             new_elem->next = curr;

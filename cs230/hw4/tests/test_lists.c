@@ -267,7 +267,7 @@ void *parallel_worker(void *_data) {
                 data->results[i] = lf_contains(l, keys[i]);
                 break;
             case 1:
-                data->results[i] = lf_add(l, keys[i], NULL);
+                data->results[i] = lf_add(l, keys[i], NULL, NULL);
                 break;
             default:
                 data->results[i] = lf_remove(l, keys[i]);

@@ -32,7 +32,7 @@ struct split_table *create_splittable(int cap) {
 
     tab->buckets = create_lockfree_lists(PREALLOC_COUNT);
     // Create a single sentinal node at zero.
-    lf_add(tab->buckets, 0, 0);
+    lf_add(tab->buckets, 0, 0, NULL);
 
     tab->add = split_add;
     tab->remove = split_remove;
@@ -89,7 +89,8 @@ void initialize_index (struct split_table *tab, int index) {
 
 
 bool split_add(struct hashtable *_t, int key, Packet_t *pkt) {
-    return true;
+    struct split_table *tab = (struct split_table *) _t;
+    
 }
 
 bool split_remove(struct hashtable *_t, int key) {

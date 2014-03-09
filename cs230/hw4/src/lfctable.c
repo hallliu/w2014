@@ -48,7 +48,7 @@ bool lfc_add(struct hashtable *_t, int key, Packet_t *pkt) {
     pthread_mutex_lock(tab->locks + lock_ind);
 
     int bucket_ind = key & (tab->cap - 1);
-    bool succ = lf_add (tab->buckets + bucket_ind, key, pkt);
+    bool succ = lf_add (tab->buckets + bucket_ind, key, pkt, NULL);
 
     if (tab->buckets[bucket_ind].size > RESIZE_THRESH) {
         trigger_resize = true;
@@ -124,7 +124,7 @@ void lf_inc_size(struct lfc_table *tab) {
             int new_ind = e->key & (tab->cap * 2 - 1);
             if (new_ind != i) {
                 if (!MARKOF(e->next))
-                    lf_add(tab->buckets + new_ind, e->key, e->pkt);
+                    lf_add(tab->buckets + new_ind, e->key, e->pkt, NULL);
                 move_ctr++;
             }
             else {
