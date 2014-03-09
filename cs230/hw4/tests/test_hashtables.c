@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
 // the (presumably correct) lockfree list to guarantee distinctness. 
 int *key_helper(int N, int limit) {
     int *keys = malloc (N * sizeof(int));
-    srand (54624);
+    srand (time(0));
     struct lockfree_list *l = create_lockfree_lists(1);
 
     for (int i = 0; i < N; i++) {

@@ -69,7 +69,7 @@ restart_find:
             if (!successful_phy_rm)
                 goto restart_find;
             prev = REFOF(curr);
-            curr = curr->next;
+            curr = prev->next;
         }
 
         if (prev == NULL)

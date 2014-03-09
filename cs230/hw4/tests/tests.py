@@ -138,7 +138,7 @@ class ListTests(unittest.TestCase):
 
 class HashTableTests(unittest.TestCase):
     def setUp(self):
-        self.tablenames = ['lfc', 'locked']
+        self.tablenames = ['lfc', 'locked', 'probe']
 
     def test_addcontain1(self):
         for tab, N, T in product(self.tablenames, [1, 10, 100, 1000, 2000], [1,2,4,8]):
