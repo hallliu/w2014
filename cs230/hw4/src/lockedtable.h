@@ -15,7 +15,6 @@ struct locked_table {
 
     // Capacities assumed to be powers of 2
     int initial_cap;
-    int cap;
 
     pthread_rwlock_t *locks;
     struct serial_list *buckets;

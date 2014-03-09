@@ -20,9 +20,6 @@ struct probe_table {
     bool (*remove)(struct hashtable *, int);
     bool (*contains)(struct hashtable *, int);
 
-    // Capacities assumed to be powers of 2
-    int cap;
-
     pthread_rwlock_t whole_lock;
     struct bucket_elem *elems;
 };

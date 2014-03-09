@@ -15,7 +15,6 @@ struct lfc_table {
 
     // Capacities assumed to be powers of 2
     int initial_cap;
-    int cap;
 
     pthread_mutex_t *locks;
     struct lockfree_list *buckets;

@@ -12,9 +12,6 @@ struct split_table {
     bool (*remove)(struct hashtable *, int);
     bool (*contains)(struct hashtable *, int);
 
-    // Capacities assumed to be powers of 2
-    int cap;
-
     struct lockfree_list *buckets;
 };
 
