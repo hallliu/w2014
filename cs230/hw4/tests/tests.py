@@ -138,7 +138,7 @@ class ListTests(unittest.TestCase):
 
 class HashTableTests(unittest.TestCase):
     def setUp(self):
-        self.tablenames = ['lfc', 'locked', 'probe']
+        self.tablenames = ['lfc', 'locked', 'probe', 'split']
 
     def test_addcontain1(self):
         for tab, N, T in product(self.tablenames, [1, 10, 100, 1000, 2000], [1,2,4,8]):
@@ -189,4 +189,15 @@ class HashTableTests(unittest.TestCase):
             out = sp.check_output(cmdstr)
             if len(out) > 0:
                 raise AssertionError('Failed with N={0}, T={1}'.format(N, T))
+
+    def test_init_ind(self):
+        for N, T in product([2,4,8,16,50,100], [2,4,8,16]):
+            if T > N:
+                continue
+            cmdstr = ['./test_hashtables', 'ind_init', str(N), str(T)]
+            print cmdstr
+            out = sp.check_output(cmdstr)
+            if len(out) > 0:
+                raise AssertionError('Failed with N={0}, T={1}'.format(N, T))
+
 
