@@ -6,6 +6,7 @@
 
 #include "../src/hashtables.h"
 #include "../src/lockedtable.h"
+#include "../src/lfctable.h"
 #include "../src/lockfree_lists.h"
 
 int *key_helper(int N, int limit);
@@ -14,6 +15,7 @@ void addcontain1(char *tabtype, int N, int T);
 void addcontain2(char *tabtype, int N, int T);
 void alltogether(char *tabtype, int N, int Tc, int Ta, int Tr);
 void indistinct_add(char *tabtype, int N, int T, int R);
+void resize_contains(int N, int T);
 
 int main(int argc, char *argv[]) {
     char *test_type = argv[1];
@@ -34,6 +36,11 @@ int main(int argc, char *argv[]) {
 
     if (!strcmp(test_type, "indistinct_add")) {
         indistinct_add(argv[2], atoi(argv[3]), atoi(argv[4]), atoi(argv[5]));
+        return 0;
+    }
+
+    if (!strcmp(test_type, "resize_contains")) {
+        resize_contains(atoi(argv[2]), atoi(argv[3]));
         return 0;
     }
 
@@ -394,5 +401,85 @@ void indistinct_add(char *tabtype, int N, int T, int R) {
     if (succ_ctr != R) {
         printf("FAIL: %d successes instead of %d\n", succ_ctr, R);
     }
+    return;
+}
+
+// Tests the linearizability of resize with contains for
+// the lock-free contains table. Adds in N elements, then launches
+// T-1 workers to call contains on these elements repeatedly.
+// Meanwhile, main thread calls resize 10 times. Worker threads
+// will signal failure if they ever fail a containment call.
+struct resize_test_data {
+    struct hashtable *tab;
+    int *keys;
+    int len;
+    volatile bool stop;
+    volatile bool error;
+};
+
+void *resize_test_worker(void *_data) {
+    struct resize_test_data *data = (struct resize_test_data *) _data;
+    struct hashtable *tab = data->tab;
+
+    while (!data->stop) {
+        for (int i = 0; i < data->len; i++) {
+            bool results = tab->contains(tab, data->keys[i]);
+            if (!results) {
+                data->stop = true;
+                data->error = true;
+                break;
+            }
+        }
+    }
+    return NULL;
+}
+void lf_inc_size(struct lfc_table *);
+void resize_contains(int N, int T) {
+    // the setup portion of the test
+    int *keys = key_helper(N, INT_MAX);
+    bool *results = malloc(N * sizeof(bool));
+    int *ops = malloc(N * sizeof(int));
+    for (int i = 0; i < N; i++) {
+        ops[i] = 1;
+    }
+
+    struct hashtable *tab = create_ht("lfc", T);
+
+    pdata *datas = malloc (T * sizeof(pdata));
+    pthread_t *threads = malloc(T * sizeof(pthread_t));
+    for (int i = 0; i < T; i++) {
+        datas[i].tab = tab;
+        datas[i].keys = keys;
+        datas[i].ops = ops;
+        datas[i].begin = i * N / T;
+        datas[i].end = (i + 1) * N / T - 1;
+        datas[i].results = results;
+    }
+
+    for (int i = 0; i < T; i++) 
+        pthread_create(&threads[i], NULL, worker, (void *)(datas + i));
+
+    for (int i = 0; i < T; i++) 
+        pthread_join(threads[i], NULL);
+
+    // The real testing part of the test
+    volatile struct resize_test_data d1 = {.tab = tab, .keys = keys, .len = N, .stop = false, .error = false};
+
+    for (int i = 0; i < T - 1; i++) 
+        pthread_create(&threads[i], NULL, resize_test_worker, (void *) &d1);
+
+
+    for (int i = 0; i < 10; i++) {
+        lf_inc_size((struct lfc_table *) tab);
+    }
+    d1.stop = true;
+
+    if (d1.error) {
+        printf("Fail: some contains failed\n");
+    }
+
+    for (int i = 0; i < T - 1; i++) 
+        pthread_join(threads[i], NULL);
+
     return;
 }

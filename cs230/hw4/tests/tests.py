@@ -179,3 +179,14 @@ class HashTableTests(unittest.TestCase):
             out = sp.check_output(cmdstr)
             if len(out) > 0:
                 raise AssertionError('Failed with table {0}, N={1}, T={2}, R={3}'.format(tab, N, T, R))
+
+    def test_resize_contains(self):
+        for N, T in product([2,4,8,16,50,100], [2,4,8,16]):
+            if T > N:
+                continue
+            cmdstr = ['./test_hashtables', 'resize_contains', str(N), str(T)]
+            print cmdstr
+            out = sp.check_output(cmdstr)
+            if len(out) > 0:
+                raise AssertionError('Failed with N={0}, T={1}'.format(N, T))
+

@@ -96,7 +96,7 @@ void lf_inc_size(struct lfc_table *tab) {
     int old_size = tab->cap;
     if (old_size >= PREALLOC_COUNT) {
         printf("Oops: exceeded prealloc\n");
-        goto end;
+        return;
     }
 
     // Acq all the locks
@@ -166,7 +166,7 @@ end:
 }
 
 // debugging
-void dump_table(struct lfc_table *t) {
+void lf_dump_table(struct lfc_table *t) {
     for (int i = 0; i < t->cap; i++) {
         fprintf(stderr, "%d: ", t->buckets[i].size);
         struct lf_elem *e = t->buckets[i].head;

@@ -308,6 +308,11 @@ void parallel_addcontain1(int N, int T) {
     for (int i = 0; i < T; i++) 
         pthread_join(threads[i], NULL);
 
+    if (l->size != N) {
+        printf("FAIL: bad size: %d instead of %d\n", l->size, N);
+        return;
+    }
+
     for (int i = 0; i < N; i++) {
         if (!results[i]) {
             printf("FAIL: bad return on parallel adds\n");
@@ -396,6 +401,11 @@ void parallel_addcontain2(int N, int T) {
     for (int i = 0; i < T; i++) 
         pthread_join(threads[i], NULL);
 
+    if (l->size != 2*N) {
+        printf("FAIL: bad size: %d instead of %d\n", l->size, 2*N);
+        return;
+    }
+
     for (int i = 0; i < N; i++) {
         if (!results_c[i]) {
             printf("FAIL: bad return on parallel contains\n");
@@ -481,6 +491,11 @@ void parallel_alltogether(int N, int Tc, int Ta, int Tr) {
     for (int i = 0; i < T; i++) 
         pthread_join(threads[i], NULL);
 
+    if (l->size != 2*N) {
+        printf("FAIL: bad size: %d instead of %d\n", l->size, 2*N);
+        return;
+    }
+
     for (int i = 0; i < N; i++) {
         if (!results_c[i]) {
             printf("FAIL: bad return on parallel contains\n");
@@ -563,6 +578,11 @@ void parallel_indistinct_add(int N, int T, int R) {
 
     for (int i = 0; i < T; i++) 
         pthread_join(threads[i], NULL);
+
+    if (l->size != R) {
+        printf("FAIL: bad size: %d instead of %d\n", l->size, R);
+        return;
+    }
 
     int succ_ctr = 0;
     for (int i = 0; i < N; i++) {
