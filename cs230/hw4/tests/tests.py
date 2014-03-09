@@ -148,7 +148,7 @@ class HashTableTests(unittest.TestCase):
             print cmdstr
             out = sp.check_output(cmdstr)
             if len(out) > 0:
-                raise AssertionError('Failed with table {0}, N={1}, T={2}'.format(tab, N, T))
+                raise AssertionError('Failed with table {0}, N={1}, T={2}: {3}'.format(tab, N, T, out))
 
     def test_addcontain2(self):
         for tab, N, T in product(self.tablenames, [1, 10, 100, 1000, 2000], [1,2,4,8]):
@@ -158,7 +158,7 @@ class HashTableTests(unittest.TestCase):
             print cmdstr
             out = sp.check_output(cmdstr)
             if len(out) > 0:
-                raise AssertionError('Failed with table {0}, N={1}, T={2}'.format(tab, N, T))
+                raise AssertionError('Failed with table {0}, N={1}, T={2}: {3}'.format(tab, N, T, out))
 
     def test_alltogether(self):
         for tab, N, (Tc, Ta, Tr) in product(self.tablenames, [10, 100, 1000, 2000],[(1,2,1),(2,1,1),(1,1,2),(2,4,2),(2,2,4),(4,2,2),(5,1,2),(2,5,1)]):
@@ -168,7 +168,7 @@ class HashTableTests(unittest.TestCase):
             print cmdstr
             out = sp.check_output(cmdstr)
             if len(out) > 0:
-                raise AssertionError('Failed with table {0}, N={1}, Tc={2}, Ta={3}, Tr={4}'.format(tab, N, Tc, Ta, Tr))
+                raise AssertionError('Failed with table {0}, N={1}, Tc={2}, Ta={3}, Tr={4}: {5}'.format(tab, N, Tc, Ta, Tr, out))
 
     def test_indistinct_add(self):
         for tab, N, T, R in product(self.tablenames, [1, 10, 100, 1000, 2000], [1,2,4,8], [1,2,8,16]):
@@ -178,7 +178,7 @@ class HashTableTests(unittest.TestCase):
             print cmdstr
             out = sp.check_output(cmdstr)
             if len(out) > 0:
-                raise AssertionError('Failed with table {0}, N={1}, T={2}, R={3}'.format(tab, N, T, R))
+                raise AssertionError('Failed with table {0}, N={1}, T={2}, R={3}: {4}'.format(tab, N, T, R, out))
 
     def test_resize_contains(self):
         for N, T in product([2,4,8,16,50,100], [2,4,8,16]):
@@ -188,7 +188,7 @@ class HashTableTests(unittest.TestCase):
             print cmdstr
             out = sp.check_output(cmdstr)
             if len(out) > 0:
-                raise AssertionError('Failed with N={0}, T={1}'.format(N, T))
+                raise AssertionError('Failed with N={0}, T={1}: {2}'.format(N, T, out))
 
     def test_init_ind(self):
         for N, T in product([2,4,8,16,50,100], [2,4,8,16]):
@@ -198,6 +198,6 @@ class HashTableTests(unittest.TestCase):
             print cmdstr
             out = sp.check_output(cmdstr)
             if len(out) > 0:
-                raise AssertionError('Failed with N={0}, T={1}'.format(N, T))
+                raise AssertionError('Failed with N={0}, T={1}: {2}'.format(N, T, out))
 
 

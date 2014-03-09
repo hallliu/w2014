@@ -27,7 +27,7 @@ struct lockfree_list *create_lockfree_lists(int n) {
 // If both are unset, that means that the list is currently empty.
 // Return value is the number of steps taken
 int lf_find(volatile struct lockfree_list *l, unsigned rev_key, struct lf_elem **_prev, struct lf_elem **_curr) {
-    struct lf_elem *prev = NULL, *curr = NULL, *next = NULL;
+    volatile struct lf_elem *prev = NULL, *curr = NULL, *next = NULL;
     while (1) {
 restart_find:
 
@@ -51,14 +51,14 @@ restart_find:
             return 0;
 
         if (rev_key <= prev->rev_key) {
-            *_curr = REFOF(prev);
+            *_curr = (struct lf_elem *) REFOF(prev);
             return 0;
         }
         int num_steps = 0;
 
         while (1) {
             if (curr == NULL) {
-                *_prev = REFOF(prev);
+                *_prev = (struct lf_elem *) REFOF(prev);
                 return num_steps;
             }
             next = curr->next;
@@ -71,8 +71,8 @@ restart_find:
             }
 
             if (rev_key <= curr->rev_key) {
-                *_prev = REFOF(prev);
-                *_curr = REFOF(curr);
+                *_prev = (struct lf_elem *) REFOF(prev);
+                *_curr = (struct lf_elem *) REFOF(curr);
                 return num_steps;
             }
             prev = REFOF(curr);

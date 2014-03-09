@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <limits.h>
 #include <assert.h>
 
 #include <packetsource.h>
@@ -10,7 +11,7 @@
 #include "splittable.h"
 
 #define RESIZE_THRESH 4
-#define PREALLOC_COUNT 1<<18
+#define PREALLOC_COUNT 1<<20
 
 #define MARKOF(x) ((unsigned long)(x) & (0x1l))
 #define REFOF(x) (typeof(x))((unsigned long)(x) & (~0x1l))
@@ -63,7 +64,7 @@ void initialize_index (struct split_table *tab, int index) {
         // Because of the way we did things, prev should never be unset. 
         // The zero sentinal node was inserted at list creation and we are
         // guaranteed that the parent ind's rev_key should come before ours.
-        assert(prev);
+        // assert(prev);
     
         // This is if some other thread managed to initialize this thing before us.
         // If this happens, just free alloc'd memory and return.
@@ -98,13 +99,19 @@ bool split_add(struct hashtable *_t, int key, Packet_t *pkt) {
         initialize_index(tab, ind);
 
     // Add it in
-    bool succ = lf_add (&tab->buckets[ind], key, pkt, &num_steps);
+    int mod_key = key | ((unsigned) INT_MAX + 1);
+    bool succ = lf_add (&tab->buckets[ind], mod_key, pkt, &num_steps);
     if (!succ)
         return false;
 
     // See if we need to resize
-    if (num_steps > RESIZE_THRESH)
+    if (num_steps > RESIZE_THRESH) {
+        if (cap == PREALLOC_COUNT) {
+            printf("Oops -- prealloc reached\n");
+            exit(0);
+        }
         __sync_bool_compare_and_swap(&tab->cap, cap, cap * 2);
+    }
 
     return true;
 }
@@ -117,7 +124,8 @@ bool split_remove(struct hashtable *_t, int key) {
     if (!tab->buckets[ind].head)
         initialize_index(tab, ind);
 
-    return lf_remove (&tab->buckets[ind], key);
+    int mod_key = key | ((unsigned) INT_MAX + 1);
+    return lf_remove (&tab->buckets[ind], mod_key);
 }
 
 bool split_contains(struct hashtable *_t, int key) {
@@ -128,5 +136,6 @@ bool split_contains(struct hashtable *_t, int key) {
     if (!tab->buckets[ind].head)
         initialize_index(tab, ind);
 
-    return lf_contains (&tab->buckets[ind], key);
+    int mod_key = key | ((unsigned) INT_MAX + 1);
+    return lf_contains (&tab->buckets[ind], mod_key);
 }
