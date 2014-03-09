@@ -68,7 +68,7 @@ int *key_helper(int N, int limit) {
 
     for (int i = 0; i < N; i++) {
         keys[i] = rand() % limit;
-        while (!lf_add (l, keys[i], NULL)) {
+        while (!lf_add (l, keys[i], NULL, NULL)) {
             keys[i] = rand() % limit;
         }
     }

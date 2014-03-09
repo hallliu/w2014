@@ -113,7 +113,6 @@ bool split_remove(struct hashtable *_t, int key) {
     struct split_table *tab = (struct split_table *) _t;
     int cap = tab->cap;
     int ind = key & (cap - 1);
-    int num_steps;
     // Make sure index is initialized
     if (!tab->buckets[ind].head)
         initialize_index(tab, ind);
@@ -125,7 +124,6 @@ bool split_contains(struct hashtable *_t, int key) {
     struct split_table *tab = (struct split_table *) _t;
     int cap = tab->cap;
     int ind = key & (cap - 1);
-    int num_steps;
     // Make sure index is initialized
     if (!tab->buckets[ind].head)
         initialize_index(tab, ind);
