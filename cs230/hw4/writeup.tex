@@ -46,85 +46,88 @@ For the lock-free contains table implementation (henceforth referred to as ``lfc
 Due to the recursive split-ordering used in the list in the lfc table, dropping the old nodes simply consisted of remembering the last node that stays in place and swapping its next pointer for a null. I made this choice consciously because it significantly simplified the implementation of resize, but I do expect it to boost the speed of lfc somewhat because contains now never has to traverse the old nodes, even before resize has removed them.
 
 For the linear-probe table, the old design ran into a problem when I discovered that I couldn't upgrade a read-lock to a write-lock when I find the element that I want to change. Thus, a new locking scheme was devised. The read-write lock on the whole table for resizing was maintained, but now each array node has two locks: a data lock to protect the key and the packet and a distance lock to protect the max distance. When add goes in, it grabs the distance lock and the data lock on the first node, but it only holds the distance lock as it walks along. This way, each thread holds at most one lock of each type at any moment, which eliminates the deadlock risk.
+\section*{Summary of tests}
+The tests changed significantly between the original design and present. All the tests are documented in the two files containing test functions, but for the sake of completeness, I'll paste them here along with the test cases used.
+\subsection*{List tests}
+First, the tests for the serial list. These were all tested over $N\in \{1,2,4,100\}$.
 
-In the split table, the tricky part was implementing initialization of indices, since all the other parts either consisted of calls into the lock-free list interface or were described by the book. 
+\begin{enumerate}
+    \item Inserts N distinct random elements into a list, then tests that they're still all there. 
+    \item Inserts N distinct random elements into the list, removes half of them, then tests that contains functions correctly.
+    \item Inserts N random elements with keys <=2N, then tests 20 random keys above 2N to make sure that they're not contained.
+    \item Inserts a bunch of random elements in, and tests that the ordering makes sense.
+    \item Calls contain and remove several times on an empty list. (no arguments)
+\end{enumerate}
+
+The tests for the lockfree list. All tests were tested with $N\in\{1,2,4,100,2000\}$, $T\in\{1,2,4,8,16\}$, where applicable.
+
+\begin{enumerate}
+    \item Adds in N distinct keys to the list using T threads, then uses T threads to test that they're in the list.
+    \item Tests concurrent adds and contains -- Adds N random keys, then adds an additional distinct N while testing containment on the first N. All results should be successful. Assume T divisible by 2.
+    \item Tests concurrent adds, contains, and removes. Add in 2N keys,then call adds on N more, removes on the second N, and contains on the first N. Everything should succeed. Proceed to test containment on all keys. Should succeed on first N, fail on second block, succeed on third block. This test uses three parameters, $T_a$, $T_r$, and $T_c$, corresponding to the number of threads used. See test.py for the values.
+    \item Tests to make sure that indistinct adds will fail. Attempts to insert R distinct values a total of N times, and asserts that there are only R successes. Tested over $R$ in the same range as $T$.
+    \item Does a parallel add of 2N elements, then a parallel removal of the first N and makes sure the order is correct.
+    \item Finally, a test similar to that of the last test in the serial case.
+\end{enumerate}
+\subsection*{Hash table tests}
+For the hash tables, the exact same tests were used as for the lock-free list except the last two, since they're both fundamentally implementations of sets. There were two other specific tests -- one which inserted $N$ elements into a lock-free-contains list, then spawned off $T-1$ workers to call contains repeatedly on these while the main thread called resize repeatedly. The expectation is that contains will always succeed. The other test is one to test that indices get initialized correctly in the split table implementation -- $T$ workers loop over $N$ indices and call initialize on them all, then verifies that the resulting linked list has exactly $N$ sentinal nodes, with each index pointing to the correct one.
 \section*{Results}
-Unless otherwise specified, all counter experiments were conducted with 4 iterations at the same parameter averaged together, and 3 for the packet tests.
-\subsection*{Counter overhead -- work and time}
-Instead of using an explicit serial function here, I implemented it with the noop lock, which added a very small (on the order of $1\%$) amount of overhead.
+Results were obtained with the average of $4$ iterations of the same test. The values of $n$ tested for the speedup were $1,2,3,7,15,31$, where $n$ is the number of workers.
+\subsection*{Dispatcher rate}
+As measured here, the dispatcher rate was 2650 packets/ms. This is somewhat above the dispatcher rates measured from hw2, which ranged from 1600 to 2400. The dispatcher from hw2 was significantly more complex than this one due to it using work-based measurements, which added a good deal of bookkeeping, so it makes sense that the dispatcher would be faster here.
+\subsection*{Parallel overhead}
+For this and the rest of the performance measurements, I used $W=500$ instead of $W=4000$. Comparatively, far more of the work is going to be done in the getFingerprint function rather than in the hash table functions, so reducing the workload has the effect of better discrimination between the performances of the different hash tables. In addition, I set the mysterious preload parameter to 128, so as to allow the tables to skip the large amounts of resizing near the start.
 
-\begin{tabular}{c|c|c|c|c|c}
-    TAS&backoff&mutex&Alock&CLH&MCS\\
-    0.093& 0.087& 0.114& 0.164& 0.117& 0.109\\
+Now, here is a table of speedups for $n=1$, $W=500$ under the read configuration.
+
+\begin{tabular}{c|cccc}
+    Table&locked&lfc&probe&split\\
+    \hline
+         &$1.072$&$1.096$&$1.078$&$1.083$\\
 \end{tabular}
 
-Here, something strange happened. The TAS and backoff locks actually had worse performance than the rest of them. One possible culprit is the test-and-set function. This is used in TAS and backoff for both lock and unlock, whereas it is not used in the Alock and only used in the lock in CLH and MCS. This is further supported by the good performance of the Alock relative to CLH and MCS.
+A similar table for the write configuration:
 
-One thing that can be concluded here is that the thread-local storage isn't much of a performance hit -- the Alock makes pretty heavy use of it and still ended up having the best performance.
-
-For the work-based test, the following was observed:
-
-\begin{tabular}{c|c|c|c|c|c}
-    TAS&backoff&mutex&Alock&CLH&MCS\\
-    0.087& 0.079& 0.107& 0.156& 0.109& 0.104\\
+\begin{tabular}{c|cccc}
+    Table&locked&lfc&probe&split\\
+    \hline
+         &$0.918$&$0.886$&$0.892$&$0.894$\\
 \end{tabular}
 
-There are higher overheads across the board. If there is a fixed decrease in the throughput for all the cases, including lockfree, we would expect to see this sort of numerical behavior. The fixed decrease can come from the fact that the timer is not fully accurate and would tend to inflate throughput by waiting too long to come back in.
-\subsection*{Lock scaling}
-I decided to forgo the 64-thread test here -- preliminary results on my machine with more threads than cores indicated that there is an extremely severe performance hit, and 32 threads would probably show that on research2. Here are the graphs for the work-based and time-based slowdowns (work-based on the left)
+I didn't write the serial implementation, so I'm not quite sure why the speedup is greater than 1 for the read configuration. A quick glance through the provided code shows that the lists are not contiguous with each other, so perhaps the lack of locality is what caused the slowdown. Otherwise, the code path for contains seems to be the same. 
 
-\includegraphics[width=0.5\textwidth]{img/counter_scaling_work.png}
-\includegraphics[width=0.5\textwidth]{img/counter_scaling_time.png}
+Unsurprisingly, the lfc and the split table had the least overhead for the read configuration. The split table does a bit more logic on contains to check the incremental resize condition and the initialization state of the bucket it hashed into, so it makes sense that it would be slower.
 
-My graphing software is being finicky and refuses to display the ticks on the $x$-axis, but they run from $1$ to $32$ in a base-2 log scale. 
+For the write configuration, there was actually overhead. The add functions in lfc and split both go through the add function for the lock-free list, which does a fair amount of work to make sure that the list remains in a consistent state. The locked table probably has the most similarity to the serial table in terms of code path, with the only overhead coming from the acquisition of the r/w lock. 
+\subsection*{Preload effect}
+The following two graphs plot the number of items preloaded versus throughput. The read config is on left, the write config on right. This was run on 15 sources + 1 dispatcher, with initial table capacity set to 16. As before, $W=500$.
 
-As we expect, the performance of the FIFO locks drops dramatically with any contention, but then stays relatively constant. TAS drops off in performance faster than backoff does, and the mutex lock just does its own thing. There's no perceptible difference between the work- and time-based approaches besides the small change in scale I noted earlier.
+\includegraphics[width=0.5\textwidth]{img/rd_preload.png}
+\includegraphics[width=0.5\textwidth]{img/wr_preload.png}
 
-The original hypothesis about the MCS lock not scaling as well is inconclusive -- the 32-thread tests actually timed out for the FIFO locks (the loop didn't stop when the timer told it to, although it was not a deadlock), so those numbers don't actually mean anything.
-\subsection*{Counter fairness}
-Here is the requested scatterplot:
+For increasing values of $P$, the tables behave in very different ways. The locked table and the linear probe table have basically constant performance, while the lfc table drops off somewhat for $P=2,4,8$ (but not 1) and the split table increases drastically in performance until $P=32$ or so, after which point it levels off. The behavior of the split table is easy to explain -- if we start with more elements loaded before timing begins, more of its indices from the initial table capacity of $16$ are initialized, which avoids method calls having to do the initialization themselves. 
 
-\includegraphics[width=0.6\textwidth]{img/counter_fairness.png}
+The lfc table is a bit harder to explain. It's possible that the preloaded values just gives it more stuff to move around during the resize operations, but then the effect would've shown up on the locked table as well. It's also pretty strange how the dropoff occurs at 2 rather than 1 -- an extra packet really shouldn't make THAT much of a difference. I'm lacking in an explanation for this -- it might even just be some load issue on research2, since the write and read configs were tested in close temporal proximity. 
+\subsection*{Read config speedups}
+Graphs, for the four values of $\rho$. $0.5$ on top left, $0.75$ on top right, $0.9$ on bottom left, and $0.99$ on bottom right. $n$ on the horizontal axis, speedup on the vertical.
 
-The backoff lock managed to have the highest throughput by far, and also the highest standard deviation. This isn't surprising considering the lock scaling results. With lower standard deviation we have the TAS lock, then all the FIFO locks and the mutex are clustered together with very low standard deviation. This suggests that the mutex also uses some sort of internal queue to keep things fair -- probably the operating system scheduler itself, actually. The original hypothesis about the MCS lock having slightly higher standard deviation turned out to be accurate -- 156 packets/ms for MCS versus 144 for CLH, though we should be careful about attributing statistical significance to such a small difference.
+\includegraphics[width=0.5\textwidth]{img/reads_5.png}
+\includegraphics[width=0.5\textwidth]{img/reads_75.png}
 
-\subsection*{Packet overhead}
-\includegraphics[width=0.6\textwidth]{img/pkt_overhead.png}
+\includegraphics[width=0.5\textwidth]{img/reads_9.png}
+\includegraphics[width=0.5\textwidth]{img/reads_99.png}
 
-As expected, we see less and less proportional overhead as the amount of work gets larger, with the exception of a weird hump by TAS and backoff at $W=50$. We see that TAS and backoff follow each other very closely (due to the similarity of their uncontested code paths) and end up near the bottom for performance for most values of $W$ (as expected from the discussion of test-and-set above). The Alock dominates in performance, followed by CLH then MCS, which again echos the results from the counter tests. 
+$\rho$ doesn't seem to have much effect at all. This is not surprising, as the resizing policy prevents contains from searching too far for an element it can't find. If we actually have something uniformly distributed, the number of buckets with one or two elements should constitute the vast majority of the buckets (in a steady-state), which means that a contains call would take the same amount of time regardless of whether the key was in the table.
 
-As for the worker rate, it's just number of packets processed by time, which is exactly the data we're collecting here. The worker rate from the last assignment is the same as the one here: for example, $W=400$ plugged into the fitted equation from last time gives a rate of 955 packets/ms, and the rate measured from lockfree was 950 here.
-\subsection*{Uniform speedup}
-Between this and the exponential speedup, there are 16 graphs. For the sake of saving some paper, I'm going to leave those in the SVN repo (in the img directory in the unif and exp subdirectories, named \verb|lq_xxxx| or \verb|rand_xxxx|, where \verb|xxxx| is the work mean), especially since many of them look really similar. 
+Among the tables, the lfc table seems to be consistently the highest-performing table, except in the case of $n=2$, where the split table has a minor advantage. Once again, following the reasoning from the parallel overhead section, lfc has less overhead in the contains call, so it makes sense that it would perform better when the vast majority of operations are contains calls.
 
-That said, here are the $W=1000$ graphs from lastqueue (left) and random queue. We can clearly see where the dispatcher rate gets hit in both graphs.
+In all cases, the linear probe table suffers a large dropoff at $n=7$ for some reason. This is not due to load factors -- the loop over $\rho$ is the outer loop in the testing script, so there is a systematic effect. After some explorative testing with the performance of \verb|pthread_rwlock|, I found that it has a dip in performance for $n=7$ but rises on $n=15$ when multiple threads are trying to acquire the read lock and release it in a loop. Since every contains call is bracketed by a pair of these calls, it seems that this may be the reason for the dip.
 
-\includegraphics[width=0.5\textwidth]{img/unif/lq_1000.png}
-\includegraphics[width=0.5\textwidth]{img/unif/rand_1000.png}
+Throughputs for the rwlock read acquisition/release are as follows:
 
-The behavior of these differ after the dispatcher rate gets hit. lastqueue has better performance up until that point, but then drops off to about the same. This is because the two strategies basically act the same when most of the queues are empty (i.e. the dispatcher isn't fast enough) -- they both jump around randomly looking for packets to process, not staying on one queue for very long. 
-
-Curiously though, the performance of the backoff lock is much better under lastqueue than under random, and it even seems to be unaffected by the dispatcher rate barrier. This is a common theme across all the workloads. A possible explanation is the sleep call inside backoff. Even though there are 16 logical cores, a thread getting descheduled will free up time on the physical cores for other threads to run, which means that the dispatcher rate is potentially increased. In the random queue approach, a thread going to sleep means less threads to process packets, whereas in lastqueue, a thread going to sleep will potentially decrease contention on the queues that are present.
-
-In virtually all cases, the load-balanced approaches failed to beat the lockfree approach, and they only manage to approach the lockfree approach's performance from below as $W$ increases. The reasoning for this is given in the next section.
-
-\subsection*{Exponential speedup}
-Mystifyingly, the lockfree approach managed to get higher throughput on exponential packets than on uniform packets for higher values of $W$. This is totally contradictory to the findings from the last assignment, and the only thing that changed was the time-based versus the work-based approach. For packet processing, this is probably actually significant. 
-
-In the work-based approach, we had to wait for all the workers to finish their assigned workload. This means that the overall performance was bottlenecked by the unfortunate worker who got the source with the highest mean. However, in the time-based approach, no such restriction exists, as we're merely counting the total number of packets processed. This, combined with the dispatcher skipping over full queues and saving the packet for the next time it comes around, effectively means that the performance is instead pegged to the source with the \textit{lowest} mean work, as it's free to process as many packets as it wants, contributing to the overall count. Essentially, the load balancing isn't doing us any good because the dispatcher is already balancing out the load in its own odd little way.
-
-Unfortunately, this realization came a bit too late to be useful (my own scheduler could use some work), so I'm just going to plow ahead and analyze the data with this in mind. Again, we look at the $W=1000$ case, as the effect of the locks becomes more obscured as $W$ increases and the proportional overhead decreases.
-
-\includegraphics[width=0.5\textwidth]{img/exp/lq_1000.png}
-\includegraphics[width=0.5\textwidth]{img/exp/rand_1000.png}
-
-We see pretty much the same effect as the uniform case, with throughputs being a bit lower in the exponential case. The same jump in backoff lock performance occurs, and we have, for both distributions and both worker strategies, the CLH lock drooping in performance with respect to the other locks at the 15-source mark. This is interesting because we don't see this happening for other values of $W$, which suggests that it's got something to do with the dispatcher rate, and by extension, contention. However, we didn't see this effect in the counter experiments, which suggests that some more detailed experimentation is needed to figure out what's actually going on.
-\subsection*{Statistical worker}
-This is the custom load-balancing strategy. Based on the observation that lastqueue tends to do better than random-queue for exponentially distributed packets and the fact that neither strategy makes use of the fact that the sources in the exponential distribution have different means, I implemented a strategy that attempts to gravitate towards queues with more work.
-
-First, a brief description of the strategy. Each worker initializes an array of relative weights assigned to each queue. In the beginning, these weights are all set equal. Each time a packet is pulled from a queue, the worker updates the queue's relative weight by taking an exponentially weighted moving average with $\alpha=0.05$. Assuming that there are enough packets and a constant mean for each source, this should converge to the true mean and stay there. Conversely, each time a worker encounters an empty queue or contention, it degrades the weight of that queue.
-
-Once every 64 iterations, the worker calculates a cumulative density function from the relative weights. The worker follows the lastqueue strategy, except when it looks for a new queue, it samples from the calculated cdf rather than from a uniform distribution on the queues. This means that the worker is more likely to gravitate towards queues that have more work and less contention. 
-
-According to the principles I mentioned in my design document, this is likely to improve on lastqueue by shifting even more towards the extreme where the worker gravitates towards where the work is. Unfortunately, due to the aforementioned dispatcher effect, I was unable to actually observe any improvement.
+\begin{tabular}{ccccc}
+    1&2&3&7&15\\
+    \hline
+    18851&3700&1491&1071&3348\\
+\end{tabular}
 \end{document}
