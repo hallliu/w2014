@@ -123,11 +123,11 @@ def preload_effect():
     wr_results = np.zeros((len(preload_vals), len(tables)), dtype='float64')
     for (p_ind, p), (t_ind, t) in product(enumerate(preload_vals), enumerate(tables)):
         for i in range(iters):
-            print('preload effect read: p={0} table {1} iter {2}'.format(p, t, i))
+            _log('preload effect read: p={0} table {1} iter {2}'.format(p, t, i))
             out = timeout_output(['./perf_main', 'parallel', '2000', str(n), '0.09', '0.01', '0.9', str(p), '500', '0', t], 3000)
             rd_results[p_ind, t_ind] += float(out.split()[-1]) / 2000
     
-            print('preload effect write: p={0} table {1} iter {2}'.format(p, t, i))
+            _log('preload effect write: p={0} table {1} iter {2}'.format(p, t, i))
             out = timeout_output(['./perf_main', 'parallel', '2000', str(n), '0.45', '0.09', '0.9', str(p), '500', '0', t], 3000)
             wr_results[p_ind, t_ind] += float(out.split()[-1]) / 2000
 
