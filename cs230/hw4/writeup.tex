@@ -54,7 +54,7 @@ First, the tests for the serial list. These were all tested over $N\in \{1,2,4,1
 \begin{enumerate}
     \item Inserts N distinct random elements into a list, then tests that they're still all there. 
     \item Inserts N distinct random elements into the list, removes half of them, then tests that contains functions correctly.
-    \item Inserts N random elements with keys <=2N, then tests 20 random keys above 2N to make sure that they're not contained.
+    \item Inserts N random elements with keys $\leq2N$, then tests 20 random keys above 2N to make sure that they're not contained.
     \item Inserts a bunch of random elements in, and tests that the ordering makes sense.
     \item Calls contain and remove several times on an empty list. (no arguments)
 \end{enumerate}
@@ -130,4 +130,23 @@ Throughputs for the rwlock read acquisition/release are as follows:
     \hline
     18851&3700&1491&1071&3348\\
 \end{tabular}
+
+\subsection*{Write config speedups}
+Graphs, arranged the same way as in the read configuration.
+
+\includegraphics[width=0.5\textwidth]{img/writes_5.png}
+\includegraphics[width=0.5\textwidth]{img/writes_75.png}
+
+\includegraphics[width=0.5\textwidth]{img/writes_9.png}
+\includegraphics[width=0.5\textwidth]{img/writes_99.png}
+
+Here, the split table and the lock-free contains table are pretty much on par with each other, with the split table having a slight edge. The locking table trails behind significantly, with the probe table still coming in dead last with the same pattern as before (probably due to the read-write lock again). 
+
+Originally, I had expected the table without locks on add/remove to work faster than the one with. However, it doesn't seem like this is the case, at least not markedly so. There are two possible reasons for this. First, adds call malloc every single time, and if the performance of that function degrades a lot under heavy parallelism, then this would even out the performance between the two. We can actually test whether this is the case by preallocating some large number of nodes for each thread to draw from so that they don't have to call malloc.
+
+The other possibility is that the add function in the split table has a lot of failure modes -- it has to start over again whenever something gets changed from out under it. This seems like a pretty unlikely scenario given the large number of buckets, but it's hard to tell.
+
+In any case, it may even be that the lock-free approach offers no advantages over the lock-free contains. If contention is low, then it may be that the effort of acquiring the lock is lower than the effort of constantly checking to see if something had been changed from out under you, which would make the locking approach more attractive both due to simplicity and performance.
+
+Finally, these speedups may look disappointing, but the maximum theoretical speedup is the dispatcher rate divided by the serial throughput. This is around $2.5$ for both reads and writes, which means that these tables are getting pretty close, at least in the case of reads.
 \end{document}
