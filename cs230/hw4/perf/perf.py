@@ -114,6 +114,28 @@ def writes_speedup():
     np.save('results/writes/serial', serial_results)
     return (serial_results, results)
     
+def preload_effect():
+    preload_vals = [1, 2, 4, 8, 16, 32, 128, 512]
+    n = 15
+    iters = 4
+    
+    rd_results = np.zeros((len(preload_vals), len(tables)), dtype='float64')
+    wr_results = np.zeros((len(preload_vals), len(tables)), dtype='float64')
+    for (p_ind, p), (t_ind, t) in product(enumerate(preload_vals), enumerate(tables)):
+        for i in range(iters):
+            print('preload effect read: p={0} table {1} iter {2}'.format(p, t, i))
+            out = timeout_output(['./perf_main', 'parallel', '2000', str(n), '0.09', '0.01', '0.9', str(p), '500', '0', t], 3000)
+            rd_results[p_ind, t_ind] += float(out.split()[-1]) / 2000
+    
+            print('preload effect write: p={0} table {1} iter {2}'.format(p, t, i))
+            out = timeout_output(['./perf_main', 'parallel', '2000', str(n), '0.45', '0.09', '0.9', str(p), '500', '0', t], 3000)
+            wr_results[p_ind, t_ind] += float(out.split()[-1]) / 2000
+
+    rd_results /= iters
+    wr_results /= iters
+    np.save('results/rd_preload', rd_results)
+    np.save('results/wr_preload', wr_results)
+    return (rd_results, wr_results)
 
 if __name__ == '__main__':
     os.mkdir('results')
