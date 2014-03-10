@@ -114,6 +114,7 @@ def writes_speedup():
     np.save('results/writes/serial', serial_results)
     return (serial_results, results)
     
+
 if __name__ == '__main__':
     os.mkdir('results')
     os.mkdir('results/reads')
