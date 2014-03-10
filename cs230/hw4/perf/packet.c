@@ -66,9 +66,10 @@ void *worker_fn(void *_data) {
 void *dropper_fn(void *_data) {
     struct worker_data *data = (struct worker_data *) _data;
     struct l_queue *q = data->q;
-    HashPacket_t *pkt;
+    HashPacket_t *pkt = NULL;
     while (1) {
-        deq(q, (void **) &pkt);
+        if (deq(q, (void **) &pkt))
+            continue;
         if (pkt == NULL)
             break;
     }
