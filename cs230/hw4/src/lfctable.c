@@ -85,7 +85,7 @@ bool lfc_contains(struct hashtable *_t, int key) {
     __sync_fetch_and_add(access_cnt, 1);
 
     int bucket_ind = key & (tab->cap - 1);
-    bool succ = lf_contains (tab->buckets + bucket_ind, key);
+    bool succ = lf_contains (tab->buckets + bucket_ind, key, NULL);
 
     __sync_fetch_and_add(access_cnt, -1);
     return succ;

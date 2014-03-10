@@ -159,14 +159,22 @@ bool lf_remove (struct lockfree_list *l, int key) {
     }
 }
 
-bool lf_contains (struct lockfree_list *l, int key) {
+bool lf_contains (struct lockfree_list *l, int key, int *num_steps) {
     unsigned rev_key = rev_bits(key);
     struct lf_elem *curr = l->head;
-    if (!curr)
+    int n_steps = 0;
+
+    if (!curr) {
         return false;
+    }
+
     while (curr && rev_key > curr->rev_key) {
+        n_steps++;
         curr = REFOF(curr->next);
     }
+    if (num_steps)
+        *num_steps = n_steps;
+
     return (curr && curr->rev_key == rev_key && !MARKOF(curr->next));
 }
 

@@ -105,7 +105,7 @@ bool split_add(struct hashtable *_t, int key, Packet_t *pkt) {
         return false;
 
     // See if we need to resize
-    if (num_steps > RESIZE_THRESH) {
+    if (num_steps >= RESIZE_THRESH) {
         if (cap == PREALLOC_COUNT) {
             printf("Oops -- prealloc reached\n");
             exit(0);
@@ -137,5 +137,37 @@ bool split_contains(struct hashtable *_t, int key) {
         initialize_index(tab, ind);
 
     int mod_key = key | ((unsigned) INT_MAX + 1);
-    return lf_contains (&tab->buckets[ind], mod_key);
+    int num_steps;
+    bool succ = lf_contains (&tab->buckets[ind], mod_key, &num_steps);
+
+    if (num_steps >= RESIZE_THRESH) {
+        if (cap == PREALLOC_COUNT) {
+            printf("Oops -- prealloc reached\n");
+            exit(0);
+        }
+        __sync_bool_compare_and_swap(&tab->cap, cap, cap * 2);
+    }
+
+    return succ;
+}
+
+void spl_dump_table(struct split_table *tab) {
+    printf("Table cap: %d\n", tab->cap);
+    unsigned imax = INT_MAX;
+
+    for (int i = 0; i < tab->cap; i++) {
+        printf("%d: ", i);
+        struct lf_elem *e = tab->buckets[i].head;
+        while(e) {
+            if ((e->key & (tab->cap - 1)) != i)
+                break;
+            if (e->key & (imax + 1)) {
+                printf("%d ", e->key & imax);
+            } else {
+                printf("S%d ", e->key);
+            }
+            e = e->next;
+        }
+        printf("\n");
+    }
 }

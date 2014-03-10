@@ -18,6 +18,7 @@ void alltogether(char *tabtype, int N, int Tc, int Ta, int Tr);
 void indistinct_add(char *tabtype, int N, int T, int R);
 void resize_contains(int N, int T);
 void ind_init (int N, int T);
+void testtab(int N, int T);
 
 int main(int argc, char *argv[]) {
     char *test_type = argv[1];
@@ -48,6 +49,11 @@ int main(int argc, char *argv[]) {
 
     if (!strcmp(test_type, "ind_init")) {
         ind_init(atoi(argv[2]), atoi(argv[3]));
+        return 0;
+    }
+
+    if (!strcmp(test_type, "testtab")) {
+        testtab(atoi(argv[2]), atoi(argv[3]));
         return 0;
     }
 
@@ -552,4 +558,38 @@ void ind_init (int N, int T) {
         }
     }
     return;
+}
+
+void testtab(int N, int T) {
+    int *keys = malloc(N * sizeof(int));
+    bool *results = malloc(N * sizeof(bool));
+    int *ops = malloc(N * sizeof(int));
+    for (int i = 0; i < N; i++) {
+        ops[i] = 1;
+        keys[i] = i;
+    }
+
+    if (T > N)
+        T = N;
+
+    struct hashtable *tab = create_ht("split", T);
+
+    pdata *datas = malloc (T * sizeof(pdata));
+    pthread_t *threads = malloc(T * sizeof(pthread_t));
+    for (int i = 0; i < T; i++) {
+        datas[i].tab = tab;
+        datas[i].keys = keys;
+        datas[i].ops = ops;
+        datas[i].begin = i * N / T;
+        datas[i].end = (i + 1) * N / T - 1;
+        datas[i].results = results;
+    }
+
+    for (int i = 0; i < T; i++) 
+        pthread_create(&threads[i], NULL, worker, (void *)(datas + i));
+
+    for (int i = 0; i < T; i++) 
+        pthread_join(threads[i], NULL);
+    
+    printf("poop\n");
 }

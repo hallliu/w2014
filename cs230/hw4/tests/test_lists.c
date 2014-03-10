@@ -264,7 +264,7 @@ void *parallel_worker(void *_data) {
     for (int i = data->begin; i <= data->end; i++) {
         switch (data->ops[i]) {
             case 0:
-                data->results[i] = lf_contains(l, keys[i]);
+                data->results[i] = lf_contains(l, keys[i], NULL);
                 break;
             case 1:
                 data->results[i] = lf_add(l, keys[i], NULL, NULL);

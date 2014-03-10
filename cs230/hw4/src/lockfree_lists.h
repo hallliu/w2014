@@ -23,7 +23,7 @@ struct lockfree_list {
 struct lockfree_list *create_lockfree_lists(int);
 bool lf_add (struct lockfree_list *, int, Packet_t *, int *);
 bool lf_remove (struct lockfree_list *, int);
-bool lf_contains (struct lockfree_list *, int);
+bool lf_contains (struct lockfree_list *, int, int *);
 void destroy_lockfree_lists (struct lockfree_list *, int);
 int lf_find(volatile struct lockfree_list *l, unsigned rev_key, struct lf_elem **_prev, struct lf_elem **_curr);
 
