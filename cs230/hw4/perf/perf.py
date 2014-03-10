@@ -105,7 +105,7 @@ def writes_speedup():
     serial_results = np.zeros(len(rhos), dtype='float64')
     for (r_ind, rho) in enumerate(rhos):
         for i in range(iters):
-            _log('read serial results: rho={0} iter {1}'.format(rho, i))
+            _log('write serial results: rho={0} iter {1}'.format(rho, i))
             out = timeout_output(['./perf_main', 'serial', '2000', '0.45', '0.05', str(rho), '4', '500', '128'], 3000)
             serial_results[r_ind] += float(out.split()[-1]) / 2000
 
