@@ -58,7 +58,7 @@ def dispatcher_rate():
         out = timeout_output(['./perf_main', 'parallel_noload', '2000', str(n), '0.1', '0.1', '0.1', '128', '0'], 4000)
         dr += float(out.split()[-1]) / 2000
         
-    np.savetxt('results/dr.txt', np.array(dr))
+    np.savetxt('results/dr.txt', np.array([dr]))
     return dr / iters
 
 def reads_speedup():
