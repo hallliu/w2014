@@ -36,10 +36,18 @@ Date: \today
 \vspace{20pt}
 
 \section*{Changes to original design}
-\subsection*{Program structure}
-The original plan to have the queue do the locking/unlocking was scuttled because I decided that it would be easier to have that logic in the packet workers instead. At one point, one of my designs called for holding onto a lock between dequeues, but that was later scuttled. This actually came back to haunt me later when I accidentally put the \verb|getFingerPrint| function inside the locked section, resulting in highly distorted performance figures.
-\subsection*{Backoff tuning}
-For the backoff tuning, I decided to make the throughput a function of \verb|min_delay| and \verb|max_delay|, then ran it through Powell's method for optimization without derivatives. The results were pretty screwed up because the function in consideration doesn't have consistent values, but after six or so runs, there was general agreement on one value.
+\subsection*{Program structure/interfaces}
+The linked lists were not unified into one structure. Instead, the lock-free and serial lists were given their own interfaces with the same type signatures, except add and contains on lock-free, which now take an integer pointer as a place to store the number of steps taken.
+
+The hash tables' destroy functions were removed, since for the purposes of this assignment, memory leaks are rampant anyway and the hash table is only destroyed at the end of the process, at which point the OS cleans up anyway.
+\subsection*{Hash table implementation choices}
+For the lock-free contains table implementation (henceforth referred to as ``lfc''), the original design of having resize copy the whole table was abandoned due to implementing preallocation for more parity in comparison to the fully lock-free table (henceforth referred to as the ``split'' table). Instead, the strategy was to copy all the nodes that need to be moved over to their new locations, then double the table capacity. Immediately after, a counter of the total contains access count was swapped out for a new one with zero value, then resize will wait for the old one to go to zero, at which point it removes all the old nodes from the table.
+
+Due to the recursive split-ordering used in the list in the lfc table, dropping the old nodes simply consisted of remembering the last node that stays in place and swapping its next pointer for a null. I made this choice consciously because it significantly simplified the implementation of resize, but I do expect it to boost the speed of lfc somewhat because contains now never has to traverse the old nodes, even before resize has removed them.
+
+For the linear-probe table, the old design ran into a problem when I discovered that I couldn't upgrade a read-lock to a write-lock when I find the element that I want to change. Thus, a new locking scheme was devised. The read-write lock on the whole table for resizing was maintained, but now each array node has two locks: a data lock to protect the key and the packet and a distance lock to protect the max distance. When add goes in, it grabs the distance lock and the data lock on the first node, but it only holds the distance lock as it walks along. This way, each thread holds at most one lock of each type at any moment, which eliminates the deadlock risk.
+
+In the split table, the tricky part was implementing initialization of indices, since all the other parts either consisted of calls into the lock-free list interface or were described by the book. 
 \section*{Results}
 Unless otherwise specified, all counter experiments were conducted with 4 iterations at the same parameter averaged together, and 3 for the packet tests.
 \subsection*{Counter overhead -- work and time}
