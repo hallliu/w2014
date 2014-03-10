@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "packet.h"
+#include <hashpackettest.h>
 
 /*
  * Invoke with the test name as the first arg (excluding test_)
@@ -14,33 +16,21 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (!strcmp(argv[1], "serial_work")) {
-        double time = serial_work_test(atol(argv[2]));
-        printf("%.6f\n", time);
+    if (!strcmp(argv[1], "serial")) {
+        serialHashPacketTest(atoi(argv[2]), atof(argv[3]), atof(argv[4]), 
+                atof(argv[5]), atoi(argv[6]), atol(argv[7]), atoi(argv[8]));
         return 0;
     }
 
-    if (!strcmp(argv[1], "parallel_work")) {
-        double time = parallel_work_test(argv[2], NULL, atol(argv[3]), atoi(argv[4]));
-        printf("%.6f\n", time);
+    if (!strcmp(argv[1], "parallel_noload")) {
+        parallel_dispatcher(atoi(argv[2]), atoi(argv[3]), atof(argv[4]), 
+                atof(argv[5]), atof(argv[6]), atoi(argv[7]), 0, atoi(argv[8]), "locked");
         return 0;
     }
 
-    if (!strcmp(argv[1], "serial_time")) {
-        long n = serial_time_test(atoi(argv[2]));
-        printf("%ld\n", n);
-        return 0;
-    }
-
-    if (!strcmp(argv[1], "parallel_time")) {
-        long n = parallel_time_test(argv[2], NULL, atoi(argv[3]), atoi(argv[4]));
-        printf("%ld\n", n);
-        return 0;
-    }
-
-    if (!strcmp(argv[1], "parallel_dispatcher")) {
-        parallel_dispatcher(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), 
-                atol(argv[5]), atoi(argv[6]), atoi(argv[7]), argv[8]);
+    if (!strcmp(argv[1], "parallel")) {
+        parallel_dispatcher(atoi(argv[2]), atoi(argv[3]), atof(argv[4]), 
+                atof(argv[5]), atof(argv[6]), atoi(argv[7]), atol(argv[8]), atoi(argv[9]), argv[10]);
         return 0;
     }
 

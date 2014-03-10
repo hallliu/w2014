@@ -83,9 +83,7 @@ void serialHashPacketTest(int numMilliseconds,
 	 pthread_attr_destroy(&attr);
 
 	long totalCount = workerData.totalPackets;
-	printf("count: %ld \n", totalCount);
-	printf("time: %f\n",getElapsedTime(&timer));
-	printf("%f inc / ms", totalCount/getElapsedTime(&timer));
+	printf("%ld \n", totalCount);
 }
 
 void parallelHashPacketTest(int numMilliseconds,
