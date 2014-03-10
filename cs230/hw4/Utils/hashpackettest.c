@@ -59,8 +59,6 @@ void serialHashPacketTest(int numMilliseconds,
 		exit(-1);
 	}
 
-	printf("Sleeping!!");
-
 	startTimer(&timer);
 
 	nanosleep(&tim, NULL);
