@@ -61,6 +61,16 @@ void *worker_fn(void *_data) {
     return NULL;
 }
 
+void *dropper_fn(void *_data) {
+    struct worker_data *data = (struct worker_data *) _data;
+    struct l_queue *q = data->q;
+    while (1) {
+        deq(q, (void **) &pkt)
+        if (pkt == NULL)
+            break;
+    }
+}
+
 void parallel_dispatcher 
         (int n_ms,
          int n_src, 
@@ -73,6 +83,11 @@ void parallel_dispatcher
          char *tab_type) {
 
     // set up the sources and receiver stuff
+    bool drop_pkts = false;
+    if (mean == 0) {
+        mean = 1;
+        drop_pkts = true;
+    }
     
     HashPacketGenerator_t *pkt_src = createHashPacketGenerator(add_frac, rm_frac, hit_rate, mean);
     struct hashtable *tab = create_ht (tab_type, 1 << (blog2(n_src) + 1));
@@ -94,7 +109,10 @@ void parallel_dispatcher
     pthread_t *workers = calloc (n_src, sizeof(pthread_t));
 
     for (int i = 0; i < n_src; i++) {
-        pthread_create (workers + i, NULL, worker_fn, (void *) (data + i));
+        if (drop_pkts)
+            pthread_create (workers + i, NULL, dropper_fn, (void *) (data + i));
+        else
+            pthread_create (workers + i, NULL, worker_fn, (void *) (data + i));
     }
     
     long packet_ctr = 0;
