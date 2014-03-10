@@ -1,2 +1,3 @@
 tests/test_lists
 tests/test_hashtables
+perf/perf_main

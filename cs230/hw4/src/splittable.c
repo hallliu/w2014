@@ -11,7 +11,7 @@
 #include "splittable.h"
 
 #define RESIZE_THRESH 4
-#define PREALLOC_COUNT 1<<20
+#define PREALLOC_COUNT 1<<22
 
 #define MARKOF(x) ((unsigned long)(x) & (0x1l))
 #define REFOF(x) (typeof(x))((unsigned long)(x) & (~0x1l))

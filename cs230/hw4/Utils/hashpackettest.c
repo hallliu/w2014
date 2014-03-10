@@ -30,9 +30,6 @@ void serialHashPacketTest(int numMilliseconds,
 	PaddedPrimBool_NonVolatile_t done;
 	done.value = false;
 
-	PaddedPrimBool_t memFence;
-	memFence.value = false;
-
 	HashPacketGenerator_t * source = createHashPacketGenerator(fractionAdd,fractionRemove,hitRate,mean);
 	SerialHashTable_t * table = createSerialHashTable(1, maxBucketSize);
 
@@ -70,8 +67,6 @@ void serialHashPacketTest(int numMilliseconds,
 
 	done.value = true;
 
-	memFence.value = true;
-
 	 rc = pthread_join(workerThread, &status);
 	 if (rc){
 		 fprintf(stderr,"firewall error: return code for the threads using pthread_join() for solo thread  is %d\n", rc);
@@ -84,52 +79,4 @@ void serialHashPacketTest(int numMilliseconds,
 
 	long totalCount = workerData.totalPackets;
 	printf("%ld \n", totalCount);
-}
-
-void parallelHashPacketTest(int numMilliseconds,
-							float fractionAdd,
-							float fractionRemove,
-							float hitRate,
-							int maxBucketSize,
-							long mean,
-							int initSize,
-							int numWorkers)
-{
-	StopWatch_t timer;
-	//
-	// allocate and initialize Lamport queues and hash table
-	//
-	HashPacketGenerator_t * source = createHashPacketGenerator(fractionAdd,fractionRemove,hitRate,mean);
-	//
-	// initialize your hash table w/ initSize number of add() calls using
-	// getAddPacket();
-	//
-	// allocate and initialize locks and any signals used to marshal threads (eg. done signals)
-	//
-	// allocate and initialize Dispatcher and Worker threads
-	//
-	// start your Workers
-	//
-	struct timespec tim;
-
-	millToTimeSpec(&tim,numMilliseconds);
-
-	startTimer(&timer);
-	//
-	// start your Dispatcher
-	//
-	nanosleep(&tim , NULL);
-	//
-	// assert signals to stop Dispatcher
-	//
-	// call join on Dispatcher
-	//
-	// assert signals to stop Workers - they are responsible for leaving
-	// the queues empty
-	//
-	// call join for each Worker
-	//
-	stopTimer(&timer);
-
-	// report the total number of packets processed and total time
 }

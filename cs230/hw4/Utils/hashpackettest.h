@@ -11,15 +11,4 @@ void serialHashPacketTest(int numMilliseconds,
 							int initSize);
 
 
-void parallelHashPacketTest(int numMilliseconds,
-							float fractionAdd,
-							float fractionRemove,
-							float hitRate,
-							int maxBucketSize,
-							long mean,
-							int initSize,
-							int numWorkers);
-
-
-
 #endif /* HASHPACKETTEST_H_ */

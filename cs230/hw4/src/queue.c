@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include "queue.h"
 
-
 struct l_queue *create_queues(int n_queues, int size) {
     struct l_queue *q = calloc (n_queues, sizeof(struct l_queue));
     for (int i = 0; i < n_queues; i++) {
@@ -40,7 +39,9 @@ int deq(struct l_queue *q, void **obj_ptr) {
     int tail = q->tail;
     int len = q->length;
 
-    if (tail == head) {
+    if (tail == head) 
+        return 1;
+
     *obj_ptr = q->items[head & (len - 1)];
     q->head = head + 1;
     return 0;

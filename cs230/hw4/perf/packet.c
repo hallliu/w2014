@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <sys/time.h>
-#include "../Utils/stopwatch.h"
-#include "../Utils/hashgenerator.h"
+
+#include <stopwatch.h>
+#include <hashgenerator.h>
+#include <fingerprint.h>
 #include "../src/queue.h"
 #include "../src/hashtables.h"
 
@@ -44,11 +46,11 @@ void *worker_fn(void *_data) {
             continue;
         if (pkt == NULL)
             break;
-        data->fp_sum += getFingerPrint(pkt->body->iterations, pkt->body->seed);
+        data->fp_sum += getFingerprint(pkt->body->iterations, pkt->body->seed);
 
         switch (pkt->type) {
             case Add:
-                tab->add (tab, mangleKey(pkt), pkt->body);
+                tab->add (tab, mangleKey(pkt), (Packet_t *) pkt->body);
                 break;
             case Remove:
                 tab->remove (tab, mangleKey(pkt));
@@ -64,11 +66,13 @@ void *worker_fn(void *_data) {
 void *dropper_fn(void *_data) {
     struct worker_data *data = (struct worker_data *) _data;
     struct l_queue *q = data->q;
+    HashPacket_t *pkt;
     while (1) {
-        deq(q, (void **) &pkt)
+        deq(q, (void **) &pkt);
         if (pkt == NULL)
             break;
     }
+    return NULL;
 }
 
 void parallel_dispatcher 
@@ -96,7 +100,7 @@ void parallel_dispatcher
     // Preinsert elements
     for (int i = 0; i < preload_size; i++) {
         HashPacket_t *pkt = getAddPacket(pkt_src);
-        tab->add (tab, mangleKey(pkt), pkt->body);
+        tab->add (tab, mangleKey(pkt), (Packet_t *) pkt->body);
     }
 
     struct l_queue *queues = create_queues (n_src, QUEUE_DEPTH);
@@ -127,7 +131,7 @@ void parallel_dispatcher
         for (int i = 0; i < n_src; i++) {
             if (!check_free(queues + i))
                 continue;
-            Packet_t *pkt = pkt_fn (source, i);
+            HashPacket_t *pkt = getRandomPacket(pkt_src);
             enq (queues + i, (void *) pkt);
 
             packet_ctr += 1;

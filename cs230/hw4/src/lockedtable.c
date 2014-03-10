@@ -9,7 +9,7 @@
 #include "lockedtable.h"
 
 #define RESIZE_THRESH 4
-#define PREALLOC_COUNT 1<<18
+#define PREALLOC_COUNT 1<<22
 
 bool locked_add(struct hashtable *_t, int key, Packet_t *pkt);
 bool locked_remove(struct hashtable *_t, int key);
