@@ -145,7 +145,8 @@ if __name__ == '__main__':
     global logfile
     logfile = open('/tmp/hallliu_log', 'w', 0)
 
-    dispatcher_rate()
-    reads_speedup()
-    writes_speedup()
+#    dispatcher_rate()
+#    reads_speedup()
+#    writes_speedup()
+    preload_effect()
     logfile.close()
