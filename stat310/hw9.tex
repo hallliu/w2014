@@ -1,0 +1,47 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage[namelimits,sumlimits]{amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage{mathrsfs}
+\usepackage[cm]{fullpage}
+\newcommand{\tab}{\hspace*{5em}}
+\newcommand{\conj}{\overline}
+\newcommand{\dd}{\partial}
+\newcommand{\ep}{\epsilon}
+\newcommand{\openm}{\begin{pmatrix}}
+\newcommand{\closem}{\end{pmatrix}}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\Null}{null}
+\newcommand{\nc}{\newcommand}
+\newcommand{\rn}{\mathbb{R}}
+\nc{\cn}{\mathbb{C}}
+\nc{\ssn}[1]{\subsubsection*{#1}}
+\nc{\inner}[2]{\langle #1,#2\rangle}
+\nc{\h}[1]{\widehat{#1}}
+\nc{\tl}[1]{\widetilde{#1}}
+\nc{\norm}[1]{\left\|{#1}\right\|}
+\begin{document}
+
+Name: Hall Liu
+
+Date: \today 
+\vspace{1.5cm}
+\subsection*{2}
+Let $d$ be an arbitrary point in $\mathscr{F}(x^*)$. We want to show that $d$ is also in the tangent cone.
+
+First, if we replace $\mathscr{A}(x^*)$ in the argument in the book with the matrix of equality constraint gradients $\mathscr{E}(x^*)$, and follow the argument until (12.42b), we obtain a feasible sequence of $z_k$ defined via the implicit function theorem by $z(t)$ as a solution to (12.40). This is possible because the MFCQ condition specifies that the equality constraint gradients are linearly independent. 
+
+In addition, since the function and its constraints are smooth, the implicit function theorem also gives us an expression for $z'(0)$, which is the inverse Jacobian of $R$ at $t=0$ multiplied by the derivative of $R$ by $t$ at $t=0$. In other words, 
+\[z'(0)=-\openm \mathscr{E}(x^*)\\Z^T\closem^{-1}\openm-\mathscr{E}(x^*)d\\-Z^Td\closem\]
+Clearly, $d$ is a solution to this system. Since the Jacobian is invertible, it is the unique solution, so we have that $z'(0)=d$.
+
+Now, let $w$ be some vector from the MFCQ conditions where $\mathscr{A}(x^*)w$ is positive in all its entries. For any $\ep>0$, we have that $d+\ep w\in\mathscr{F}(x^*)$, since $\ep w\in\mathscr{F}(x^*)$ by the form of the MFCQ conditions and the sum of two vectors in a cone is still in the cone. Then, there exists a curve $z_\ep(t)$ which is feasible for small $t$, with 
+\[z_\ep'(0)=d+\ep w=\lim_{t\to 0}\frac{z_\ep(t)-z_\ep(0)}{t}\]
+Note that $z_\ep(0)=x^*$ by the construction in the book, so this means that $d+\ep w$ is actually in the tangent cone for all $\ep>0$, which means that $d$ is a limit point of the tangent cone. Since the tangent cone is closed, $d$ is in the tangent cone.
+
+\end{document}
