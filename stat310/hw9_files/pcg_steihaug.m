@@ -44,12 +44,10 @@ function [pk, iters] = pcg_steihaug(f, g, B, delta, m_solv)
         
         old_r = r;
         r = r + alpha * B * d;
-        
         if norm(r) < epsilon
             pk = z;
             return;
         end
-        
         old_y = y;
         y = m_solv(r);
         
@@ -59,7 +57,6 @@ function [pk, iters] = pcg_steihaug(f, g, B, delta, m_solv)
 end
 
 % Finds tau1, tau2 such that norm(z + tau{1,2}*d) == delta
-% Do quadratic formula on the expansion.
 function [tau1, tau2] = findtaus(z, d, delta)
     c = norm(z)^2 - delta^2;
     b = 2 * z.' * d;

@@ -1,0 +1,151 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage[namelimits,sumlimits]{amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage{mathtools}
+\usepackage[cm]{fullpage}
+\newcommand{\tab}{\hspace*{5em}}
+\newcommand{\conj}{\overline}
+\newcommand{\dd}{\partial}
+\newcommand{\ep}{\epsilon}
+\newcommand{\openm}{\begin{pmatrix}}
+\newcommand{\closem}{\end{pmatrix}}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\Null}{null}
+\newcommand{\nc}{\newcommand}
+\newcommand{\rn}{\mathbb{R}}
+\newcommand{\zn}{\mathbb{Z}}
+\nc{\cn}{\mathbb{C}}
+\nc{\ssn}[1]{\subsubsection*{#1}}
+\nc{\inner}[2]{\langle #1,#2\rangle}
+\nc{\h}[1]{\widehat{#1}}
+\nc{\tl}[1]{\widetilde{#1}}
+\nc{\norm}[1]{\left\|{#1}\right\|}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+\begin{document}
+Name: Hall Liu
+
+Date: \today 
+\vspace{1.5cm}
+
+\subsection*{108}
+The basic idea is that the add method is only modifying pred, and only looks at the value of curr. Since nodes effectively have an immutable key field (it's never modified after node creation), the only way that curr can be modified while add is validating is either by removal, addition of another node, or by changing its next pointer. The former is rendered impossible by the lock on pred -- it is impossible for any other thread to change the fact that the node immediately following pred is curr, as doing so would necessitate altering prev's next pointer. Further, the next pointer of curr is irrelevant to add, so the second case doesn't matter. Thus, only the lock on prev is necessary.
+\subsection*{109}
+This is linearizable. Let contains be looking for some element $x$, and suppose that at the start of the contains call, one more add call had been completed on $x$ than remove on $x$. Then, if some remove call on $x$ overlaps with contains, either result would be linearizable, so let's assume that no remove call on $x$ overlaps with contains. Since add and remove never create orphan nodes that they are not currently operating on, contains will always be able to traverse the entire list. Thus, at some point, it will come across the node $x$ and return true without having to lock. 
+
+For the case where the node is not in the list at the start of the contains call and it was not added during the duration of contains, there exists no node with the correct key in the list, so contains cannot return true.
+\subsection*{120}
+For enq, the store for the item array is problematic. The line \verb|items[tail % items.length] = x| consists of a load on tail, a load on length (which is constant), computation of the correct address, then a store to that address. If the processor decides that the address can be computed and kept in the registers, it may reorder the store to after the store on tail. If this happens, then if the thread goes to sleep between the store to tail and the store to items, deq may find itself exiting from the spin, but with no valid item at the address it's looking at.
+\subsection*{121}
+Fields:
+\begin{verbatim}
+int head, tail, capacity
+array items[capacity]
+lock headLock, tailLock
+\end{verbatim}
+
+Methods:
+\begin{verbatim}
+enq(x):
+    while (tail - head == capacity):
+        pass
+    lock(tailLock)
+
+    if (tail - head == capacity):
+        unlock(tailLock)
+        try again
+
+    items[tail % capacity] = x
+    tail++
+    unlock(tailLock)
+
+deq():
+    while (tail == head):
+        pass
+    lock(headLock)
+
+    if (tail == head):
+        unlock(headLock)
+        try again
+
+    x = items[head % capacity]
+    head++
+    unlock(headLock)
+    return x
+\end{verbatim}
+
+The difficulty comes in satisfying the bound: once a thread gets the notification that it can stop spinning and can enter an item into the queue, it may go to sleep and then other threads may fill up the queue. In the locked version, we can correct for this by checking the fullness again after acquiring the lock, but the lockfree version has no way of guaranteeing that the queue has any space left by the time it physically inserts an item.
+\subsection*{124}
+\ssn{1}
+A successful deq means that the CAS on line 39 is successful, which implies that no other threads interfered with the head of the queue between lines 38 and 40. Thus, to other threads, lines 38-40 appear to execute atomically, so we can pick line 38 as the linearization point because the only change to the queue (for a successful deq) happens during lines 38-40.
+\ssn{2}
+Line 17 cannot be considered the linearization point of enq. Suppose there are two threads $A, B$ trying to enqueue $a, b$. Then, if thread $A$ executes line 16 then goes to sleep, thread $B$ may execute lines 16 and 17 during the interim, which means that when $A$ wakes up, it will fail line 17, so it will take place after the execution of $A$'s deq. However, this means that $A$'s enq's linearization point comes after that of $B$, which contradicts the fact that $a$ is physically in front of $b$ in the queue.
+\subsection*{125}
+\ssn{1}
+enq appears to be wait-free, if the atomic modification instructions are also wait-free. deq is not wait-free nor lock-free, since if it executes in isolation on an empty queue, it will never return. This means that it's not obstruction-free, which implies not lock-free.
+\ssn{2}
+With respect to other threads performing enq, the linearization point of enq is on line 6, since after this point, other threads will be assigned a higher place to put their items into. With respect to other threads performing deq, the linearization point of enq is on line 7, since before that, line 14 will fail and deq will fail and start over
+
+The linearization point of deq is on line 13, as this is the only place where it makes any change to the state of the object.
+\subsection*{127}
+Fields:
+\begin{verbatim}
+int capacity, head
+array items[capacity]
+lock headLock
+\end{verbatim}
+
+Methods:
+\begin{verbatim}
+push(x):
+    while (head == capacity):
+        pass
+    lock(headLock)
+    if (head == capacity):
+        unlock(headLock)
+        try again
+
+    items[head] = x
+    head++
+    unlock(headLock)
+
+pop():
+    while (head == 0):
+    lock(headLock)
+    if (head == 0):
+        unlock(headLock)
+        try again
+
+    x = items[head - 1]
+    head--
+    unlock(headLock)
+\end{verbatim}
+
+As with the bounded queue, the difficulty with making this lock-free comes in making sure that other threads didn't fill up/empty out the stack between when we checked for capacity and when we actually insert the item.
+\subsection*{129}
+It does make sense to use the same backoff, if we assume that the stack is usually not empty. In that case, every case of the tryPush or tryPop methods failing would be because of contention at the head, which is the limiting factor in performance. It doesn't matter if the thread is pushing or popping -- it's still doing a CAS to the head of the stack.
+
+Alternate strategies for doing the backoff on the elimination array include using some other probability distribution than uniform over the range of slots to choose from and doing individual timeouts on certain elimination buckets depending on their history.
+\subsection*{132}
+Suppose we have two threads $A_1, A_2$ pushing and one thread $B$ popping. Let the stack be initially empty. If $A_1$ executes line 9, immediately followed by $B$ executing line 17, immediately followed by $A_2$ executing line 9, then $A_1$ and $A_2$ both receive $i=0$, which means that one of them is going to overwrite the other.
+
+To fix this, have the first line of every push call begin with entry to the push room, have its last action be exit from the push room, and similarly for pop, but with the other room. Then, this way, we are guaranteed that the value of top will monotonically increase or decrease as long as there is an active push or pop call, which solves the problem from above.
+\subsection*{159}
+Suppose that the hash table initially has two nodes with key zero and four at bucket zero (capacity 2). If thread $A$ calls remove on key zero at the same time that thread $B$ tries to add in a node with key 2, then if $A$ first swings the pointer from the bucket to node 4 then $B$ comes and follows the bucket pointer, it won't find a good place to put the node with key 2.
+\subsection*{160}
+The parent bucket index is obtained by un-setting the most significant nonzero bit of a bucket's index. If we have a bucket with index $2^N-1$, this will take $\log N$ steps before it gets to $1$. The expected value of the length of this sequence is not constant in $N$ if we consider the initialization sequences independently of each other, since it's equal to the expected value of the number of nonzero bits in a $N$ bit number. However, the total effort required to initialize all the buckets divided by the number of buckets is constant, as we never need to initialize a bucket twice.
+\subsection*{185}
+We have $A_1(n)=2A_1(n/2)+\Theta(n)$, which comes out to $A_(n)=\Theta(n\log n)$. The critical path length is $A_\infty(n)=A_\infty(n/2)+\Theta(n)$, which comes out to $\Theta(n)$, so the parallelism is $\log n$.
+\subsection*{186}
+Depends on what we mean by optimized. If we take it in the sense that it requires less work, then it is optimized because the work for the second one is half as much as the first one. For a 512-processor machine, $T_p=2048/512+1=5$ and $T_p'=1024/512+8=10$, so the first version scales better to the machine with more processors.
+\subsection*{188}
+We want to find lower bounds on $T_1$ and $T_\infty$. We have the two inequalities $T_\infty+\frac{T_1-T_\infty}{4}\geq80$ and $T_\infty+\frac{T_1-T_\infty}{16}\geq10$, which leads us to the inequalities $T_1\geq80-3T_\infty$ and $T_1\geq640-63T_\infty$. Subject to these two constraints, we want to minimize $\max(T_1/10, T_\infty)$. In 2 dimensions, this is the point $(T_\infty, T_1/10)$ with the lowest infinity norm. Since the feasible set is convex and positive, this is at the point where the line $T_\infty=T_1/10$ intersects the boundary of the feasible region. 
+
+Plugging into the first one, we have $10T_\infty=10-3T_\infty\implies T_\infty=\frac{10}{13}$. For the second one, we have $10T_\infty=640-63T_\infty\implies T_\infty=\frac{640}{73}$. Thus, the intersection is at $T_\infty=\frac{640}{13}=49$ seconds.
+\end{document}
