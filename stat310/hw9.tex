@@ -31,6 +31,33 @@ Name: Hall Liu
 
 Date: \today 
 \vspace{1.5cm}
+\subsection*{1}
+\ssn{a}
+By analogy with the standard preconditioning scheme for CG, we want to transform the problem by some matrix $D_k$ such that $\h{B_k}D_k^{-T}B_kD_k^{-1}$ has a nicer eigenvalue distribution that $B_k$ itself. The book states that this is equivalent to solving the subproblem 
+\[\min_{\h{p}} f_k+\h{g}_k^T\h{p}+\frac{1}{2}\h{p}^T\h{B_k}\h{p}\]
+where the true solution $p=D^{-1}\h{p}$ and $\h{g}_k=D^{-T}\nabla f_k$. 
+
+Just like with ordinary CG, we can make the substitutions $\h{d}_i=D^{-1}d_i$, $\h{r}_i=D^{-T}r_i$, and $\h{z}_i=D^{-1}z_i$ to algorithm (7.2) to transform it into the preconditioned version. Prior to these substitutions, feeding the preconditioned minimization into the algorithm gives the initial state $z_0=0$, $r_0=D^{-T}\nabla f_k$, and $d_0=-D^{-T}\nabla f_k$. After the substitutions, we get $\h{z}_0=0$, $\h{r}_0=\nabla f_k$, and $\h{d}_0=D^{-1}D^{-T}\nabla f_k$. 
+
+The main loop becomes the following, with the breaking conditions removed (I'll talk about them later)
+\begin{align*}
+    \alpha_i&=\frac{\h{r}_i^Ty_i}{\h{d}_i^TB\h{d}_i}\\
+    \h{z}_{i+1}&=\h{z}_i+\alpha_i\h{d}_i\\
+    \h{r}_{i+1}&=\h{r}_i+\alpha_iB\h{d}_i\\
+    y_{i+1}&=D^{-1}D^{-T}\h{r}_{i+1}\\
+    \beta_{i+1}&=\frac{\h{r}_{i+1}^Ty_{i+1}}{\h{r}_i^Ty_i}\\
+    \h{d}_{i+1}&=-D^{-1}D^{-T}r_{i+1}+\beta_{i+1}\h{d}_i=-y_{i+1}+\beta_{i+1}\h{d}_i\\
+\end{align*}
+
+For the first breaking condition ($d_i^TBd_i\leq0$), we just need to convert it to $\h{d}_iBd_i\leq0$ by what we substituted for each of those things. In order to calculate $\tau$ and the return value, we transform back to the un-preconditioned problem. The algorithm that operates on $D^{-T}BD^{-1}$ returns $Dp$, so we have that $Dp=z_i+\tau d_i\implies p=\h{z}_i+\tau\h{d}_i$. Thus, we want to compute $\tau$ such that $\|p\|=\Delta_k$ and minimizes the approximation function (the original one).
+
+The second and third breaking conditions work similarly, with the hatted version of the variables.
+\ssn{b}
+Suppose we have that $A=LDL^T$ for some $A$, where $D$ is composed of block diagonal elements of size at most $2$. If we let $\Lambda$ be a block diagonal matrix with the same structure as $D$. If the $i$th block of $D$ is size 1 and positive ($>\ep$), then let the $i$th block of $\Lambda$ be its square root. If the $i$th block of $D$ is size 2 and positive definite, the let the $i$th block of $\Lambda$ be the its Cholesky factor (which should be easy to compute analytically). Otherwise, let the diagonal of $\Lambda$ be composed of 1s. 
+
+Then, if we precondition with $\Lambda^{-1} L^{-1}AL^{-T}\Lambda^{-T}=\Lambda^{-1} D\Lambda^{-T}$, we manage to send all the positive eigenvalues of $D$ that aren't bound up in a indefinite block to $1$, which significantly reduces the number of distinct eigenvalues. In the preconditioning scheme, then, we'd have that $M^{-1}=\Lambda^{-1} L^{-1}L^{-T}\Lambda^{-T}$. If we include the permutation matrices into consideration, then $M^{-1}=\Lambda^{-1} L^{-1}P^TPL^{-T}\Lambda^{-T}$, which tells us that the permutation doesn't matter here.
+
+I implement this by having the CG routine take a function which computes $M^{-1}x$ as an argument, and write a function that computes $\Lambda$, then wraps it in a closure that computes $M^{-1}x$ through a series of solves and returns that. This avoids any matrix-matrix multiplication at all.
 \subsection*{2}
 Let $d$ be an arbitrary point in $\mathscr{F}(x^*)$. We want to show that $d$ is also in the tangent cone.
 
