@@ -53,11 +53,41 @@ For the first breaking condition ($d_i^TBd_i\leq0$), we just need to convert it 
 
 The second and third breaking conditions work similarly, with the hatted version of the variables.
 \ssn{b}
-Suppose we have that $A=LDL^T$ for some $A$, where $D$ is composed of block diagonal elements of size at most $2$. If we let $\Lambda$ be a block diagonal matrix with the same structure as $D$. If the $i$th block of $D$ is size 1 and positive ($>\ep$), then let the $i$th block of $\Lambda$ be its square root. If the $i$th block of $D$ is size 2 and positive definite, the let the $i$th block of $\Lambda$ be the its Cholesky factor (which should be easy to compute analytically). Otherwise, let the diagonal of $\Lambda$ be composed of 1s. 
+Suppose we have that $P^TAP=LDL^T$ for some $A$, where $D$ is composed of block diagonal elements of size at most $2$. If we let $\Lambda$ be a block diagonal matrix with the same structure as $D$. If the $i$th block of $D$ is size 1 and positive ($>\ep$), then let the $i$th block of $\Lambda$ be its square root. If the $i$th block of $D$ is size 2 and positive definite, the let the $i$th block of $\Lambda$ be the its Cholesky factor (which should be easy to compute analytically). Otherwise, let the diagonal of $\Lambda$ be composed of 1s. This will send the positive eigenvalues of $D$ which are not bound into indefinite blocks to $1$, which reduces the number of distinct eigenvalues.
 
-Then, if we precondition with $\Lambda^{-1} L^{-1}AL^{-T}\Lambda^{-T}=\Lambda^{-1} D\Lambda^{-T}$, we manage to send all the positive eigenvalues of $D$ that aren't bound up in a indefinite block to $1$, which significantly reduces the number of distinct eigenvalues. In the preconditioning scheme, then, we'd have that $M^{-1}=\Lambda^{-1} L^{-1}L^{-T}\Lambda^{-T}$. If we include the permutation matrices into consideration, then $M^{-1}=\Lambda^{-1} L^{-1}P^TPL^{-T}\Lambda^{-T}$, which tells us that the permutation doesn't matter here.
+Now, we have that there is some matrix $R$ with ``better'' eigenvalues such that $R=\Lambda^{-1}D\Lambda^{-T}$, or $R=\Lambda^{-1}L^{-1}P^TAPL^{-T}\Lambda^{-T}$. Our preconditioning matrix $C$ (sorry about the notation change from above -- I called the preconditioner $D$ in part (a)) then satisfies $C^{-T}=\Lambda^{-1}L^{-1}P^T$, or $C=\Lambda^TL^TP^T$. Thus, obtaining $C^{-1}C^{-T}x=y$ means solving the system $PL\Lambda\Lambda^TL^TP^Ty=x$. 
 
 I implement this by having the CG routine take a function which computes $M^{-1}x$ as an argument, and write a function that computes $\Lambda$, then wraps it in a closure that computes $M^{-1}x$ through a series of solves and returns that. This avoids any matrix-matrix multiplication at all.
+\ssn{c}
+Running it on sizes $\{100, 200, 400, 600, 1000, 2000, 3000\}$ with random starting points, $\h{\Delta}=10$, $\eta=0.2$, and $\ep=10^{-7}$, we have the following results for timing and average number of CG iterations:
+
+Non-preconditioned:
+
+\begin{tabular}{c|ccccccc}
+    $n$&100&200&400&600&1000&2000&3000\\
+    Time&0.0230&0.0297&0.0304&0.0315&0.0383&0.0555&0.1077\\
+    CG iters&16.8663&18.8310&16.6214&16.9496&18.1482&17.2296&16.6980\\
+\end{tabular}
+
+Preconditioned:
+
+\begin{tabular}{c|ccccccc}
+    $n$&100&200&400&600&1000&2000&3000\\
+    Time&0.0409&0.0789&0.1626&0.2547&0.5128&1.3180&2.2316\\
+    CG iters&1.0000&1.0000&1.0000&1.0175&1.0000&1.0000&1.0000\\
+\end{tabular}
+
+Looks like the preconditioning was a bit too powerful here. The CG loop finished in one iteration almost always, and the time shot way up, probably because there was a hot loop over $n$ in Matlab and some fancy stuff with closures. However, the un-preconditioned results already look pretty good -- 16 iterations for a Hessian with $n=3000$ makes me think that the Rosenbrock Hessian already has a pretty good spectrum for doing CG.
+\ssn{d}
+Below are two graphs showing the fractional decrease in the iterates, preconditioned on the left, unpreconditioned on the right, starting from a random point for $n=3000$.
+
+\includegraphics[width=0.5\textwidth]{hw9_files/pc_superlinear.png}
+\includegraphics[width=0.5\textwidth]{hw9_files/npc_superlinear.png}
+
+There is pretty good indication of superlinear convergence, and it shows up even more if we start from all negative ones:
+
+\includegraphics[width=0.5\textwidth]{hw9_files/ones_sl.png}
+
 \subsection*{2}
 Let $d$ be an arbitrary point in $\mathscr{F}(x^*)$. We want to show that $d$ is also in the tangent cone.
 

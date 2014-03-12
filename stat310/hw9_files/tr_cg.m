@@ -1,4 +1,4 @@
-function [xi, iters] = tr_cg(f, start, Dhat, eta, epsilon)
+function [xi, iters, cg_avg] = tr_cg(f, start, Dhat, eta, epsilon, pc)
     x = start;
     iters = 0;
     TR_size = Dhat;
@@ -8,7 +8,7 @@ function [xi, iters] = tr_cg(f, start, Dhat, eta, epsilon)
     xi = {x};
     xval_ctr = 2;
     updated = true;
-    
+    cg_avg = 0;
     while 1
         if norm(gx) < epsilon
             break
@@ -16,10 +16,15 @@ function [xi, iters] = tr_cg(f, start, Dhat, eta, epsilon)
         iters = iters + 1;
         if updated
             [fx, gx, Hx] = f(x, 2);
-            pc_fn = compute_preconditioner(Hx);
+            if pc
+                pc_fn = compute_preconditioner(Hx);
+            else
+                pc_fn = @(x)(x);
+            end
         end
         
-        pk = pcg_steihaug(fx, gx, Hx, TR_size, pc_fn);
+        [pk, i1] = pcg_steihaug(fx, gx, Hx, TR_size, pc_fn);
+        cg_avg = cg_avg + i1;
         old_fx = fx;
         
         fx = f(x+pk, 0);
@@ -42,5 +47,6 @@ function [xi, iters] = tr_cg(f, start, Dhat, eta, epsilon)
         end
         
     end
+    cg_avg = cg_avg / iters;
     
 end

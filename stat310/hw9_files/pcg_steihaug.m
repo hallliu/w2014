@@ -1,16 +1,17 @@
-function pk = pcg_steihaug(f, g, B, delta, m_solv)
+function [pk, iters] = pcg_steihaug(f, g, B, delta, m_solv)
     % m_solv is a function that computes M\x
-    epsilon = min(0.5, sqrt(norm(g))) * norm(g);
-    z = 0;
+    epsilon = min(0.005, sqrt(norm(g))) * norm(g);
+    z = zeros(length(g), 1);
     r = g;
     d = -m_solv(g);
-    y = d;
+    y = -d;
     if norm(r) < epsilon
         pk = zeros(length(g));
         return;
     end
-    
+    iters = 0;
     while (1)
+        iters = iters + 1;
         dbd = d.' * B * d;
         if dbd <= 0
             [tau1, tau2] = findtaus(z, d, delta);
@@ -26,10 +27,12 @@ function pk = pcg_steihaug(f, g, B, delta, m_solv)
         end
         
         alpha = r.' * y / dbd;
+        
+        old_z = z;
         z = z + alpha * d;
         
         if norm(z) >= delta
-            [tau1, tau2] = findtaus(z, d, delta);
+            [tau1, tau2] = findtaus(old_z, d, delta);
             if tau1 >= 0
                 pk = old_z + tau1 * d;
                 return;

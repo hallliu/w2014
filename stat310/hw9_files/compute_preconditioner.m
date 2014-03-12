@@ -1,5 +1,6 @@
 function f = compute_preconditioner(B)
-    [L, D, ~] = ldl(B, 'vector');
+    [L, D, p] = ldl(B, 'vector');
+
     % Loop through and compute the proper lambda matrix
     [n, ~] = size(D);
     Lambda = D;
@@ -14,6 +15,7 @@ function f = compute_preconditioner(B)
             i = i + 1;
             continue;
         end
+        
         if (D(i, i) <= 1e-5)
             Lambda(i:i+1, i:i+1) = eye(2);
         elseif D(i+1, i+1) < D(i, i+1)^2/D(i, i) + 1e-5
@@ -24,16 +26,19 @@ function f = compute_preconditioner(B)
             Lambda(i, i+1) = 0;
             Lambda(i+1, i+1) = sqrt(D(i+1, i+1) - D(i, i+1)^2/D(i, i));
         end
+        
         i = i + 2;
     end
-    f = @(x)(compute_mx(L, Lambda, x));
+    f = @(x)(compute_mx(L, Lambda, p, x));
 end
 
 
 % This function used to build the closure
-function y = compute_mx (L, Lambda, x)
-    y = Lambda.' \ x;
-    y = L.' \ y;
+function y = compute_mx (L, Lambda, p, x)
+    y = x(p);
     y = L \ y;
     y = Lambda \ y;
+    y = Lambda.' \ y;
+    y = L.' \ y;
+    y(p) = y;
 end
