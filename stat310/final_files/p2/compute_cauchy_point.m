@@ -1,7 +1,3 @@
-function [ inds, bp_list] = grad_proj(x, g, lower_bnds, G, c)
-    [inds, bp_list] = compute_cauchy_point(x, g, lower_bnds, G, c);
-end
-
 function [cp, active_set] = compute_cauchy_point(x, g, lower_bnds, G, c)
     bps = compute_breakpoints(x, g, lower_bnds).';
     [inds, bp_list] = get_active_bnds(bps);
