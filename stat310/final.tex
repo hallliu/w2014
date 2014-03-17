@@ -1,0 +1,59 @@
+\documentclass{article}
+\usepackage{geometry}
+\usepackage[namelimits,sumlimits]{amsmath}
+\usepackage{amssymb,amsfonts}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage[cm]{fullpage}
+\newcommand{\tab}{\hspace*{5em}}
+\newcommand{\conj}{\overline}
+\newcommand{\dd}{\partial}
+\newcommand{\ep}{\epsilon}
+\newcommand{\openm}{\begin{pmatrix}}
+\newcommand{\closem}{\end{pmatrix}}
+\DeclareMathOperator{\cov}{cov}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\im}{im}
+\DeclareMathOperator{\Span}{span}
+\DeclareMathOperator{\Null}{null}
+\newcommand{\nc}{\newcommand}
+\newcommand{\rn}{\mathbb{R}}
+\nc{\cn}{\mathbb{C}}
+\nc{\ssn}[1]{\subsubsection*{#1}}
+\nc{\inner}[2]{\langle #1,#2\rangle}
+\nc{\h}[1]{\widehat{#1}}
+\nc{\tl}[1]{\widetilde{#1}}
+\nc{\norm}[1]{\left\|{#1}\right\|}
+\begin{document}
+
+Name: Hall Liu
+
+Date: \today 
+\vspace{1.5cm}
+\subsection*{1}
+\ssn{a}
+If we wish to use the trust-region framework to solve this problem, the Hessian approximation in the problem is only a $9\times9$ matrix, which means that any reasonable operations on it will be very cheap and take an insignificant amount of effort compared to the effort of actually evaluating the function/Jacobian. Thus, a good way to solve the subproblem exactly would be to use the eigendecomposition method from (1) of the midterm, mostly since it's already been implemented. 
+
+Unfortunately, I was not able to get this algorithm to converge in any reasonable amount of time when not using the quasi-newton enhancement and with the provided starting point (I remember it being said that this problem is very sensitive to the choice of starting point). Thus, instead, I found a starting point that works, and ran the unenhanced algorithm from that starting point. The point in question is 
+$[0.4789,3.0474,0.5442,0.0146,-1.6093,0.5419,0.0514,0.2381,1.5101]$
+and the other parameters were $\h{\Delta}=1$, $\eta=0.2$, $c=0.5$, and the stopping criterion was $\|Jr\|_2<\ep=10^{-3}$. This converged in 
+\ssn{b}
+For this part, the quasi-newton enhancement did make the algorithm converge faster than plain LM for the above starting point, but it was difficult to see any evidence of superlinear convergence there. However, starting from the point provided on chalk with other parameters the same as above except $\ep=10^{-5}$, the plot of ratios of successive differences looks like
+
+\includegraphics[width=0.5\textwidth]{final_files/p1/1b_superlinear.png}
+
+which does indicate that there is evidence of superlinear convergence.
+\ssn{c}
+Here is the plot of the fit superimposed over the data:
+
+\includegraphics[width=\textwidth]{final_files/p1/1c_fit_data.png}
+
+It's kinda hard to tell if there's a good fit, but the annual pattern seems to fit fairly well, and if I squint hard enough, I can sorta see the longer-term trends lining up. Here are the residuals:
+
+\includegraphics[width=\textwidth]{final_files/p1/1c_resid_index.png}
+
+Not much of a discernable pattern here. This suggests that the model probably captured all the information there was in the data. The best-guesses for the periods of the other two cycles are the reciprocals of $\h{\beta}_4$ and $\h{\beta}_7$, which are $44.3$ months and $26.9$ months, respectively. (this is starting from the point given on chalk).
+\subsection*{2}
+
+
+\end{document}

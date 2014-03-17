@@ -4,6 +4,7 @@ function p1_plot_fit(b)
     hold on;
     scatter(1:168, data);
     hold off;
-    
+    figure(2);
+    scatter(1:168, res);
 end
 

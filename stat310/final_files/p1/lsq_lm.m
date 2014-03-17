@@ -26,7 +26,7 @@ function [xi, iters, t1, t2] = lsq_lm(start, Dhat, eta, c, epsilon, use_qn)
         end
         iters = iters + 1;
         
-        pk = calculate_pk(B, gx, c, 1e-6, TR_size);
+        pk = calculate_pk(B, gx, c, 1e-3, TR_size);
         
         old_fx = fx;
         old_gx = gx;
@@ -133,7 +133,7 @@ function [pk, lambda] = iterate_pk(Q, D, gx, c, epsilon, TR_size)
         return
     end
     
-    lambda = (abs(eigs(1))+1) * 1.5; % initial value for lambda, kinda arbitrary
+    lambda = (abs(eigs(1))+3) * 3; % initial value for lambda, kinda arbitrary
     [phi2, dphi2] = phi2_fn(lambda, qtg, eigs, TR_size);
     while abs(phi2) > epsilon
         other_lambda = lambda - phi2 / dphi2;
