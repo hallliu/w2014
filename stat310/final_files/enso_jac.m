@@ -2,7 +2,7 @@ function J = enso_jac(b)
     xs = 1:168;
     J = zeros(168, 9);
     for x=xs
-        J(x, :) = grad_resid(x, b);
+        J(x, :) = -grad_resid(x, b);
     end
 end
 
