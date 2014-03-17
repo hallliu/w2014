@@ -26,16 +26,13 @@ function [xi, iters, t1, t2] = lsq_lm(start, Dhat, eta, c, epsilon, use_qn)
         end
         iters = iters + 1;
         
-        pk = calculate_pk(B, gx, c, 1e-7, TR_size);
+        pk = calculate_pk(B, gx, c, 1e-6, TR_size);
         
         old_fx = fx;
         old_gx = gx;
         old_J = J;
         
-        norm(gx) % debug
-        if mod(iters, 10) == 0
-            iters;
-        end
+        norm(gx)
         
         tic;
         [fx, gx, J, res] = calc_vals(x + pk);
@@ -119,11 +116,14 @@ function pk = calculate_pk(B, gx, c, epsilon, TR_size)
     end
 end
 
-function pk = iterate_pk(Q, D, gx, c, epsilon, TR_size)
+function [pk, lambda] = iterate_pk(Q, D, gx, c, epsilon, TR_size)
     qtg = Q.' * gx;
     eigs = diag(D);
     % This is checking the "hard case" in the book
     l1_inds = eigs - eigs(1) < 1e-8;
+    if norm(gx) < 1e-3
+        norm(gx);
+    end
     
     if all(abs(qtg(l1_inds)) < 1e-10)
         upper = qtg(~l1_inds);
