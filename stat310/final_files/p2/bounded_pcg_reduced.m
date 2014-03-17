@@ -6,7 +6,7 @@
 % lower_bnds is a list of lower-bound constraints
 % precondition is a flag that tells the CG program whether to precondition
 
-function x = bounded_pcg_reduced(G, c, start, actives, lower_bnds, precondition)
+function [x, cg_iters] = bounded_pcg_reduced(G, c, start, actives, lower_bnds, precondition)
     % It's really easy to compute the null space of the constraint matrix:
     % it's just the standard basis vectors corresponding to the inactive
     % constraints.
@@ -22,8 +22,7 @@ function x = bounded_pcg_reduced(G, c, start, actives, lower_bnds, precondition)
     
     % See what we can do with the preconditioner
     if precondition
-        W = diag(diag(G));
-        W = W(~actives, ~actives);
+        W = ZGZ;
     else
         W = i0(~actives, ~actives);
     end
@@ -35,7 +34,9 @@ function x = bounded_pcg_reduced(G, c, start, actives, lower_bnds, precondition)
     g = W \ r;
     d = -g;
     
+    cg_iters = 0;
     while 1
+        cg_iters = cg_iters + 1;
         % I'm pretty sure G is always positive-definite in this problem
         % so there's no need to correct for bad curvature.
         alpha = r.' * g / (d.' * ZGZ * d);
