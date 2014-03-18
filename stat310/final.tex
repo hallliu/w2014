@@ -4,6 +4,7 @@
 \usepackage{amssymb,amsfonts}
 \usepackage{multicol}
 \usepackage{graphicx}
+\usepackage{mathrsfs}
 \usepackage[cm]{fullpage}
 \newcommand{\tab}{\hspace*{5em}}
 \newcommand{\conj}{\overline}
@@ -54,16 +55,16 @@ It's kinda hard to tell if there's a good fit, but the annual pattern seems to f
 
 Not much of a discernable pattern here. This suggests that the model probably captured all the information there was in the data. The best-guesses for the periods of the other two cycles are the reciprocals of $\h{\beta}_4$ and $\h{\beta}_7$, which are $44.3$ months and $26.9$ months, respectively. (this is starting from the point given on chalk).
 \subsection*{2}
-In the CG iteration, the remaining inequality constraints were dealt with by simply stopping the iteration and returning when the current point strayed beyond one of the bounds. Execution times for $n$ up to 100 are below. After running through the profiler, it turns out that most of the time was spent in the hot loop in \verb|get_active_bnds|, which is kinda unfortunate because otherwise I'd be able to work on much bigger values of $n$. 
+In the CG iteration, the remaining inequality constraints were dealt with by simply stopping the iteration and returning when the current point strayed beyond one of the bounds. Execution times for $n$ up to 100 are below. After running through the profiler, it turns out that most of the time was spent in the hot loop in \verb|get_active_bnds|, which is kinda unfortunate because otherwise I'd be able to work on much bigger values of $n$. Stopping conditions simply amount to checking that the inactive coordinates of the gradient are zero or close to so.
 
 For speeding up the iteration, I decided to use the ideal preconditioner ($Z^TGZ$) because $Z$ is so simple that this product is as easy as slicing $G$, and $G$ is so sparse that doing the solve isn't very expensive. It also seems to have the added benefit of not straying outside the inequality bounds so that the CG loop gets to a point way closer to the optimal point, which in turn reduces the number of gradient projections, which are the thing that takes up the most time.
 
 \begin{tabular}{c|cccccc}
     $n$&4&8&16&32&64&100\\
     \hline
-    No preconditioner&0.0061&0.0157&0.0408&0.1738&1.7346&7.8431\\
+    No preconditioner&0.2568&0.0166&0.0414&0.1984&1.7779&7.8181
     \hline
-    Preconditioned&0.0013&0.0021&0.0066&0.0353&0.4695&1.8562\\
+    Preconditioned&0.0020&0.0029&0.0080&0.0407&0.4883&2.0842
 \end{tabular}
 
 Note that this algorithm produces a monotone increase in the size of the active set of constraints -- once the gradient projection finds a local minimum that's constrained on an additional coordinate, the subsequent CG iteration will keep it within that constrained surface, and subsequent starting points will also be located on that constrained surface. Thus, once we get to the correct set of active constraints, the CG iteration should be able to hone in on the optimal point. 
@@ -78,8 +79,19 @@ For this problem, I'm choosing to use the interior point method outlined in sect
 
 Reformulating the problem in standard constrained QP format, let $r=\openm w\\b\closem\in\rn^{m+1}$, with $w\in\rn^m$ and $b\in\rn$. Then, the problem becomes 
 \begin{align*}
-    \text{Minimize }f(r)&=\frac{1}{2}r^T\openm I&0\\0&0\closem r\\
+    \text{Minimize }f(r)&=\frac{1}{2}r^TGr,\ \text{where }G=\openm I&0\\0&0\closem\\
     \text{subject to }Ar&\geq\openm 1\\\vdots\\1\closem\\
     \text{where }A&=\openm y_1x_1^T&1\\y_2x_2^T&1\\\vdots&\vdots\\y_nx_n^T&1\closem\\
 \end{align*}
+By the form of $A$, it seems that this will be a fairly dense problem, as the provided $x_i$ are composed of zeros and ones with a good proportion of ones. 
+
+My intent is to follow the framework in algorithm (16.4) in the textbook, with equal step lengths and modification of the provided starting point. The work then is in determining how to solves the systems to obtain the affine scaling step and the actual step. 
+
+In this problem, we have that $m=123$, so that even if we take $n=1000$, we have at most a $1123$ by $1123$ dense matrix on our hands if we decide to go the route of solving (16.61). This seems like a fairly managably operation, seeing as an LDL factorization on matrices around this size take less than a second. However, larger values of $n$ might not do so well, as taking $n=30000$ would be pushing the limits on the size of machine memory. In that case, a projected CG approach like the book suggests might do better.
+
+Here, though, I'm just going to go the route of the direct solution. To solve for the affine scaling step, we solve the system
+\[\openm G&A^T\\A&-\Lambda^{-1}\mathscr{Y}\closem\openm\Delta x\\-\Delta\lambda\closem=\openm -Gx-A^T\lambda\\-Ax+e\closem\]
+where $e$ is the $n$-vector of all $1$s. To solve for the actual step, transform (16.67) to the a form similar above to obtain
+\[\openm G&A^T\\A&-\Lambda^{-1}\mathscr{Y}\closem\openm\Delta x\\-\Delta\lambda\closem=\openm-Gx-A^T\lambda\\-\Lambda^{-1}\Delta\Lambda^\text{aff}\Delta y^\text{aff}+\sigma\mu\Lambda^{-1}e-Ax+e\closem\]
+Due to the diagonal nature of all of these matrices except for $A$, the code will not contain explicit matrix-vector multiplications for the most part.
 \end{document}
