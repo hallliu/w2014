@@ -3,10 +3,7 @@ function [cp, active_set] = compute_cauchy_point(x, g, lower_bnds, G, c)
     [inds, bp_list] = get_active_bnds(bps);
     active_set = false(1, length(g));
     for i = 1:(length(bp_list) - 1)
-        this_ind_activations = inds(i);
-        while (~this_ind_activations.isEmpty())
-            active_set(this_ind_activations.pop()) = true;
-        end
+        active_set(inds{i}) = true;
         cp = find_local_min(x, g, bps, bp_list(i), bp_list(i+1), active_set, G, c);
         if ~isnan(cp)
             break;
@@ -55,23 +52,17 @@ end
 
 % Computes which components of the gradient become active at any particular
 % subinterval.
-% inds is an array of linked lists the same length as bp_list which contain at each
+% inds is a cell array the same length as bp_list which contain at each
 % entry the components that become active on the subinterval starting
 % at that entry in bp_list.
 function [inds, bp_list] = get_active_bnds(ti)
-    import java.util.LinkedList;
     [bp_list, ~, ic] = unique(ti);
     bp_list = [0; bp_list];
-    inds = javaArray('java.util.LinkedList', length(bp_list));
-    for i = 1:length(inds)
-        inds(i) = LinkedList();
-    end
     
-    for i = 1:length(ti)
-        i2 = ic(i);
-        inds(i2+1).push(i);
+    inds = cell(1, length(bp_list));
+    for i = 2:length(inds)
+        inds{i} = find(ic == i - 1);
     end
-    
 end
 
 function ti = compute_breakpoints(x, g, lower_bnds)
