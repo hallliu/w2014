@@ -62,9 +62,9 @@ For speeding up the iteration, I decided to use the ideal preconditioner ($Z^TGZ
 \begin{tabular}{c|cccccc}
     $n$&4&8&16&32&64&100\\
     \hline
-    No preconditioner&0.2568&0.0166&0.0414&0.1984&1.7779&7.8181
+    No preconditioner&0.2568&0.0166&0.0414&0.1984&1.7779&7.8181\\
     \hline
-    Preconditioned&0.0020&0.0029&0.0080&0.0407&0.4883&2.0842
+    Preconditioned&0.0020&0.0029&0.0080&0.0407&0.4883&2.0842\\
 \end{tabular}
 
 Note that this algorithm produces a monotone increase in the size of the active set of constraints -- once the gradient projection finds a local minimum that's constrained on an additional coordinate, the subsequent CG iteration will keep it within that constrained surface, and subsequent starting points will also be located on that constrained surface. Thus, once we get to the correct set of active constraints, the CG iteration should be able to hone in on the optimal point. 
@@ -81,17 +81,19 @@ Reformulating the problem in standard constrained QP format, let $r=\openm w\\b\
 \begin{align*}
     \text{Minimize }f(r)&=\frac{1}{2}r^TGr,\ \text{where }G=\openm I&0\\0&0\closem\\
     \text{subject to }Ar&\geq\openm 1\\\vdots\\1\closem\\
-    \text{where }A&=\openm y_1x_1^T&1\\y_2x_2^T&1\\\vdots&\vdots\\y_nx_n^T&1\closem\\
+    \text{where }A&=\openm y_1x_1^T&y_1\\y_2x_2^T&y_2\\\vdots&\vdots\\y_nx_n^T&y_n\closem\\
 \end{align*}
 By the form of $A$, it seems that this will be a fairly dense problem, as the provided $x_i$ are composed of zeros and ones with a good proportion of ones. 
 
 My intent is to follow the framework in algorithm (16.4) in the textbook, with equal step lengths and modification of the provided starting point. The work then is in determining how to solves the systems to obtain the affine scaling step and the actual step. 
 
-In this problem, we have that $m=123$, so that even if we take $n=1000$, we have at most a $1123$ by $1123$ dense matrix on our hands if we decide to go the route of solving (16.61). This seems like a fairly managably operation, seeing as an LDL factorization on matrices around this size take less than a second. However, larger values of $n$ might not do so well, as taking $n=30000$ would be pushing the limits on the size of machine memory. In that case, a projected CG approach like the book suggests might do better.
+In this problem, we have that $m=123$, so that even if we take $n=1000$, we have a $1123$ by $1123$ dense matrix on our hands if we decide to go the route of solving (16.61). This seems like a fairly managably operation, seeing as an LDL factorization on matrices around this size take less than a second. However, larger values of $n$ might not do so well, as taking $n=30000$ would be pushing the limits on the size of machine memory. In that case, a projected CG approach like the book suggests might do better.
 
 Here, though, I'm just going to go the route of the direct solution. To solve for the affine scaling step, we solve the system
-\[\openm G&A^T\\A&-\Lambda^{-1}\mathscr{Y}\closem\openm\Delta x\\-\Delta\lambda\closem=\openm -Gx-A^T\lambda\\-Ax+e\closem\]
+\[\openm G&A^T\\A&-\Lambda^{-1}\mathscr{Y}\closem\openm\Delta x\\-\Delta\lambda\closem=\openm -Gx+A^T\lambda\\-Ax+e\closem\]
 where $e$ is the $n$-vector of all $1$s. To solve for the actual step, transform (16.67) to the a form similar above to obtain
 \[\openm G&A^T\\A&-\Lambda^{-1}\mathscr{Y}\closem\openm\Delta x\\-\Delta\lambda\closem=\openm-Gx-A^T\lambda\\-\Lambda^{-1}\Delta\Lambda^\text{aff}\Delta y^\text{aff}+\sigma\mu\Lambda^{-1}e-Ax+e\closem\]
 Due to the diagonal nature of all of these matrices except for $A$, the code will not contain explicit matrix-vector multiplications for the most part.
+
+As for stopping conditions, the gradient of the Lagrangian at some $r$ is $Gr - \lambda^T A$. 
 \end{document}
