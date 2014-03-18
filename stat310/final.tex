@@ -74,5 +74,12 @@ Finally, here's a picture with $n=200$ done by the preconditioned version:
 
 \includegraphics[width=\textwidth]{final_files/p2/obstacle_200.png}
 \subsection*{3}
+For this problem, I'm choosing to use the interior point method outlined in section 16.6 and solving the problem in its primal form. First, in the primal form, the problem is particularly simple, with $G$ being the identity and $b$ zero. Second, it seems like a more direct approach than the augmented Lagrangian method, as the latter involves an extra layer of iteration (granted, with preconditioning in place, solving the box-bounded problem doesn't take many repeats, but it's still extra work). 
 
+Reformulating the problem in standard constrained QP format, let $r=\openm w\\b\closem\in\rn^{m+1}$, with $w\in\rn^m$ and $b\in\rn$. Then, the problem becomes 
+\begin{align*}
+    \text{Minimize }f(r)&=\frac{1}{2}r^T\openm I&0\\0&0\closem r\\
+    \text{subject to }Ar&\geq\openm 1\\\vdots\\1\closem\\
+    \text{where }A&=\openm y_1x_1^T&1\\y_2x_2^T&1\\\vdots&\vdots\\y_nx_n^T&1\closem\\
+\end{align*}
 \end{document}
