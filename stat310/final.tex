@@ -53,7 +53,7 @@ It's kinda hard to tell if there's a good fit, but the annual pattern seems to f
 
 \includegraphics[width=\textwidth]{final_files/p1/1c_resid_index.png}
 
-Not much of a discernable pattern here. This suggests that the model probably captured all the information there was in the data. The best-guesses for the periods of the other two cycles are the reciprocals of $\h{\beta}_4$ and $\h{\beta}_7$, which are $44.3$ months and $26.9$ months, respectively. (this is starting from the point given on chalk).
+It's hard to tell, but it looks like there might be another wavy pattern in there, which means that there might be another cycle that the model didn't account for. The best-guesses for the periods of the two cycles are the reciprocals of $\h{\beta}_4$ and $\h{\beta}_7$, which are $44.3$ months and $26.9$ months, respectively. (this is starting from the point given on chalk).
 \subsection*{2}
 In the CG iteration, the remaining inequality constraints were dealt with by simply stopping the iteration and returning when the current point strayed beyond one of the bounds. Execution times for $n$ up to 100 are below. After running through the profiler, it turns out that most of the time was spent in the hot loop in \verb|get_active_bnds|, which is kinda unfortunate because otherwise I'd be able to work on much bigger values of $n$. Stopping conditions simply amount to checking that the inactive coordinates of the gradient are zero or close to so.
 
@@ -103,6 +103,7 @@ Due to the diagonal nature of all of these matrices except for $A$, the code wil
 As for stopping conditions, we just need to make sure we satisfy the KKT conditions (16.55). For some provided $\ep$, the stopping condition is if (16.55a,b,c) all have norm less than $\ep$.
 \ssn{b}
 For all the timing results below, I took $C=200$ and $\ep=10^{-3}$ (since lower values of $C$ seemed to produce faster convergence rates). 
+
 \begin{tabular}{c|ccccccc}
     $n$&200&400&600&800&1000&1500&2000\\
     Time&0.3288&1.5629&3.8450&7.4499&17.2098&49.1102&97.1836\\
