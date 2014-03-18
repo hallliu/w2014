@@ -8,12 +8,12 @@ function x = p3_int_point(M, q, start, C, epsilon)
     [n, m] = size(M);
     G = diag([ones(m,1); zeros(n+1,1)]);
     c = [zeros(m+1, 1); C * ones(n, 1)];
-    A = [bsxfun(@times, q, M) q -eye(n); zeros(n, m) zeros(n, 1) eye(n)];
+    A = [bsxfun(@times, q, M) q eye(n); zeros(n, m) zeros(n, 1) eye(n)];
     b = [ones(n, 1); zeros(n, 1)];
     
     x = start(1:m+n+1);
-    y = start(m+n+2:m+2*n+1);
-    lambda = start(m+2*n+2:m+3*n+1);
+    y = start(m+n+2:m+3*n+1);
+    lambda = start(m+3*n+2:m+5*n+1);
     
     % Do the recommended correction to the starting point
     [dxaff, dyaff, dlaff] = compute_affine_scaling(G, A, b, c, x, y, lambda);
@@ -23,9 +23,9 @@ function x = p3_int_point(M, q, start, C, epsilon)
     
     % Start looping
     while 1
-        grad_l = G*x - A.' * lambda;
+        grad_l = G*x - A.' * lambda + c;
         norm(grad_l)
-        if norm(grad_l) < epsilon && norm(A*x - y - ones(n, 1)) < epsilon && norm(y .* lambda) < epsilon
+        if norm(grad_l) < epsilon && norm(A*x - y - b) < epsilon && norm(y .* lambda) < epsilon
             break;
         end
         [dxaff, dyaff, dlaff] = compute_affine_scaling(G, A, b, c, x, y, lambda);
@@ -35,7 +35,7 @@ function x = p3_int_point(M, q, start, C, epsilon)
         sigma = (muaff / mu)^3;
         [dx, dy, dl] = compute_step(G, A, b, c, x, y, lambda, dyaff, dlaff, sigma, mu);
    
-        tau = 0.2;%1/(1+exp(-0.001/norm(grad_l)));
+        tau = 0.8;%1/(1+exp(-0.001/norm(grad_l)));
         alpha = get_maxmult([tau * y; tau * lambda], [dy; dl]);
         x = x + alpha * dx;
         y = y + alpha * dy;
@@ -62,8 +62,15 @@ function [dxaff, dyaff, dlaff] = compute_affine_scaling(G, A, b, c, x, y, lambda
     v1 = -rd + A.' * v1;
     
     dxaff = X \ v1;
-    dlaff = -lambda .* (y - (A * dxaff) - rp) ./ y;
+    dlaff = -lambda .* (y + (A * dxaff) + rp) ./ y;
     dyaff = A * dxaff + rp;
+    %{
+    [n, m] = size(A);
+    K = [G zeros(m, n) -A.'; A -eye(n) zeros(n, n); zeros(n, m) diag(lambda) diag(y)];
+    vl = [dxaff; dyaff; dlaff];
+    vr = [-rd; -rp; -lambda .* y];
+    norm(K*vl - vr)
+    %}
 end
 
 function [dx, dy, dl] = compute_step(G, A, b, c, x, y, lambda, dyaff, dlaff, sigma, mu)
@@ -73,13 +80,20 @@ function [dx, dy, dl] = compute_step(G, A, b, c, x, y, lambda, dyaff, dlaff, sig
 
     rd = G*x - A.'*lambda + c;
     rp = A*x - y - b;
-    rl = -lambda .* y - dyaff .* dlaff + sigma*mu*ones(length(y));
+    rl = -lambda .* y - dyaff .* dlaff + sigma*mu*ones(length(y), 1);
     
     v = -rd + A.' * (rl ./ y) - A.' * (lambda .* rp ./ y);
     
     dx = X \ v;
-    dl = (rl  - lambda.*(A * dx) - lambda * rp) ./ y;
+    dl = (rl  - lambda.*(A * dx) - lambda .* rp) ./ y;
     dy = A * dx + rp;
+    %{
+    [n, m] = size(A);
+    K = [G zeros(m, n) -A.'; A -eye(n) zeros(n, n); zeros(n, m) diag(lambda) diag(y)];
+    vl = [dx;dy;dl];
+    vr = [-rd; -rp; rl];
+    norm(K * vl - vr)
+    %}
 end
 
 %{
