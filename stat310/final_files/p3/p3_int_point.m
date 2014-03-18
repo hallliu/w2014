@@ -35,7 +35,7 @@ function x = p3_int_point(M, q, start, C, epsilon)
         sigma = (muaff / mu)^3;
         [dx, dy, dl] = compute_step(G, A, b, c, x, y, lambda, dyaff, dlaff, sigma, mu);
    
-        tau = 0.8;%1/(1+exp(-0.001/norm(grad_l)));
+        tau = 0.8;
         alpha = get_maxmult([tau * y; tau * lambda], [dy; dl]);
         x = x + alpha * dx;
         y = y + alpha * dy;

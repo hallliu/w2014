@@ -75,25 +75,38 @@ Finally, here's a picture with $n=200$ done by the preconditioned version:
 
 \includegraphics[width=\textwidth]{final_files/p2/obstacle_200.png}
 \subsection*{3}
-For this problem, I'm choosing to use the interior point method outlined in section 16.6 and solving the problem in its primal form. First, in the primal form, the problem is particularly simple, with $G$ being the identity and $b$ zero. Second, it seems like a more direct approach than the augmented Lagrangian method, as the latter involves an extra layer of iteration (granted, with preconditioning in place, solving the box-bounded problem doesn't take many repeats, but it's still extra work). 
+\ssn{a}
+For this problem, I'm choosing to use the interior point method outlined in section 16.6 and solving the problem in its primal form. First, in the primal form, the problem is particularly simple, with $G$ being mostly the identity and $b$ zeros and $C$s. Second, it seems like a more direct approach than the augmented Lagrangian method, as the latter involves an extra layer of iteration (granted, with preconditioning in place, solving the box-bounded problem doesn't take many repeats, but it's still extra work). 
 
-Reformulating the problem in standard constrained QP format, let $r=\openm w\\b\closem\in\rn^{m+1}$, with $w\in\rn^m$ and $b\in\rn$. Then, the problem becomes 
+Reformulating the problem in standard constrained QP format, let $r=\openm w\\b\\\xi\closem\in\rn^{m+n+1}$, with $w\in\rn^m$, $b\in\rn$, and $\xi\in\rn^n$. Then, the problem becomes 
 \begin{align*}
-    \text{Minimize }f(r)&=\frac{1}{2}r^TGr,\ \text{where }G=\openm I&0\\0&0\closem\\
-    \text{subject to }Ar&\geq\openm 1\\\vdots\\1\closem\\
-    \text{where }A&=\openm y_1x_1^T&y_1\\y_2x_2^T&y_2\\\vdots&\vdots\\y_nx_n^T&y_n\closem\\
+    \text{Minimize }f(r)&=\frac{1}{2}r^TGr+r^Tc,\ \text{where }G=\openm I_n&0\\0&0\closem\text{ and }c=\openm1_n\\0_n\closem\\
+    \text{subject to }Ar&\geq\openm1_n\\0_n\closem\\
+    \text{where }A&=\openm y_1x_1^T&y_1&e_1\\y_2x_2^T&y_2&e_2\\\vdots&\vdots&\vdots\\y_nx_n^T&y_n&e_n\\0&0&e_1\\0&0&e_2\\\vdots&\vdots&\vdots\\0&0&e_n\closem\\
 \end{align*}
-By the form of $A$, it seems that this will be a fairly dense problem, as the provided $x_i$ are composed of zeros and ones with a good proportion of ones. 
+By the form of $A$, it seems like it probably won't be worth it to do this problem in sparse linear algebra, seeing as the upper left block of $A$ is pretty dense. 
 
 My intent is to follow the framework in algorithm (16.4) in the textbook, with equal step lengths and modification of the provided starting point. The work then is in determining how to solves the systems to obtain the affine scaling step and the actual step. 
 
-In this problem, we have that $m=123$, so that even if we take $n=1000$, we have a $1123$ by $1123$ dense matrix on our hands if we decide to go the route of solving (16.61). This seems like a fairly managably operation, seeing as an LDL factorization on matrices around this size take less than a second. However, larger values of $n$ might not do so well, as taking $n=30000$ would be pushing the limits on the size of machine memory. In that case, a projected CG approach like the book suggests might do better.
+In this problem, we have that $m=123$, so that even if we take $n=1000$, we have that the length of $x$, $y$, and $\lambda$ put together is only $5123$. If we use the normal equations form as in (16.62), the resulting matrix we need to perform a solve on has the same shape as $G$, or $1124\times1124$. This seems like a fairly managable operation, seeing as an LDL factorization on matrices around this size take less than a second. However, larger values of $n$ might not do so well, as taking $n=30000$ would be pushing the limits on the size of machine memory, especially on the storage of $A$. In that case, a projected CG approach like the book suggests might do better.
 
 Here, though, I'm just going to go the route of the direct solution. To solve for the affine scaling step, we solve the system
-\[\openm G&A^T\\A&-\Lambda^{-1}\mathscr{Y}\closem\openm\Delta x\\-\Delta\lambda\closem=\openm -Gx+A^T\lambda\\-Ax+e\closem\]
-where $e$ is the $n$-vector of all $1$s. To solve for the actual step, transform (16.67) to the a form similar above to obtain
-\[\openm G&A^T\\A&-\Lambda^{-1}\mathscr{Y}\closem\openm\Delta x\\-\Delta\lambda\closem=\openm-Gx-A^T\lambda\\-\Lambda^{-1}\Delta\Lambda^\text{aff}\Delta y^\text{aff}+\sigma\mu\Lambda^{-1}e-Ax+e\closem\]
+\[(G+A^T\mathscr{Y}^{-1}\Lambda A)\Delta x^\text{aff}=-r_d+A^T\mathscr{Y}^{-1}\Lambda(-r_p-y)\]
+where $r_d$ and $r_p$ are defined similarly as in the book. To obtain $\Delta\lambda^\text{aff}$, compute $\Lambda\mathscr{Y}^{-1}(y+A\Delta x^\text{aff}+r_p)$, and similarly $\Delta y^\text{aff}=A\Delta x^\text{aff}+r_p$. 
+
+To solve for the actual step, transform (16.67) to the a form similar above to obtain
+\[(G+A^T\mathscr{Y}^{-1}\Lambda A)\Delta x=-r_d+A^T\mathscr{Y}^{-1}(r_l-\Lambda r_p)\]
+where $r_l$ is the last entry on the RHS of (16.67). Then, we have that $\Delta\lambda=\mathscr{Y}^{-1}(r_l-\Lambda A\Delta x-\Lambda r_p)$ and $\Delta y=A\Delta x+r_p$.
+
 Due to the diagonal nature of all of these matrices except for $A$, the code will not contain explicit matrix-vector multiplications for the most part.
 
-As for stopping conditions, the gradient of the Lagrangian at some $r$ is $Gr - \lambda^T A$. 
+As for stopping conditions, we just need to make sure we satisfy the KKT conditions (16.55). For some provided $\ep$, the stopping condition is if (16.55a,b,c) all have norm less than $\ep$.
+\ssn{b}
+For all the timing results below, I took $C=200$ and $\ep=10^{-3}$ (since lower values of $C$ seemed to produce faster convergence rates). 
+\begin{tabular}{c|ccccccc}
+    $n$&200&400&600&800&1000&1500&2000\\
+    Time&0.3288&1.5629&3.8450&7.4499&17.2098&49.1102&97.1836\\
+\end{tabular}
+
+Using the hyperplane parameters from the $n=2000$ case, I classified the rest of the provided data set and compared them to the actual labels. The misclassified examples constituted about $16\%$. Looking up the a9a data set online, I found various measures of accuracy on this data set, which were mostly around the $84\%$ that I managed to get. The $w$ and $b$ parameters are stored in a file called \verb|p3_params.csv| in \verb|w2014:stat310/final_files/p3| on my GitHub (https://github.com/hallliu/w2014), since it would be somewhat pointless to print these numbers out.
 \end{document}
