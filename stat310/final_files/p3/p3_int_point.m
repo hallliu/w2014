@@ -1,21 +1,22 @@
 % Parameters: 
 % start is some arbitrary starting point, specifying x, y, and lambda
 % epsilon is the stopping tolerance
-% M and c are the data matrix and label vector
+% M and q are the data matrix and label vector
  
-function x = p3_int_point(start, epsilon, M, c)
+function x = p3_int_point(M, q, start, C, epsilon)
     % First compute the necessary matrices
     [n, m] = size(M);
-    G = eye(m+1);
-    G(m+1, m+1) = 0;
-    A = [bsxfun(@times, c, M) c];
+    G = diag([ones(m,1); zeros(n+1,1)]);
+    c = [zeros(m+1, 1); C * ones(n, 1)];
+    A = [bsxfun(@times, q, M) q -eye(n); zeros(n, m) zeros(n, 1) eye(n)];
+    b = [ones(n, 1); zeros(n, 1)];
     
-    x = start(1:m+1);
-    y = start(m+2:m+n+1);
-    lambda = start(m+n+2:m+2*n+1);
+    x = start(1:m+n+1);
+    y = start(m+n+2:m+2*n+1);
+    lambda = start(m+2*n+2:m+3*n+1);
     
     % Do the recommended correction to the starting point
-    [dxaff, dyaff, dlaff] = compute_affine_scaling(G, A, x, y, lambda);
+    [dxaff, dyaff, dlaff] = compute_affine_scaling(G, A, b, c, x, y, lambda);
 
     y = max(1, abs(y + dyaff));
     lambda = max(1, abs(lambda+dlaff));
@@ -27,12 +28,12 @@ function x = p3_int_point(start, epsilon, M, c)
         if norm(grad_l) < epsilon && norm(A*x - y - ones(n, 1)) < epsilon && norm(y .* lambda) < epsilon
             break;
         end
-        [dxaff, dyaff, dlaff] = compute_affine_scaling(G, A, x, y, lambda);
+        [dxaff, dyaff, dlaff] = compute_affine_scaling(G, A, b, c, x, y, lambda);
         mu = y.' * lambda / n;
         aaff = get_maxmult([y; lambda], [dyaff; dlaff]);
         muaff = (y + aaff*dyaff).' * (lambda + aaff*dlaff) / n;
         sigma = (muaff / mu)^3;
-        [dx, dy, dl] = compute_step(G, A, x, y, lambda, dyaff, dlaff, sigma, mu);
+        [dx, dy, dl] = compute_step(G, A, b, c, x, y, lambda, dyaff, dlaff, sigma, mu);
    
         tau = 0.2;%1/(1+exp(-0.001/norm(grad_l)));
         alpha = get_maxmult([tau * y; tau * lambda], [dy; dl]);
@@ -49,30 +50,36 @@ function alpha = get_maxmult(a, da)
     alpha = min(rs);
 end
 
-function [dxaff, dyaff, dlaff] = compute_affine_scaling(G, A, x, y, lambda)
-    [n, m] = size(A);
+function [dxaff, dyaff, dlaff] = compute_affine_scaling(G, A, b, c, x, y, lambda)
     M2 = bsxfun(@times, lambda./y, A);
     M2 = A.' * M2;
     X = G + M2;
     
-    v1 = -G * x + A.' * lambda - A.' * ((lambda .* (A*x)) ./ y) + A.' * (lambda ./ y);
+    rd = G*x - A.'*lambda + c;
+    rp = A*x - y - b;
+    
+    v1 = lambda .* (-rp - y) ./ y;
+    v1 = -rd + A.' * v1;
+    
     dxaff = X \ v1;
-    dlaff = lambda .* (-A * (x + dxaff) + ones(n, 1)) ./ y;
-    dyaff = A * dxaff + A*x - y - ones(n, 1);
+    dlaff = -lambda .* (y - (A * dxaff) - rp) ./ y;
+    dyaff = A * dxaff + rp;
 end
 
-function [dx, dy, dl] = compute_step(G, A, x, y, lambda, dyaff, dlaff, sigma, mu)
+function [dx, dy, dl] = compute_step(G, A, b, c, x, y, lambda, dyaff, dlaff, sigma, mu)
     M2 = bsxfun(@times, lambda./y, A);
     M2 = A.' * M2;
     X = G + M2;
 
-    v1 = -G * x + A.' * lambda - A.' * ((dlaff .* dyaff) ./ y) + sigma*mu*(A.' * (1./y));
-    v1 = v1 - A.' * ((lambda .* (A*x)) ./ y) + A.' * (lambda ./ y);
+    rd = G*x - A.'*lambda + c;
+    rp = A*x - y - b;
+    rl = -lambda .* y - dyaff .* dlaff + sigma*mu*ones(length(y));
     
-    dx = X \ v1;
-    dl = -lambda .* (A * (x+dx)) ./ y - ((dlaff .* dyaff) ./ y) + (sigma * mu ./ y) + lambda ./ y;
-    dy = A * dx + A*x - y - ones(length(y), 1);
-
+    v = -rd + A.' * (rl ./ y) - A.' * (lambda .* rp ./ y);
+    
+    dx = X \ v;
+    dl = (rl  - lambda.*(A * dx) - lambda * rp) ./ y;
+    dy = A * dx + rp;
 end
 
 %{
