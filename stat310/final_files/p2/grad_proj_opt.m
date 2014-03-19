@@ -13,4 +13,3 @@ function x = grad_proj_opt(G, c, lower_bnds, start, epsilon, pc)
     end
 
 end
-

@@ -64,13 +64,6 @@ function [dxaff, dyaff, dlaff] = compute_affine_scaling(G, A, b, c, x, y, lambda
     dxaff = X \ v1;
     dlaff = -lambda .* (y + (A * dxaff) + rp) ./ y;
     dyaff = A * dxaff + rp;
-    %{
-    [n, m] = size(A);
-    K = [G zeros(m, n) -A.'; A -eye(n) zeros(n, n); zeros(n, m) diag(lambda) diag(y)];
-    vl = [dxaff; dyaff; dlaff];
-    vr = [-rd; -rp; -lambda .* y];
-    norm(K*vl - vr)
-    %}
 end
 
 function [dx, dy, dl] = compute_step(G, A, b, c, x, y, lambda, dyaff, dlaff, sigma, mu)
@@ -87,59 +80,4 @@ function [dx, dy, dl] = compute_step(G, A, b, c, x, y, lambda, dyaff, dlaff, sig
     dx = X \ v;
     dl = (rl  - lambda.*(A * dx) - lambda .* rp) ./ y;
     dy = A * dx + rp;
-    %{
-    [n, m] = size(A);
-    K = [G zeros(m, n) -A.'; A -eye(n) zeros(n, n); zeros(n, m) diag(lambda) diag(y)];
-    vl = [dx;dy;dl];
-    vr = [-rd; -rp; rl];
-    norm(K * vl - vr)
-    %}
 end
-
-%{
-function [dxaff, dyaff, dlaff] = compute_affine_scaling1(G, A, x, y, lambda)
-    % Construct the matrix we want to solve with
-    Linvy = y ./ lambda;
-    X = [G A.';A -diag(Linvy)];
-    % Construct the RHS
-    v1 = -(G*x - A.'*lambda);
-    v2 = -A*x + ones(length(lambda), 1);
-    v = [v1; v2];
-    % Do the solve
-    result = X \ v;
-    
-    % Extract delta x and delta lambda
-    dxaff = result(1:length(x));
-    dlaff = -result(length(x)+1:length(result));
-    % Compute delta y
-    dyaff = A * dxaff + A*x - y - ones(length(y), 1);
-end
-
-function [dx, dy, dl] = compute_step1(G, A, x, y, lambda, dyaff, dlaff, sigma, mu)
-    % Construct the matrix we want to solve with
-    Linvy = y ./ lambda;
-    X = [G A.';A -diag(Linvy)];
-    % Construct the RHS
-    v1 = -(G*x - A.'*lambda);
-    v2 = -A*x + ones(length(lambda), 1) + sigma*mu*1./lambda - (dyaff .* dlaff) ./ lambda;
-    v = [v1; v2];
-    % Do the solve
-    result = X \ v;
-    % Extract delta x and delta lambda
-    dx = result(1:length(x));
-    dl = -result(length(x)+1:length(result));
-    % Compute delta y
-    dy = A * dx + A*x - y - ones(length(y), 1);
-    %{
-    [n, m] = size(A);
-    K = [G zeros(m, n) -A.';A -eye(n) zeros(n); zeros(n, m) diag(lambda) diag(y)];
-    vc = [dx;dy;dl];
-    rc = G*x - A.'*lambda;
-    rp = A*x-y-ones(n, 1);
-    rl = -lambda.*y - dlaff.*dyaff + sigma*mu*ones(n, 1);
-    bvec = [-rc;-rp;rl];
-    norm(K*vc-bvec)
-    %}
-
-end
-%}

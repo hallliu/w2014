@@ -60,4 +60,3 @@ function [x, cg_iters] = bounded_pcg_reduced(G, c, start, actives, lower_bnds, p
     end
     
 end
-

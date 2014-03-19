@@ -69,7 +69,9 @@ For speeding up the iteration, I decided to use the ideal preconditioner ($Z^TGZ
 
 Note that this algorithm produces a monotone increase in the size of the active set of constraints -- once the gradient projection finds a local minimum that's constrained on an additional coordinate, the subsequent CG iteration will keep it within that constrained surface, and subsequent starting points will also be located on that constrained surface. Thus, once we get to the correct set of active constraints, the CG iteration should be able to hone in on the optimal point. 
 
-Convergence, then, depends on the gradient projection eventually getting the active set right. For the sake of simplicity, suppose that there is no additional CG step and that subsequent projection steps continue where the last one found a local min. Then, in order to not end up with the correct active set, we'd have to get stuck on a too-small active set, which means that a local min is consistently found before the first breakpoint. However, this looks a lot like steepest descent line search, which we know to converge.
+Convergence, then, depends on the gradient projection eventually getting the active set right. For the sake of simplicity, suppose that there is no additional CG step and that subsequent projection steps continue where the last one found a local min. Then, in order to not end up with the correct active set, we'd have to get stuck on a too-small active set, which means that a local min is consistently found before the first breakpoint. 
+
+Next, if this is the incorrect active set (i.e. there's a constraint that's active at the optimal point but not here), the iteration will behave like steepest descent and converge to a point on the current active set where all inactive coordinates of the gradient are zero. However, since this point is not the optimal point, at some point, the first local min on the steepest descent path must go beyond the first breakpoint.
 
 Finally, here's a picture with $n=200$ done by the preconditioned version:
 
